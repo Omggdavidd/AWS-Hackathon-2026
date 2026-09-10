@@ -129,3 +129,8 @@ temp/
 *.tmp
 *.bak
 *.orig
+
+# AI coding agents: project config in .claude/ and .gemini/ IS committed; personal files are not
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/worktrees/

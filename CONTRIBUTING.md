@@ -1,0 +1,76 @@
+# Contributing
+
+Lightweight workflow for a fast-moving hackathon team working with AI coding agents. Agents follow this too (via `AGENTS.md`).
+
+## Principles
+
+- `main` is always demoable and always describes the current project. Never push to it directly.
+- Branches live hours to a couple of days, not weeks.
+- Small PRs merge fast; big PRs rot.
+- Context Sync before merge: `docs/process/context-sync.md`.
+
+## The loop
+
+1. Update local `main`: `git switch main && git pull --ff-only`.
+2. Create a focused branch.
+3. Work with your AI agent (it follows `AGENTS.md`).
+4. Test the work.
+5. Context Sync.
+6. Push the branch and open a PR from the template.
+7. Review, address feedback.
+8. Squash merge, delete the branch.
+9. Everyone else pulls `main`.
+
+## Branches
+
+- Branch from an up-to-date `main`: `git fetch origin && git switch -c <name> origin/main`.
+- Name: `<type>/<short-kebab-description>`, optionally with an issue number: `feature/12-agent-tool-router`.
+- Types: `feature`, `fix`, `docs`, `chore`, `infra`, `spike` (throwaway experiments, may be deleted unmerged).
+- One person (plus their agent) per branch. Parallel work goes on separate branches. Claude Code users can run parallel sessions with `git worktree`.
+
+## Commits
+
+- Conventional Commits: `type(scope): description`, with types `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `infra`, `ci`. Breaking change: `!` after the type.
+- Commit often on your branch. WIP commits are fine because PRs are squash-merged; the **PR title** becomes the commit on `main`, so make it a good conventional message.
+- Never commit secrets. `.gitignore` catches common cases and CI runs a secret scan. Neither replaces reading your own diff.
+
+## Keeping current
+
+- Rebase on `main` at least daily and before marking a PR ready: `git fetch origin && git rebase origin/main`.
+- After a rebase, push your own branch with `git push --force-with-lease`. Never force-push someone else's branch or `main`.
+- Rebase, do not merge, `main` into feature branches. History stays linear and conflicts stay local.
+
+## Pull requests
+
+1. Open as a **draft** early if you want eyes on it. Mark **Ready for review** only after Context Sync.
+2. Fill in the template. The checklist is short on purpose; every box means something.
+3. Keep it reviewable: one logical change, ideally under ~400 changed lines. Split otherwise.
+4. CI must be green: `context-check`, `secret-scan`, and build/test jobs as they are added.
+5. One approval from a teammate who did not write it. During crunch, docs-only or trivially safe PRs may be merged by the author after posting in the team channel and waiting 15 minutes with no objection.
+6. Squash merge. Delete the branch.
+
+## Reviews
+
+- Review within a couple of hours during working sessions. Unblocking teammates beats finishing your own feature.
+- Review for: does it do what the PR says, is scope respected, are shared docs synchronized, is anything dangerous (secrets, destructive infra, cost).
+- Do not review style. Formatters and linters own that.
+- Reviewers may push small fixes to the branch instead of requesting changes, and say so in a comment.
+
+## Conflicts and stale branches
+
+- The branch author resolves conflicts by rebasing. Ask the other author when intent is unclear.
+- A branch more than two days behind `main` is stale: rebase it before doing anything else, and re-run the checks, since `main` may have changed the ground under it.
+- A branch nobody has touched for a week gets closed or its PR marked draft; reopen from a fresh rebase when work resumes.
+- `STATUS.md`: keep both sides' facts, then re-read the whole file so it still describes *now*.
+- ADR number collisions: the later PR renumbers its ADR to the next free number and fixes the index.
+- Lockfiles: take `main`'s lockfile and re-run the install command.
+
+## Testing before merge
+
+- Run the commands listed in `AGENTS.md` *Commands* for every workspace you touched.
+- If a check cannot run (missing credentials, no AWS access), say so in the PR instead of skipping silently.
+- Manual demo checks count. Note what you tried.
+
+## Recommended `main` protection (repo admin, one-time)
+
+GitHub → Settings → Rules → New branch ruleset for `main`: require a pull request (1 approval), require status checks `context-check` and `secret-scan`, require linear history, block force pushes. Drop the approval requirement to 0 only if the team is two people.
