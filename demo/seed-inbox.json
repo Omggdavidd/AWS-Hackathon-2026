@@ -1,0 +1,181 @@
+{
+  "persona": {
+    "name": "Alex Rivera",
+    "email": "alex.rivera@student.northgate.edu",
+    "now": "2026-09-10T09:00:00-04:00"
+  },
+  "messages": [
+    {
+      "id": "msg-001",
+      "threadId": "thr-deposit",
+      "from": "Bursar's Office <bursar@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Action required: Fall registration deposit",
+      "date": "2026-08-14T10:12:00-04:00",
+      "snippet": "Your $200 registration deposit must be received by September 15 to hold your course registration.",
+      "body": "Dear Alex,\n\nYour $200 registration deposit must be received by September 15, 2026 to hold your course registration for the Fall term. Registrations without a deposit on file after that date may be released.\n\nPay online at the Student Accounts portal.\n\nBursar's Office\nNorthgate University",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-002",
+      "threadId": "thr-housing",
+      "from": "Northgate Housing <housing@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Housing application fee due September 1",
+      "date": "2026-08-20T14:30:00-04:00",
+      "snippet": "A $150 housing application fee is due by September 1 to complete your application.",
+      "body": "Hi Alex,\n\nA $150 housing application fee is due by September 1, 2026 to complete your on-campus housing application. Applications without the fee will not be placed.\n\nNorthgate Housing",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-003",
+      "threadId": "thr-housing",
+      "from": "Northgate Housing <housing@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Re: Housing application fee due September 1",
+      "date": "2026-09-03T09:05:00-04:00",
+      "snippet": "Payment received. Thank you. Your housing application is now complete.",
+      "body": "Hi Alex,\n\nPayment received. Thank you. Your $150 housing application fee was processed on September 2 and your application is now complete.\n\nNorthgate Housing",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-004",
+      "threadId": "thr-insurance",
+      "from": "Maple Court Property Management <office@maplecourtpm.com>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Proof of renter's insurance needed before move-in",
+      "date": "2026-09-02T16:45:00-04:00",
+      "snippet": "Please reply with a copy of your renter's insurance certificate before September 12.",
+      "body": "Hello Alex,\n\nPer your lease, please reply to this email with a copy of your renter's insurance certificate before September 12. We cannot release keys without it.\n\nThank you,\nMaple Court Property Management",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-005",
+      "threadId": "thr-issue1",
+      "from": "Bill Okafor <bill.okafor@brightpath.io>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Issue #1 review",
+      "date": "2026-08-28T11:20:00-04:00",
+      "snippet": "Can you send me your write-up for Issue #1 so I can review before the sprint?",
+      "body": "Hi Alex,\n\nCan you send me your write-up for Issue #1 so I can review it before the sprint planning meeting?\n\nThanks,\nBill",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-006",
+      "threadId": "thr-issue1",
+      "from": "Alex Rivera <alex.rivera@student.northgate.edu>",
+      "to": ["bill.okafor@brightpath.io"],
+      "subject": "Re: Issue #1 review",
+      "date": "2026-09-03T18:10:00-04:00",
+      "snippet": "Attached is the write-up for Issue #1. Let me know if anything is unclear.",
+      "body": "Hi Bill,\n\nAttached is the write-up for Issue #1. Let me know if anything is unclear.\n\nAlex",
+      "labels": ["SENT"]
+    },
+    {
+      "id": "msg-007",
+      "threadId": "thr-club",
+      "from": "Robotics Club <robotics@clubs.northgate.edu>",
+      "to": ["members@clubs.northgate.edu"],
+      "subject": "Meeting moved: Thursday 6 PM, Room 204",
+      "date": "2026-09-05T12:00:00-04:00",
+      "snippet": "This week's meeting moves from Wednesday 5 PM to Thursday 6 PM in Room 204.",
+      "body": "Hi all,\n\nThis week's meeting moves from Wednesday 5 PM to Thursday September 10 at 6 PM in Engineering Room 204. Same agenda.\n\nRobotics Club",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-008",
+      "threadId": "thr-flight",
+      "from": "Northwind Air <itinerary@northwindair.example>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Your itinerary: Toronto (YYZ) to London (LHR), October 17",
+      "date": "2026-07-30T08:00:00-04:00",
+      "snippet": "Confirmation NW7Q2K. Departs YYZ Oct 17 at 21:10, arrives LHR Oct 18 at 09:05.",
+      "body": "Booking confirmed. Confirmation NW7Q2K.\n\nNW 0412 Toronto (YYZ) to London (LHR)\nDeparts October 17, 2026 at 21:10\nArrives October 18, 2026 at 09:05\n\nOnline check-in opens 24 hours before departure.",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-009",
+      "threadId": "thr-flight",
+      "from": "Northwind Air <itinerary@northwindair.example>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Schedule change: NW 0412 on October 17",
+      "date": "2026-09-08T07:30:00-04:00",
+      "snippet": "Your departure time has changed from 21:10 to 21:55. No action is required.",
+      "body": "Your flight NW 0412 on October 17 now departs Toronto (YYZ) at 21:55 instead of 21:10 and arrives London (LHR) at 09:50. Your seat is unchanged. No action is required.",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-010",
+      "threadId": "thr-dentist",
+      "from": "Riverside Dental <reminders@riversidedental.example>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "You're due for your next visit",
+      "date": "2026-09-01T15:00:00-04:00",
+      "snippet": "It has been six months since your last cleaning. Book online or reply with a preferred time.",
+      "body": "Hi Alex,\n\nIt has been six months since your last cleaning. Book online or reply to this email with a preferred day and time. Weekday openings next two weeks: Tue 2:00 PM, Thu 10:30 AM, Fri 4:15 PM.\n\nRiverside Dental",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-011",
+      "threadId": "thr-return",
+      "from": "Shopmart <orders@shopmart.example>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Your return window closes September 19",
+      "date": "2026-09-04T10:00:00-04:00",
+      "snippet": "Return the desk lamp ($84.00) by September 19 for a full refund.",
+      "body": "Order #SM-55910\n\nYou started a return for Desk Lamp, $84.00. Drop it off at any carrier location by September 19, 2026 to receive a full refund. After that date the return is cancelled.",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-012",
+      "threadId": "thr-streaming",
+      "from": "StreamBox <billing@streambox.example>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Payment method declined",
+      "date": "2026-09-09T06:00:00-04:00",
+      "snippet": "We could not charge your card. Update your payment method by September 11 to keep watching.",
+      "body": "We could not charge your card for this month's plan ($15.99). Update your payment method by September 11 or your account will pause.",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-013",
+      "threadId": "thr-newsletter",
+      "from": "Campus Weekly <news@northgate.edu>",
+      "to": ["students@northgate.edu"],
+      "subject": "Campus Weekly: Fall events, library hours, and more",
+      "date": "2026-09-07T08:00:00-04:00",
+      "snippet": "This week on campus: farmers market, extended library hours, and the fall concert series.",
+      "body": "This week on campus: Saturday farmers market on the quad, extended library hours during midterms, and the fall concert series kicks off October 2. No action needed.",
+      "labels": ["INBOX", "CATEGORY_PROMOTIONS"]
+    }
+  ],
+  "events": [
+    {
+      "id": "evt-001",
+      "title": "Robotics Club meeting",
+      "start": "2026-09-09T17:00:00-04:00",
+      "end": "2026-09-09T18:00:00-04:00",
+      "location": "Engineering Room 110",
+      "attendees": ["members@clubs.northgate.edu"],
+      "status": "confirmed"
+    },
+    {
+      "id": "evt-002",
+      "title": "CS 301 Lecture",
+      "start": "2026-09-10T13:00:00-04:00",
+      "end": "2026-09-10T14:15:00-04:00",
+      "location": "Hall B",
+      "attendees": [],
+      "status": "confirmed"
+    },
+    {
+      "id": "evt-003",
+      "title": "Flight NW 0412 YYZ to LHR",
+      "start": "2026-10-17T21:10:00-04:00",
+      "end": "2026-10-18T04:05:00-04:00",
+      "description": "Confirmation NW7Q2K",
+      "attendees": [],
+      "status": "confirmed"
+    }
+  ]
+}

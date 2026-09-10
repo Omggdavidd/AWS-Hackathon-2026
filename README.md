@@ -4,13 +4,16 @@ Team project for the AWS Hackathon 2026. What we are building is defined by the 
 
 ## Getting started
 
+Requires Node 22 and pnpm 12 (`npm install -g pnpm@12.3.4` if corepack complains).
+
 ```
 git clone https://github.com/Omggdavidd/AWS-Hackathon-2026.git
 cd AWS-Hackathon-2026
-python3 scripts/check_context.py   # sanity check of the shared docs
+pnpm install
+pnpm check          # lint, typecheck, tests, context check
 ```
 
-No application toolchain exists yet. When the stack is chosen, this section will hold the install and run commands.
+The shared schema package and the seeded demo data exist today. The web app and the agent arrive next; their READMEs will carry the run commands.
 
 ## Working here
 
