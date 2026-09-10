@@ -1,0 +1,621 @@
+{
+  "loops": [
+    {
+      "id": "loop-deposit",
+      "userId": "user-alex",
+      "title": "Pay registration deposit",
+      "category": "payment",
+      "status": "NEEDS_YOU",
+      "owner": "user",
+      "actionType": "pay",
+      "riskLevel": "high",
+      "priority": "critical",
+      "confidence": 0.86,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-001",
+          "threadId": "thr-deposit"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "Bursar's Office, Northgate University",
+      "dueAt": "2026-09-15T23:59:00.000Z",
+      "amount": {
+        "value": 200,
+        "currency": "USD"
+      },
+      "consequence": "Course registration may be released",
+      "nextAction": "Pay $200 at the Student Accounts portal"
+    },
+    {
+      "id": "loop-housing",
+      "userId": "user-alex",
+      "title": "Pay housing application fee",
+      "category": "payment",
+      "status": "RESOLVED",
+      "owner": "user",
+      "actionType": "pay",
+      "riskLevel": "high",
+      "priority": "high",
+      "confidence": 0.97,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-002",
+          "threadId": "thr-housing"
+        },
+        {
+          "sourceType": "email",
+          "sourceId": "msg-003",
+          "threadId": "thr-housing"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:02.000Z",
+      "requestedBy": "Northgate Housing",
+      "dueAt": "2026-09-01T23:59:00.000Z",
+      "amount": {
+        "value": 150,
+        "currency": "USD"
+      },
+      "consequence": "Housing application not placed",
+      "resolvedAt": "2026-09-10T13:00:02.000Z"
+    },
+    {
+      "id": "loop-insurance",
+      "userId": "user-alex",
+      "title": "Send proof of renter's insurance",
+      "category": "reply",
+      "status": "NEEDS_YOU",
+      "owner": "user",
+      "actionType": "reply",
+      "riskLevel": "medium",
+      "priority": "high",
+      "confidence": 0.9,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-004",
+          "threadId": "thr-insurance"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "Maple Court Property Management",
+      "dueAt": "2026-09-12T23:59:00.000Z",
+      "consequence": "Keys will not be released",
+      "nextAction": "Review the prepared reply and attach the certificate"
+    },
+    {
+      "id": "loop-issue1",
+      "userId": "user-alex",
+      "title": "Issue #1 write-up review",
+      "category": "reply",
+      "status": "WAITING",
+      "owner": "other",
+      "actionType": "review",
+      "riskLevel": "low",
+      "priority": "medium",
+      "confidence": 0.88,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-005",
+          "threadId": "thr-issue1"
+        },
+        {
+          "sourceType": "email",
+          "sourceId": "msg-006",
+          "threadId": "thr-issue1"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "Bill Okafor",
+      "consequence": "Sprint planning blocked without review",
+      "waitingOn": "Bill Okafor",
+      "nextAction": "Follow up if no reply by Sep 11"
+    },
+    {
+      "id": "loop-club",
+      "userId": "user-alex",
+      "title": "Robotics Club meeting moved",
+      "category": "meeting",
+      "status": "WATCHING",
+      "owner": "nobody",
+      "actionType": "attend",
+      "riskLevel": "low",
+      "priority": "low",
+      "confidence": 0.9,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-007",
+          "threadId": "thr-club"
+        },
+        {
+          "sourceType": "calendar",
+          "sourceId": "evt-001"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "Robotics Club",
+      "dueAt": "2026-09-10T22:00:00.000Z",
+      "consequence": "Missed meeting",
+      "nextAction": "None; calendar updated"
+    },
+    {
+      "id": "loop-flight",
+      "userId": "user-alex",
+      "title": "Flight NW 0412 Toronto to London",
+      "category": "travel",
+      "status": "WATCHING",
+      "owner": "nobody",
+      "actionType": "attend",
+      "riskLevel": "low",
+      "priority": "low",
+      "confidence": 0.95,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-008",
+          "threadId": "thr-flight"
+        },
+        {
+          "sourceType": "email",
+          "sourceId": "msg-009",
+          "threadId": "thr-flight"
+        },
+        {
+          "sourceType": "calendar",
+          "sourceId": "evt-003"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "Northwind Air",
+      "dueAt": "2026-10-18T01:55:00.000Z",
+      "consequence": "Missed flight",
+      "nextAction": "None; check-in opens Oct 16"
+    },
+    {
+      "id": "loop-dentist",
+      "userId": "user-alex",
+      "title": "Book dental cleaning",
+      "category": "appointment",
+      "status": "NEEDS_YOU",
+      "owner": "user",
+      "actionType": "choose",
+      "riskLevel": "medium",
+      "priority": "low",
+      "confidence": 0.82,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-010",
+          "threadId": "thr-dentist"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "Riverside Dental",
+      "consequence": "Cleaning overdue",
+      "nextAction": "Choose one of the offered slots"
+    },
+    {
+      "id": "loop-return",
+      "userId": "user-alex",
+      "title": "Return desk lamp for refund",
+      "category": "purchase",
+      "status": "NEEDS_YOU",
+      "owner": "user",
+      "actionType": "return",
+      "riskLevel": "medium",
+      "priority": "medium",
+      "confidence": 0.9,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-011",
+          "threadId": "thr-return"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "Shopmart",
+      "dueAt": "2026-09-19T23:59:00.000Z",
+      "amount": {
+        "value": 84,
+        "currency": "USD"
+      },
+      "consequence": "$84 refund lost",
+      "nextAction": "Drop the lamp at a carrier location"
+    },
+    {
+      "id": "loop-streaming",
+      "userId": "user-alex",
+      "title": "Update StreamBox payment method",
+      "category": "subscription",
+      "status": "NEEDS_YOU",
+      "owner": "user",
+      "actionType": "pay",
+      "riskLevel": "low",
+      "priority": "low",
+      "confidence": 0.9,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-012",
+          "threadId": "thr-streaming"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "StreamBox",
+      "dueAt": "2026-09-11T23:59:00.000Z",
+      "amount": {
+        "value": 15.99,
+        "currency": "USD"
+      },
+      "consequence": "Streaming pauses",
+      "nextAction": "Update the card on file"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "ev-dep-1",
+      "loopId": "loop-deposit",
+      "sourceType": "email",
+      "sourceId": "msg-001",
+      "threadId": "thr-deposit",
+      "observedAt": "2026-08-14T14:12:00.000Z",
+      "excerpt": "Your $200 registration deposit must be received by September 15, 2026 to hold your course registration.",
+      "supports": "OPEN",
+      "confidence": 0.95
+    },
+    {
+      "id": "ev-hou-1",
+      "loopId": "loop-housing",
+      "sourceType": "email",
+      "sourceId": "msg-002",
+      "threadId": "thr-housing",
+      "observedAt": "2026-08-20T18:30:00.000Z",
+      "excerpt": "A $150 housing application fee is due by September 1, 2026 to complete your on-campus housing application.",
+      "supports": "OPEN",
+      "confidence": 0.95
+    },
+    {
+      "id": "ev-hou-2",
+      "loopId": "loop-housing",
+      "sourceType": "email",
+      "sourceId": "msg-003",
+      "threadId": "thr-housing",
+      "observedAt": "2026-09-03T13:05:00.000Z",
+      "excerpt": "Payment received. Thank you. Your $150 housing application fee was processed on September 2 and your application is now complete.",
+      "supports": "RESOLVED",
+      "confidence": 0.97
+    },
+    {
+      "id": "ev-ins-1",
+      "loopId": "loop-insurance",
+      "sourceType": "email",
+      "sourceId": "msg-004",
+      "threadId": "thr-insurance",
+      "observedAt": "2026-09-02T20:45:00.000Z",
+      "excerpt": "Please reply to this email with a copy of your renter's insurance certificate before September 12. We cannot release keys without it.",
+      "supports": "OPEN",
+      "confidence": 0.93
+    },
+    {
+      "id": "ev-iss-1",
+      "loopId": "loop-issue1",
+      "sourceType": "email",
+      "sourceId": "msg-005",
+      "threadId": "thr-issue1",
+      "observedAt": "2026-08-28T15:20:00.000Z",
+      "excerpt": "Can you send me your write-up for Issue #1 so I can review it before the sprint planning meeting?",
+      "supports": "OPEN",
+      "confidence": 0.9
+    },
+    {
+      "id": "ev-iss-2",
+      "loopId": "loop-issue1",
+      "sourceType": "email",
+      "sourceId": "msg-006",
+      "threadId": "thr-issue1",
+      "observedAt": "2026-09-03T22:10:00.000Z",
+      "excerpt": "Attached is the write-up for Issue #1. Let me know if anything is unclear.",
+      "supports": "UPDATED",
+      "confidence": 0.92
+    },
+    {
+      "id": "ev-club-1",
+      "loopId": "loop-club",
+      "sourceType": "email",
+      "sourceId": "msg-007",
+      "threadId": "thr-club",
+      "observedAt": "2026-09-05T16:00:00.000Z",
+      "excerpt": "This week's meeting moves from Wednesday 5 PM to Thursday September 10 at 6 PM in Engineering Room 204.",
+      "supports": "UPDATED",
+      "confidence": 0.94
+    },
+    {
+      "id": "ev-fl-1",
+      "loopId": "loop-flight",
+      "sourceType": "email",
+      "sourceId": "msg-008",
+      "threadId": "thr-flight",
+      "observedAt": "2026-07-30T12:00:00.000Z",
+      "excerpt": "NW 0412 Toronto (YYZ) to London (LHR). Departs October 17, 2026 at 21:10.",
+      "supports": "OPEN",
+      "confidence": 0.95
+    },
+    {
+      "id": "ev-fl-2",
+      "loopId": "loop-flight",
+      "sourceType": "email",
+      "sourceId": "msg-009",
+      "threadId": "thr-flight",
+      "observedAt": "2026-09-08T11:30:00.000Z",
+      "excerpt": "Your flight NW 0412 on October 17 now departs at 21:55 instead of 21:10. No action is required.",
+      "supports": "UPDATED",
+      "confidence": 0.96
+    },
+    {
+      "id": "ev-den-1",
+      "loopId": "loop-dentist",
+      "sourceType": "email",
+      "sourceId": "msg-010",
+      "threadId": "thr-dentist",
+      "observedAt": "2026-09-01T19:00:00.000Z",
+      "excerpt": "It has been six months since your last cleaning. Weekday openings next two weeks: Tue 2:00 PM, Thu 10:30 AM, Fri 4:15 PM.",
+      "supports": "OPEN",
+      "confidence": 0.85
+    },
+    {
+      "id": "ev-ret-1",
+      "loopId": "loop-return",
+      "sourceType": "email",
+      "sourceId": "msg-011",
+      "threadId": "thr-return",
+      "observedAt": "2026-09-04T14:00:00.000Z",
+      "excerpt": "Drop it off at any carrier location by September 19, 2026 to receive a full refund.",
+      "supports": "OPEN",
+      "confidence": 0.92
+    },
+    {
+      "id": "ev-str-1",
+      "loopId": "loop-streaming",
+      "sourceType": "email",
+      "sourceId": "msg-012",
+      "threadId": "thr-streaming",
+      "observedAt": "2026-09-09T10:00:00.000Z",
+      "excerpt": "We could not charge your card for this month's plan ($15.99). Update your payment method by September 11 or your account will pause.",
+      "supports": "OPEN",
+      "confidence": 0.9
+    }
+  ],
+  "actions": [
+    {
+      "id": "act-deposit-pay",
+      "loopId": "loop-deposit",
+      "userId": "user-alex",
+      "type": "pay",
+      "riskTier": "high",
+      "requiresApproval": true,
+      "summary": "Pay the $200 registration deposit",
+      "payload": {
+        "amount": 200,
+        "currency": "USD",
+        "portal": "Student Accounts"
+      },
+      "status": "PROPOSED",
+      "createdAt": "2026-09-10T13:00:05.000Z"
+    },
+    {
+      "id": "act-insurance-draft",
+      "loopId": "loop-insurance",
+      "userId": "user-alex",
+      "type": "draft_email",
+      "riskTier": "medium",
+      "requiresApproval": false,
+      "summary": "Draft reply to Maple Court with the insurance certificate",
+      "payload": {
+        "to": "office@maplecourtpm.com",
+        "subject": "Re: Proof of renter's insurance needed before move-in",
+        "body": "Hello,\n\nPlease find my renter's insurance certificate attached. Let me know if you need anything else before move-in.\n\nThanks,\nAlex Rivera"
+      },
+      "status": "PROPOSED",
+      "createdAt": "2026-09-10T13:00:05.000Z"
+    },
+    {
+      "id": "act-issue1-followup",
+      "loopId": "loop-issue1",
+      "userId": "user-alex",
+      "type": "follow_up",
+      "riskTier": "low",
+      "requiresApproval": false,
+      "summary": "Send a short follow-up to Bill tomorrow if still no reply",
+      "payload": {
+        "after": "2026-09-11T13:00:00.000Z"
+      },
+      "status": "PROPOSED",
+      "createdAt": "2026-09-10T13:00:05.000Z"
+    },
+    {
+      "id": "act-club-cal",
+      "loopId": "loop-club",
+      "userId": "user-alex",
+      "type": "create_calendar_event",
+      "riskTier": "low",
+      "requiresApproval": false,
+      "summary": "Move the Robotics Club event to Thu Sep 10, 6 PM, Room 204",
+      "payload": {
+        "eventId": "evt-001",
+        "start": "2026-09-10T22:00:00.000Z",
+        "end": "2026-09-10T23:00:00.000Z",
+        "location": "Engineering Room 204"
+      },
+      "status": "EXECUTED",
+      "createdAt": "2026-09-10T13:00:05.000Z",
+      "executedAt": "2026-09-10T13:00:06.000Z"
+    },
+    {
+      "id": "act-dentist-book",
+      "loopId": "loop-dentist",
+      "userId": "user-alex",
+      "type": "book_appointment",
+      "riskTier": "medium",
+      "requiresApproval": true,
+      "summary": "Reply to Riverside Dental choosing a slot that is free on your calendar",
+      "payload": {
+        "candidates": ["Tue 2:00 PM", "Thu 10:30 AM", "Fri 4:15 PM"],
+        "conflictFree": ["Tue 2:00 PM", "Fri 4:15 PM"]
+      },
+      "status": "PROPOSED",
+      "createdAt": "2026-09-10T13:00:05.000Z"
+    }
+  ],
+  "audit": [
+    {
+      "id": "au-1",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:01.000Z",
+      "kind": "loop_created",
+      "actor": "agent",
+      "reason": "Payment request found in Bursar email of Aug 14; deadline Sep 15; searched later messages, no receipt or confirmation found",
+      "loopId": "loop-deposit"
+    },
+    {
+      "id": "au-2",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:05.000Z",
+      "kind": "action_proposed",
+      "actor": "agent",
+      "reason": "Payment is high risk; needs your approval",
+      "loopId": "loop-deposit",
+      "actionId": "act-deposit-pay"
+    },
+    {
+      "id": "au-3",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:01.000Z",
+      "kind": "loop_created",
+      "actor": "agent",
+      "reason": "Fee request found in Housing email of Aug 20",
+      "loopId": "loop-housing"
+    },
+    {
+      "id": "au-4",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:02.000Z",
+      "kind": "state_changed",
+      "actor": "agent",
+      "reason": "Housing confirmed payment received on Sep 3; NEEDS_YOU -> RESOLVED",
+      "loopId": "loop-housing",
+      "details": {
+        "to": "RESOLVED",
+        "from": "NEEDS_YOU"
+      }
+    },
+    {
+      "id": "au-5",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:01.000Z",
+      "kind": "loop_created",
+      "actor": "agent",
+      "reason": "Insurance request found; no reply in sent mail",
+      "loopId": "loop-insurance"
+    },
+    {
+      "id": "au-6",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:05.000Z",
+      "kind": "action_proposed",
+      "actor": "agent",
+      "reason": "Reply draft prepared; you attach the certificate and send",
+      "loopId": "loop-insurance",
+      "actionId": "act-insurance-draft"
+    },
+    {
+      "id": "au-7",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:01.000Z",
+      "kind": "loop_created",
+      "actor": "agent",
+      "reason": "Bill asked for the write-up on Aug 28",
+      "loopId": "loop-issue1"
+    },
+    {
+      "id": "au-8",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:02.000Z",
+      "kind": "state_changed",
+      "actor": "agent",
+      "reason": "You sent the write-up on Sep 3; NEEDS_YOU -> WAITING on Bill",
+      "loopId": "loop-issue1"
+    },
+    {
+      "id": "au-9",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:06.000Z",
+      "kind": "action_executed",
+      "actor": "agent",
+      "reason": "Calendar event moved; no conflict with CS 301",
+      "loopId": "loop-club",
+      "actionId": "act-club-cal"
+    },
+    {
+      "id": "au-10",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:02.000Z",
+      "kind": "state_changed",
+      "actor": "agent",
+      "reason": "Departure moved 45 minutes later; no conflict found; no interruption needed",
+      "loopId": "loop-flight"
+    },
+    {
+      "id": "au-11",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:01.000Z",
+      "kind": "loop_created",
+      "actor": "agent",
+      "reason": "Dentist reminder found; two of three offered slots are free on your calendar",
+      "loopId": "loop-dentist"
+    },
+    {
+      "id": "au-12",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:01.000Z",
+      "kind": "loop_created",
+      "actor": "agent",
+      "reason": "Return window found; no drop-off confirmation found",
+      "loopId": "loop-return"
+    },
+    {
+      "id": "au-13",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:01.000Z",
+      "kind": "loop_created",
+      "actor": "agent",
+      "reason": "Declined payment notice found; low consequence",
+      "loopId": "loop-streaming"
+    },
+    {
+      "id": "au-14",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:07.000Z",
+      "kind": "scan_completed",
+      "actor": "agent",
+      "reason": "Scanned 13 messages and 3 events; 9 loops, 1 resolved, 4 need you, 1 waiting, 2 watching",
+      "details": {
+        "messages": 13,
+        "events": 3,
+        "loops": 9
+      }
+    }
+  ]
+}

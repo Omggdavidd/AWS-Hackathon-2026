@@ -5,7 +5,7 @@ import type {
   OpenLoop,
   ProposedAction,
   ProposedActionStatus,
-} from '../schemas/index.js'
+} from '../schemas/index'
 
 export interface LoopFilter {
   status?: LoopStatus | LoopStatus[]

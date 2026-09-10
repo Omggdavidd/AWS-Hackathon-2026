@@ -1,3 +1,3 @@
-export * from './ingestion/index.js'
-export * from './ledger/index.js'
-export * from './schemas/index.js'
+export * from './ingestion/index'
+export * from './ledger/index'
+export * from './schemas/index'

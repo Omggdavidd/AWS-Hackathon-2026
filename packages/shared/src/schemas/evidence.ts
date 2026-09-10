@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Confidence, Id, IsoDateTime, SourceType } from './common.js'
+import { Confidence, Id, IsoDateTime, SourceType } from './common'
 
 export const EvidenceSupports = z.enum(['OPEN', 'RESOLVED', 'UPDATED', 'CONTRADICTS'])
 export type EvidenceSupports = z.infer<typeof EvidenceSupports>

@@ -2,8 +2,8 @@ import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { LocalLedgerStore } from '../src/index.js'
-import { loop, runStoreContract } from './store-contract.js'
+import { LocalLedgerStore } from '../src/index'
+import { loop, runStoreContract } from './store-contract'
 
 runStoreContract('LocalLedgerStore (memory)', async () => new LocalLedgerStore())
 

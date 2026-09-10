@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { applyTransition, canTransition, InvalidTransitionError } from '../src/index.js'
-import { loop } from './store-contract.js'
+import { applyTransition, canTransition, InvalidTransitionError } from '../src/index'
+import { loop } from './store-contract'
 
 describe('transitions', () => {
   it('allows evidence to move any state and resolution from any state', () => {

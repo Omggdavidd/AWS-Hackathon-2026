@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { AuditEvent, Evidence, LedgerStore, OpenLoop, ProposedAction } from '../src/index.js'
+import type { AuditEvent, Evidence, LedgerStore, OpenLoop, ProposedAction } from '../src/index'
 
 const now = '2026-09-10T13:00:00.000Z'
 

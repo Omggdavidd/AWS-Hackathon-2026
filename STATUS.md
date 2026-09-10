@@ -14,7 +14,8 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 - Repository context system, CI (context check, secret scan, workspace checks), accepted architecture in ADRs 0003 to 0012.
 - `packages/shared`: schemas for OpenLoop, Evidence, ProposedAction, AuditEvent and the four agent outputs; state transitions; `LedgerStore` with `LocalLedgerStore` (memory or JSON file) and a shared contract suite; `IngestionSource` with `FixtureSource`.
-- `demo/seed-inbox.json`: the §14 student scenario, 13 messages and 3 events, validated by tests.
+- `demo/seed-inbox.json` (13 messages, 3 events) and `demo/seed-ledger.json` (the 9 loops the agent should produce), both validated by tests.
+- `web/`: dashboard with the four states, loop detail (why it exists, evidence, confidence, consequence, proposed actions, timeline), approve/decline and "I already did this" server actions, activity feed. Runs on the local ledger seeded from the demo.
 
 ## In progress
 
@@ -36,7 +37,8 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 1. Add teammates as GitHub collaborators, then raise the ruleset's required approvals from 0 to 1.
 2. Request AWS credits before Thu Sep 11, 12:00 PM PT; register everyone on Devpost (`docs/hackathon/SUBMISSION.md`).
 3. Account chores: Bedrock Anthropic use-case form, install AWS CLI and `@aws/agentcore`, first deploy of the template (CDK bootstrap), Google Cloud project in Testing, Vercel project. Owners in `docs/plans/2026-09-10-mvp.md` *Unresolved questions*.
-4. Plan steps 4 and 5 in parallel: `agent/` from the AgentCore template with the graph skeleton; `web/` dashboard shell reading `LocalLedgerStore` seeded from `demo/`.
+4. Plan step 4: `agent/` from the AgentCore template with the graph skeleton (the CLI scaffolds without AWS credentials; `agentcore dev` needs Bedrock access to answer).
+5. Plan step 6: Extractor with structured output over fixture messages, compared against `demo/seed-ledger.json`.
 
 ## Known issues
 

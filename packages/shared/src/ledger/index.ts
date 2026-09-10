@@ -1,3 +1,3 @@
-export * from './local-store.js'
-export * from './store.js'
-export * from './transitions.js'
+export * from './local-store'
+export * from './store'
+export * from './transitions'

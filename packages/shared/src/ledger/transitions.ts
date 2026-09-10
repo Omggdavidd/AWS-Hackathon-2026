@@ -1,4 +1,4 @@
-import type { LoopStatus, OpenLoop } from '../schemas/index.js'
+import type { LoopStatus, OpenLoop } from '../schemas/index'
 
 /**
  * Allowed status transitions (SPEC §7, state-lifecycle diagram). New evidence can change any
