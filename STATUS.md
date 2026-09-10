@@ -4,7 +4,7 @@ Snapshot of **now**. Not a changelog. Update it in the same PR as the change tha
 
 Last updated: 2026-09-10
 
-Current phase: Phase 0, Repository methodology (definitions in `docs/process/phases.md`). Phase 1 is unlocked: the specification is in `docs/hackathon/SPEC.md`. The phase advances when the foundation is merged and the team says go.
+Current phase: Phase 1, Understand and plan (definitions in `docs/process/phases.md`). Entered 2026-09-10 after the foundation was committed and the specification landed in `docs/hackathon/SPEC.md`.
 
 ## Demo readiness
 
@@ -19,23 +19,25 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 | Workstream | Branch / PR | Notes |
 |---|---|---|
-| Commit the Phase 0 foundation to `main` | — | Everything is still uncommitted in the working tree |
+| Phase 1 decisions: ADRs 0003 to 0012, architecture draft, MVP plan | `feature/phase-1-decisions` | Drafted; awaiting team acceptance |
 
 ## Recently completed
 
-- 2026-09-10 Phase 0 foundation: agent instructions, docs structure, decision records, plans, PR template, CI.
+- 2026-09-10 Phase 0 foundation committed to `main` (f1156d9).
 - 2026-09-10 Team playbook converted to `docs/hackathon/SPEC.md` without summarization; submission checklist created.
 
 ## Blocked
 
-- Product work waits on Phase 1 ADRs (stack, layout, AWS services, agent orchestration). Nothing external blocks them.
+- Phase 2 scaffolding waits on the team accepting ADRs 0003 to 0012.
+- First model call waits on the Bedrock Anthropic use-case form for the AWS account.
 
 ## Next up
 
-1. Commit the foundation and enable the `main` ruleset (`CONTRIBUTING.md`).
+1. Enable the `main` ruleset (`CONTRIBUTING.md`) and push so teammates can clone.
 2. Request AWS credits before Thu Sep 11, 12:00 PM PT; register everyone on Devpost (`docs/hackathon/SUBMISSION.md`).
-3. Phase 1, today: verify the Strands TypeScript SDK actually supports Graph multi-agent and structured output as `SPEC.md` §9 assumes; then record ADRs for language and framework, frontend, agent hosting (AgentCore Runtime), persistence, integrations, repository layout. Write the MVP plan in `docs/plans/`.
-4. Phase 2, by Sep 11: scaffold the agreed workspaces, seed data, first end-to-end loop; fill `AGENTS.md` *Commands* and `docs/architecture.md`.
+3. Accept or amend ADRs 0003 to 0012; merge `feature/phase-1-decisions`.
+4. Account chores today: Bedrock Anthropic use-case form, AgentCore CLI first deploy (CDK bootstrap), Google Cloud project in Testing, Vercel project. Owners in `docs/plans/2026-09-10-mvp.md` *Unresolved questions*.
+5. Phase 2 (`docs/plans/2026-09-10-mvp.md` steps 3 to 5): workspace scaffold, shared schemas and local ledger, fixtures, agent skeleton, dashboard shell.
 
 ## Known issues
 
@@ -43,7 +45,8 @@ None.
 
 ## Temporary limitations
 
-- Four days remain. Phases 1 and 2 compress into Sep 10 and 11; `SPEC.md` §16 has the day-by-day calendar.
+- Four days remain. Phases 1 and 2 compress into Sep 10 and 11; day-by-day steps in `docs/plans/2026-09-10-mvp.md`.
+- Strands TypeScript Graph joins use AND semantics; the graph is designed as a pipeline with one fan-out (ADR-0007).
 
 ## Workstreams
 
