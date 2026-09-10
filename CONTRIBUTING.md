@@ -73,4 +73,4 @@ Lightweight workflow for a fast-moving hackathon team working with AI coding age
 
 ## Recommended `main` protection (repo admin, one-time)
 
-GitHub → Settings → Rules → New branch ruleset for `main`: require a pull request (1 approval), require status checks `context-check` and `secret-scan`, require linear history, block force pushes. Drop the approval requirement to 0 only if the team is two people.
+A `main` ruleset is active: pull request required, squash merge only, status checks `context-check`, `secret-scan` and `workspace-checks` required, linear history, no force pushes or deletion. Required approvals are 0 while the repo has one collaborator; raise to 1 in GitHub → Settings → Rules → `main` as soon as teammates are added.
