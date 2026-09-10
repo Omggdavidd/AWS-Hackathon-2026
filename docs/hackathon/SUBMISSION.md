@@ -21,8 +21,8 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 
 ## Required assets
 
-- [ ] Public GitHub repository
-- [ ] MIT or Apache license file visible on the repo page
+- [x] Public GitHub repository
+- [x] MIT or Apache license file visible on the repo page
 - [ ] README with setup instructions sufficient to run the project from a clean machine
 - [ ] All source code, assets and demo data needed to run
 - [ ] Architecture diagram

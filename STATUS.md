@@ -20,12 +20,11 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 | Workstream | Branch / PR | Notes |
 |---|---|---|
-| Workspace scaffold and shared package (plan step 3) | `feature/workspace-scaffold` | PR open |
+| Web dashboard shell (plan step 5) | — | Starting; reads `LocalLedgerStore` seeded from `demo/` |
 
 ## Recently completed
 
-- 2026-09-10 Phase 0 foundation on `main` (f1156d9); playbook converted to `docs/hackathon/SPEC.md`.
-- 2026-09-10 Phase 1 merged (#1): ADRs 0003 to 0012 accepted, architecture, MVP plan.
+- 2026-09-10 Phase 0 foundation (f1156d9); Phase 1 merged (#1); workspace scaffold and shared package merged (#2); `main` ruleset enabled; MIT license added.
 
 ## Blocked
 
@@ -34,11 +33,10 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 ## Next up
 
-1. Merge the scaffold PR; add teammates as collaborators; enable the `main` ruleset (`CONTRIBUTING.md`).
+1. Add teammates as GitHub collaborators, then raise the ruleset's required approvals from 0 to 1.
 2. Request AWS credits before Thu Sep 11, 12:00 PM PT; register everyone on Devpost (`docs/hackathon/SUBMISSION.md`).
 3. Account chores: Bedrock Anthropic use-case form, install AWS CLI and `@aws/agentcore`, first deploy of the template (CDK bootstrap), Google Cloud project in Testing, Vercel project. Owners in `docs/plans/2026-09-10-mvp.md` *Unresolved questions*.
 4. Plan steps 4 and 5 in parallel: `agent/` from the AgentCore template with the graph skeleton; `web/` dashboard shell reading `LocalLedgerStore` seeded from `demo/`.
-5. Add `LICENSE` (MIT) once the copyright holder name is decided.
 
 ## Known issues
 
