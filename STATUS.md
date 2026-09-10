@@ -19,7 +19,7 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 | Workstream | Branch / PR | Notes |
 |---|---|---|
-| Phase 1 decisions: ADRs 0003 to 0012, architecture draft, MVP plan | `feature/phase-1-decisions` | Drafted; awaiting team acceptance |
+| Phase 1 decisions: ADRs 0003 to 0012, architecture, MVP plan | `feature/phase-1-decisions` | Accepted 2026-09-10; PR open, merge unlocks Phase 2 |
 
 ## Recently completed
 
@@ -28,14 +28,14 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 ## Blocked
 
-- Phase 2 scaffolding waits on the team accepting ADRs 0003 to 0012.
+- Phase 2 scaffolding waits on the Phase 1 PR merging.
 - First model call waits on the Bedrock Anthropic use-case form for the AWS account.
 
 ## Next up
 
 1. Enable the `main` ruleset (`CONTRIBUTING.md`) and push so teammates can clone.
 2. Request AWS credits before Thu Sep 11, 12:00 PM PT; register everyone on Devpost (`docs/hackathon/SUBMISSION.md`).
-3. Accept or amend ADRs 0003 to 0012; merge `feature/phase-1-decisions`.
+3. Merge `feature/phase-1-decisions`; enable the `main` ruleset.
 4. Account chores today: Bedrock Anthropic use-case form, AgentCore CLI first deploy (CDK bootstrap), Google Cloud project in Testing, Vercel project. Owners in `docs/plans/2026-09-10-mvp.md` *Unresolved questions*.
 5. Phase 2 (`docs/plans/2026-09-10-mvp.md` steps 3 to 5): workspace scaffold, shared schemas and local ledger, fixtures, agent skeleton, dashboard shell.
 

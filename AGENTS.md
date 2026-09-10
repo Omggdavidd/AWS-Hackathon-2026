@@ -6,7 +6,7 @@ Canonical briefing for AI coding agents (Claude Code, Cursor, Codex, Copilot, Ge
 
 Team entry for the AWS **Agents for Humans** hackathon, Everyday Agents track, submission due Mon Sep 14, 2026, 8:00 PM ET. Product: **Open Loops**, a follow-through agent that keeps a persistent, evidence-backed ledger of unresolved responsibilities found in email and calendar, handles low-risk work automatically and interrupts the user only for real decisions. The full specification and team playbook is `docs/hackathon/SPEC.md` (about 1,000 lines): read the sections your task touches, not the whole file.
 
-Stack, hosting, persistence, integrations and repository layout are **proposed in ADRs 0003 to 0012** (`docs/decisions/README.md`) and drafted in `docs/architecture.md`; the MVP plan is `docs/plans/2026-09-10-mvp.md`. Until the team sets those ADRs to `accepted`, do not scaffold applications or add dependencies.
+Stack, hosting, persistence, integrations and repository layout are **decided in ADRs 0003 to 0012** (`docs/decisions/README.md`): TypeScript, Strands TypeScript SDK on Bedrock, AgentCore Runtime, DynamoDB behind a local-or-AWS adapter, Next.js 16 on Vercel, Google OAuth owned by the web app, pnpm workspace with `web/`, `agent/`, `packages/shared/`, `demo/`. System map: `docs/architecture.md`. Plan: `docs/plans/2026-09-10-mvp.md`. Anything outside those decisions needs a new ADR.
 
 ## Phase discipline
 

@@ -1,6 +1,6 @@
 # Architecture
 
-Status: **proposed**, matching ADRs 0003 to 0012 (all `proposed`). Becomes current when the team accepts them and the first end-to-end slice runs. Rationale lives in the ADRs, not here.
+Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10), not yet implemented. Update this file as the code lands; rationale lives in the ADRs, not here.
 
 ## 1. Problem and shape
 
