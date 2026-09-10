@@ -18,7 +18,7 @@ Work moves through phases defined in `docs/process/phases.md`. `STATUS.md` state
 |---|---|
 | `packages/shared/` | `@openloop/shared`: Zod schemas for every record and agent output, `LedgerStore` interface with `LocalLedgerStore`, state transitions, `IngestionSource` with `FixtureSource`. No framework dependencies. |
 | `demo/` | Seeded inbox and calendar for the deterministic demo, with the expected outcome per thread in its README. |
-| `web/` | Next.js app (UI, Google OAuth, runtime invocation). Not yet created (plan step 5). |
+| `web/` | `@openloop/web`, Next.js 16: dashboard, loop detail with evidence and timeline, approvals, activity feed. Server components and server actions only touch the ledger through `@openloop/shared`. |
 | `agent/` | AgentCore CLI project: `agentcore/` config and `app/OpenLoopAgent/` Strands graph. Not yet created (plan step 4). |
 | `scripts/` | Repo tooling. `check_context.py` is the deterministic context check used by CI and hooks. |
 | `docs/` | Architecture, decisions (ADRs), hackathon material, plans, process. |
@@ -59,10 +59,12 @@ pnpm lint                          # biome check .        (pnpm format to auto-f
 pnpm typecheck                     # tsc --noEmit in every workspace
 pnpm test                          # vitest run, all workspaces (pnpm test:watch to watch)
 pnpm --filter @openloop/shared test  # one workspace
+pnpm --filter @openloop/web dev    # http://localhost:3000, seeded from demo/seed-ledger.json
+pnpm --filter @openloop/web build  # production build; run before a web PR
 python3 scripts/check_context.py   # deterministic context check (also run by CI)
 ```
 
-Workspace-specific commands (`agentcore dev`, `next dev`) are listed in each workspace README once it exists. Do not guess a command that is not listed; check the workspace manifest first.
+Workspace-specific commands are in each workspace README. Do not guess a command that is not listed; check the workspace manifest first.
 
 ## Session start protocol
 
@@ -89,6 +91,8 @@ Do not read the whole `docs/` tree or every ADR by default.
 - Write tests where they are cheap and where breakage would be silent. Do not fake coverage.
 - Every `LedgerStore` implementation runs the shared contract suite in `packages/shared/test/store-contract.ts`. Every `IngestionSource` must return results oldest first.
 - Records cross package boundaries only as parsed Zod types from `@openloop/shared`. Never hand-write a record shape in `web/` or `agent/`.
+- Imports inside packages are extensionless (bundler resolution); Turbopack and esbuild both consume the shared package as TypeScript source.
+- In `web/`, credentials and the ledger are server-side only (`server-only` import in `lib/ledger.ts`). Client components receive plain data.
 
 ## Uncertainty, architecture changes, incomplete work
 

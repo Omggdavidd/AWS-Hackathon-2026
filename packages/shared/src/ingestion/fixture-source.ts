@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
-import { CalendarEvent, EmailMessage, type IngestionSource, type MessageQuery } from './source.js'
+import { CalendarEvent, EmailMessage, type IngestionSource, type MessageQuery } from './source'
 
 const FixtureFile = z.object({
   persona: z.object({ name: z.string(), email: z.string(), now: z.string() }),

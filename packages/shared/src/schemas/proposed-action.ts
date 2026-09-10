@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Id, IsoDateTime, RiskTier } from './common.js'
+import { Id, IsoDateTime, RiskTier } from './common'
 
 export const ProposedActionType = z.enum([
   'draft_email',

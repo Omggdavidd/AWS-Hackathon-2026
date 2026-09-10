@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Id, IsoDateTime } from './common.js'
+import { Id, IsoDateTime } from './common'
 
 export const AuditKind = z.enum([
   'loop_created',

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { FixtureSource, OpenLoop } from '../src/index.js'
-import { loop } from './store-contract.js'
+import { FixtureSource, OpenLoop } from '../src/index'
+import { loop } from './store-contract'
 
 const seed = fileURLToPath(new URL('../../../demo/seed-inbox.json', import.meta.url))
 
@@ -44,5 +44,32 @@ describe('OpenLoop schema', () => {
     })
     expect(parsed.owner).toBe('user')
     expect(() => OpenLoop.parse({ ...loop(), sourceRefs: [] })).toThrow()
+  })
+})
+
+describe('demo expected ledger', () => {
+  it('validates every record against the schemas and references known sources', async () => {
+    const { readFile } = await import('node:fs/promises')
+    const { AuditEvent, Evidence, OpenLoop, ProposedAction } = await import('../src/index')
+    const raw = JSON.parse(
+      await readFile(new URL('../../../demo/seed-ledger.json', import.meta.url), 'utf8'),
+    )
+    const loops = raw.loops.map((l: unknown) => OpenLoop.parse(l))
+    const evidence = raw.evidence.map((e: unknown) => Evidence.parse(e))
+    const actions = raw.actions.map((a: unknown) => ProposedAction.parse(a))
+    raw.audit.map((a: unknown) => AuditEvent.parse(a))
+    const src = await FixtureSource.load(seed)
+    const known = new Set([
+      ...src.fixture.messages.map((m) => m.id),
+      ...src.fixture.events.map((e) => e.id),
+    ])
+    const loopIds = new Set(loops.map((l: { id: string }) => l.id))
+    expect(loops).toHaveLength(9)
+    for (const l of loops)
+      for (const r of l.sourceRefs) expect(known.has(r.sourceId), r.sourceId).toBe(true)
+    for (const e of evidence) expect(loopIds.has(e.loopId), e.loopId).toBe(true)
+    for (const a of actions) expect(loopIds.has(a.loopId), a.loopId).toBe(true)
+    for (const a of actions.filter((x: { riskTier: string }) => x.riskTier === 'high'))
+      expect(a.requiresApproval).toBe(true)
   })
 })

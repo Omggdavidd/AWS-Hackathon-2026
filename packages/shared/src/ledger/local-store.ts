@@ -5,8 +5,8 @@ import type {
   OpenLoop,
   ProposedAction,
   ProposedActionStatus,
-} from '../schemas/index.js'
-import type { LedgerStore, LoopFilter } from './store.js'
+} from '../schemas/index'
+import type { LedgerStore, LoopFilter } from './store'
 
 interface Snapshot {
   loops: OpenLoop[]

@@ -8,7 +8,7 @@ import {
   Priority,
   RiskTier,
   SourceRef,
-} from './common.js'
+} from './common'
 
 export const LoopCategory = z.enum([
   'payment',

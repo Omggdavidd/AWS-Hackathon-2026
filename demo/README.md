@@ -4,6 +4,8 @@ Deterministic seed data for the five-minute demo (`docs/hackathon/SPEC.md` §14,
 
 `seed-inbox.json` is loaded by `FixtureSource` from `@openloop/shared/ingestion`. The persona's `now` is the clock the demo runs against.
 
+`seed-ledger.json` is the ledger the agent is expected to produce from that inbox: 9 loops, their evidence, proposed actions and audit trail. The web app copies it to `.openloop/ledger.json` on first run so the dashboard is populated before the agent exists, and the agent's end-to-end test will compare its output against it.
+
 | Thread | Expected outcome |
 |---|---|
 | `thr-deposit` | Registration deposit, $200, due Sep 15: **Needs You**, critical, no receipt found |
@@ -17,4 +19,4 @@ Deterministic seed data for the five-minute demo (`docs/hackathon/SPEC.md` §14,
 | `thr-streaming` | Card declined, $15.99: **Needs You**, low |
 | `thr-newsletter` | Not a responsibility, no loop |
 
-Change the data only with a matching update to this table and to the expected-loop tests.
+Change either file only with a matching update to this table, the other file and the tests in `packages/shared/test/fixtures.test.ts`.

@@ -1,2 +1,2 @@
-export * from './fixture-source.js'
-export * from './source.js'
+export * from './fixture-source'
+export * from './source'

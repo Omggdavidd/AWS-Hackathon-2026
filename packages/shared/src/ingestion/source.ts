@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Id, IsoDateTime } from '../schemas/common.js'
+import { Id, IsoDateTime } from '../schemas/common'
 
 /** Minimal email shape shared by the Gmail connector and the fixtures. Bodies are plain text. */
 export const EmailMessage = z.object({
