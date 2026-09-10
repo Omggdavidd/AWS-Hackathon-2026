@@ -1,6 +1,6 @@
 # Architecture
 
-Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10), not yet implemented. Update this file as the code lands; rationale lives in the ADRs, not here.
+Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/` and `demo/`. Update this file as the rest lands; rationale lives in the ADRs, not here.
 
 ## 1. Problem and shape
 

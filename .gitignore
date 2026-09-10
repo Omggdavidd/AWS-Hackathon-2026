@@ -134,3 +134,6 @@ temp/
 CLAUDE.local.md
 .claude/settings.local.json
 .claude/worktrees/
+
+# Local ledger files written by LocalLedgerStore during development
+.openloop/

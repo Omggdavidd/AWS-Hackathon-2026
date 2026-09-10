@@ -16,12 +16,16 @@ Work moves through phases defined in `docs/process/phases.md`. `STATUS.md` state
 
 | Path | Purpose |
 |---|---|
-| `docs/` | Architecture, decisions (ADRs), hackathon material, plans, process. |
+| `packages/shared/` | `@openloop/shared`: Zod schemas for every record and agent output, `LedgerStore` interface with `LocalLedgerStore`, state transitions, `IngestionSource` with `FixtureSource`. No framework dependencies. |
+| `demo/` | Seeded inbox and calendar for the deterministic demo, with the expected outcome per thread in its README. |
+| `web/` | Next.js app (UI, Google OAuth, runtime invocation). Not yet created (plan step 5). |
+| `agent/` | AgentCore CLI project: `agentcore/` config and `app/OpenLoopAgent/` Strands graph. Not yet created (plan step 4). |
 | `scripts/` | Repo tooling. `check_context.py` is the deterministic context check used by CI and hooks. |
+| `docs/` | Architecture, decisions (ADRs), hackathon material, plans, process. |
 | `.claude/` | Claude Code project config: settings, skills. Committed and shared. |
 | `.github/` | PR template, CI workflows. |
 
-Application workspaces (frontend, backend, agents, shared packages, infrastructure) are added in Phase 2 after a Phase 1 ADR settles the layout. Each workspace then gets its own README; a nested `AGENTS.md` only when it develops conventions of its own (the closest `AGENTS.md` to a file wins).
+Layout is decided by ADR-0012. Each workspace gets its own README; a nested `AGENTS.md` only when it develops conventions of its own (the closest `AGENTS.md` to a file wins).
 
 ## Shared project memory: one owner per fact
 
@@ -46,13 +50,19 @@ Rules: a fact lives in exactly one place and other files link to it. Fix duplica
 
 ## Commands
 
-No toolchain yet. When code lands, this section lists the exact commands per workspace (install, dev, test, lint, typecheck, build), and agents run the relevant ones before declaring work done. Do not guess a command that is not listed here or in a workspace README; check the workspace manifest first.
-
-Repo-wide, available now:
+Node 22 (`.nvmrc`) and pnpm 12 (`packageManager` in `package.json`). If `corepack` fails with a signature error on Node 22.12, install pnpm with `npm install -g pnpm@12.3.4`.
 
 ```
+pnpm install                       # all workspaces
+pnpm check                         # lint + typecheck + test + context check; run before every PR
+pnpm lint                          # biome check .        (pnpm format to auto-fix)
+pnpm typecheck                     # tsc --noEmit in every workspace
+pnpm test                          # vitest run, all workspaces (pnpm test:watch to watch)
+pnpm --filter @openloop/shared test  # one workspace
 python3 scripts/check_context.py   # deterministic context check (also run by CI)
 ```
+
+Workspace-specific commands (`agentcore dev`, `next dev`) are listed in each workspace README once it exists. Do not guess a command that is not listed; check the workspace manifest first.
 
 ## Session start protocol
 
@@ -77,6 +87,8 @@ Do not read the whole `docs/` tree or every ADR by default.
 - Prefer the simplest thing that demos reliably. A working vertical slice beats a half-built platform.
 - Stay in scope. Do not refactor, rename or reformat files unrelated to the task.
 - Write tests where they are cheap and where breakage would be silent. Do not fake coverage.
+- Every `LedgerStore` implementation runs the shared contract suite in `packages/shared/test/store-contract.ts`. Every `IngestionSource` must return results oldest first.
+- Records cross package boundaries only as parsed Zod types from `@openloop/shared`. Never hand-write a record shape in `web/` or `agent/`.
 
 ## Uncertainty, architecture changes, incomplete work
 

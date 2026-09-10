@@ -4,7 +4,7 @@ Snapshot of **now**. Not a changelog. Update it in the same PR as the change tha
 
 Last updated: 2026-09-10
 
-Current phase: Phase 1, Understand and plan (definitions in `docs/process/phases.md`). Entered 2026-09-10 after the foundation was committed and the specification landed in `docs/hackathon/SPEC.md`.
+Current phase: Phase 2, Foundation (definitions in `docs/process/phases.md`). Entered 2026-09-10 when ADRs 0003 to 0012 were accepted and merged.
 
 ## Demo readiness
 
@@ -12,32 +12,33 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 ## What works
 
-- Repository context system: `AGENTS.md`, `CLAUDE.md`, ADRs, plans, Context Sync Protocol, PR template, CI context check and secret scan.
-- Hackathon specification organized: `docs/hackathon/SPEC.md`, `SUBMISSION.md`, diagrams.
+- Repository context system, CI (context check, secret scan, workspace checks), accepted architecture in ADRs 0003 to 0012.
+- `packages/shared`: schemas for OpenLoop, Evidence, ProposedAction, AuditEvent and the four agent outputs; state transitions; `LedgerStore` with `LocalLedgerStore` (memory or JSON file) and a shared contract suite; `IngestionSource` with `FixtureSource`.
+- `demo/seed-inbox.json`: the §14 student scenario, 13 messages and 3 events, validated by tests.
 
 ## In progress
 
 | Workstream | Branch / PR | Notes |
 |---|---|---|
-| Phase 1 decisions: ADRs 0003 to 0012, architecture, MVP plan | `feature/phase-1-decisions` | Accepted 2026-09-10; PR open, merge unlocks Phase 2 |
+| Workspace scaffold and shared package (plan step 3) | `feature/workspace-scaffold` | PR open |
 
 ## Recently completed
 
-- 2026-09-10 Phase 0 foundation committed to `main` (f1156d9).
-- 2026-09-10 Team playbook converted to `docs/hackathon/SPEC.md` without summarization; submission checklist created.
+- 2026-09-10 Phase 0 foundation on `main` (f1156d9); playbook converted to `docs/hackathon/SPEC.md`.
+- 2026-09-10 Phase 1 merged (#1): ADRs 0003 to 0012 accepted, architecture, MVP plan.
 
 ## Blocked
 
-- Phase 2 scaffolding waits on the Phase 1 PR merging.
 - First model call waits on the Bedrock Anthropic use-case form for the AWS account.
+- `agent/` scaffold waits on the AgentCore CLI and AWS CLI being installed and the account bootstrapped (plan step 2).
 
 ## Next up
 
-1. Enable the `main` ruleset (`CONTRIBUTING.md`) and push so teammates can clone.
+1. Merge the scaffold PR; add teammates as collaborators; enable the `main` ruleset (`CONTRIBUTING.md`).
 2. Request AWS credits before Thu Sep 11, 12:00 PM PT; register everyone on Devpost (`docs/hackathon/SUBMISSION.md`).
-3. Merge `feature/phase-1-decisions`; enable the `main` ruleset.
-4. Account chores today: Bedrock Anthropic use-case form, AgentCore CLI first deploy (CDK bootstrap), Google Cloud project in Testing, Vercel project. Owners in `docs/plans/2026-09-10-mvp.md` *Unresolved questions*.
-5. Phase 2 (`docs/plans/2026-09-10-mvp.md` steps 3 to 5): workspace scaffold, shared schemas and local ledger, fixtures, agent skeleton, dashboard shell.
+3. Account chores: Bedrock Anthropic use-case form, install AWS CLI and `@aws/agentcore`, first deploy of the template (CDK bootstrap), Google Cloud project in Testing, Vercel project. Owners in `docs/plans/2026-09-10-mvp.md` *Unresolved questions*.
+4. Plan steps 4 and 5 in parallel: `agent/` from the AgentCore template with the graph skeleton; `web/` dashboard shell reading `LocalLedgerStore` seeded from `demo/`.
+5. Add `LICENSE` (MIT) once the copyright holder name is decided.
 
 ## Known issues
 
