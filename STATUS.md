@@ -2,7 +2,7 @@
 
 Snapshot of **now**. Not a changelog. Update it in the same PR as the change that made it stale, and bump the date only when content changes. Keep it under ~100 lines; move items completed more than a week ago out of *Recently completed* (git history keeps them).
 
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 Current phase: Phase 2, Foundation (definitions in `docs/process/phases.md`). Entered 2026-09-10 when ADRs 0003 to 0012 were accepted and merged.
 
@@ -30,12 +30,12 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 ## Blocked
 
 - First model call waits on the Bedrock Anthropic use-case form for the AWS account.
-- `agent/` scaffold waits on the AgentCore CLI and AWS CLI being installed and the account bootstrapped (plan step 2).
+- Deploying and running the agent against Bedrock waits on the AWS account (plan step 2). Scaffolding does not.
 
 ## Next up
 
 1. Add teammates as GitHub collaborators, then raise the ruleset's required approvals from 0 to 1.
-2. Request AWS credits before Thu Sep 11, 12:00 PM PT; register everyone on Devpost (`docs/hackathon/SUBMISSION.md`).
+2. Register everyone on Devpost (`docs/hackathon/SUBMISSION.md`). AWS credits are exhausted; the AWS account is self-funded with a $25 budget alarm.
 3. Account chores: Bedrock Anthropic use-case form, install AWS CLI and `@aws/agentcore`, first deploy of the template (CDK bootstrap), Google Cloud project in Testing, Vercel project. Owners in `docs/plans/2026-09-10-mvp.md` *Unresolved questions*.
 4. Plan step 4: `agent/` from the AgentCore template with the graph skeleton (the CLI scaffolds without AWS credentials; `agentcore dev` needs Bedrock access to answer).
 5. Plan step 6: Extractor with structured output over fixture messages, compared against `demo/seed-ledger.json`.
