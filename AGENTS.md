@@ -17,6 +17,7 @@ Work moves through phases defined in `docs/process/phases.md`. `STATUS.md` state
 | Path | Purpose |
 |---|---|
 | `packages/shared/` | `@openloop/shared`: Zod schemas for every record and agent output, `LedgerStore` interface with `LocalLedgerStore`, state transitions, `IngestionSource` with `FixtureSource`. No framework dependencies. |
+| `packages/ledger-dynamo/` | `@openloop/ledger-dynamo`: the DynamoDB `LedgerStore` (single table, strongly consistent reads) and the table creation script. The only package that depends on the AWS SDK for data. |
 | `demo/` | Seeded inbox and calendar for the deterministic demo, with the expected outcome per thread in its README. |
 | `web/` | `@openloop/web`, Next.js 16: dashboard, loop detail with evidence and timeline, approvals, activity feed. Server components and server actions only touch the ledger through `@openloop/shared`. |
 | `agent/` | AgentCore CLI project. `agentcore/` holds CLI config and generated CDK (never hand-edit `cdk/`); `app/OpenLoopAgent/` is `@openloop/agent`: runtime entry point, specialist agents, tools, orchestrator. Run `agentcore` commands from `agent/`. |
@@ -64,6 +65,8 @@ pnpm --filter @openloop/web build  # production build; run before a web PR
 pnpm --filter @openloop/agent scan -- --reset   # real model over demo inbox (~4 min, needs AWS creds)
 pnpm --filter @openloop/agent dev  # runtime server on :8080
 pnpm --filter @openloop/agent deploy-runtime  # deploy to AgentCore Runtime (never bare `agentcore deploy`, see agent/README.md)
+pnpm --filter @openloop/ledger-dynamo create-table   # idempotent; OPENLOOP_LEDGER_TABLE overrides the name
+OPENLOOP_DYNAMO_TEST_TABLE=openloop-ledger-test pnpm --filter @openloop/ledger-dynamo test   # contract suite on real DynamoDB
 python3 scripts/check_context.py   # deterministic context check (also run by CI)
 ```
 
@@ -92,7 +95,7 @@ Do not read the whole `docs/` tree or every ADR by default.
 - Prefer the simplest thing that demos reliably. A working vertical slice beats a half-built platform.
 - Stay in scope. Do not refactor, rename or reformat files unrelated to the task.
 - Write tests where they are cheap and where breakage would be silent. Do not fake coverage.
-- Every `LedgerStore` implementation runs the shared contract suite in `packages/shared/test/store-contract.ts`. Every `IngestionSource` must return results oldest first.
+- Every `LedgerStore` implementation runs the shared contract suite (`@openloop/shared/testing`). The DynamoDB suite runs only with `OPENLOOP_DYNAMO_TEST_TABLE` set; run it before touching the adapter. Every `IngestionSource` must return results oldest first.
 - Records cross package boundaries only as parsed Zod types from `@openloop/shared`. Never hand-write a record shape in `web/` or `agent/`.
 - Imports inside packages are extensionless (bundler resolution); Turbopack and esbuild both consume the shared package as TypeScript source.
 - In `web/`, credentials and the ledger are server-side only (`server-only` import in `lib/ledger.ts`). Client components receive plain data.

@@ -1,0 +1,25 @@
+{
+  "name": "@openloop/ledger-dynamo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "create-table": "tsx scripts/create-table.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1131.0",
+    "@aws-sdk/lib-dynamodb": "^3.1131.0",
+    "@openloop/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.11"
+  }
+}

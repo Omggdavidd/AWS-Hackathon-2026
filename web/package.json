@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-agentcore": "^3.1131.0",
+    "@openloop/ledger-dynamo": "workspace:*",
     "@openloop/shared": "workspace:*",
     "next": "16.3.4",
     "react": "19.2.8",

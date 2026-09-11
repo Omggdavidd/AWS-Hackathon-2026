@@ -1,6 +1,7 @@
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { FixtureSource, LocalLedgerStore } from '@openloop/shared'
+import { DynamoLedgerStore } from '@openloop/ledger-dynamo'
+import { FixtureSource, type LedgerStore, LocalLedgerStore } from '@openloop/shared'
 import { BedrockAgentCoreApp } from 'bedrock-agentcore/runtime'
 import { z } from 'zod'
 import seedInbox from '../../../demo/seed-inbox.json' with { type: 'json' }
@@ -20,12 +21,15 @@ const requestSchema = z.object({
   source: z
     .object({ kind: z.literal('fixture'), path: z.string().optional() })
     .default({ kind: 'fixture' }),
-  /** Local JSON ledger; defaults to a temp file, which on the Runtime lives only for the session (DynamoDB is plan step 9). */
+  /** Where loops are written. Local JSON is ephemeral on the Runtime; DynamoDB is shared with the web app (ADR-0009). */
   ledger: z
-    .object({
-      kind: z.literal('local'),
-      path: z.string().default(path.join(tmpdir(), 'openloop-ledger.json')),
-    })
+    .discriminatedUnion('kind', [
+      z.object({
+        kind: z.literal('local'),
+        path: z.string().default(path.join(tmpdir(), 'openloop-ledger.json')),
+      }),
+      z.object({ kind: z.literal('dynamo'), table: z.string().min(1) }),
+    ])
     .default({ kind: 'local', path: path.join(tmpdir(), 'openloop-ledger.json') }),
   now: z.string().optional(),
 })
@@ -37,7 +41,10 @@ const app = new BedrockAgentCoreApp({
       const source = payload.source.path
         ? await FixtureSource.load(payload.source.path)
         : FixtureSource.fromData(seedInbox)
-      const store = await LocalLedgerStore.fromFile(payload.ledger.path)
+      const store: LedgerStore =
+        payload.ledger.kind === 'dynamo'
+          ? new DynamoLedgerStore({ tableName: payload.ledger.table })
+          : await LocalLedgerStore.fromFile(payload.ledger.path)
       const model = loadModel()
       const specialists = createSpecialists({ model, source, store, userId: payload.userId })
       const events: string[] = []

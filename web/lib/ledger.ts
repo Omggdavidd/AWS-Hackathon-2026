@@ -1,6 +1,7 @@
 import 'server-only'
 import { access, copyFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
+import { DynamoLedgerStore } from '@openloop/ledger-dynamo'
 import { type LedgerStore, LocalLedgerStore } from '@openloop/shared'
 
 /** Single demo user until auth exists (architecture §6). */
@@ -12,11 +13,14 @@ const ledgerFile =
   process.env.OPENLOOP_LEDGER_FILE ?? path.join(repoRoot, '.openloop', 'ledger.json')
 const seedFile = path.join(repoRoot, 'demo', 'seed-ledger.json')
 
+/** The DynamoDB table shared with the agent, when configured (ADR-0009). */
+export const LEDGER_TABLE = process.env.OPENLOOP_LEDGER_TABLE
+
 let storePromise: Promise<LedgerStore> | undefined
 
 /**
- * The ledger the UI reads and writes. Local JSON today (ADR-0009 local adapter), seeded from the
- * expected demo ledger on first run so the dashboard is populated before the agent exists.
+ * The ledger the UI reads and writes. DynamoDB when OPENLOOP_LEDGER_TABLE is set; otherwise a local
+ * JSON file seeded from the expected demo ledger so the dashboard is populated without the agent.
  */
 export function getStore(): Promise<LedgerStore> {
   storePromise ??= open()
@@ -24,6 +28,7 @@ export function getStore(): Promise<LedgerStore> {
 }
 
 async function open(): Promise<LedgerStore> {
+  if (LEDGER_TABLE) return new DynamoLedgerStore({ tableName: LEDGER_TABLE })
   const exists = await access(ledgerFile).then(
     () => true,
     () => false,

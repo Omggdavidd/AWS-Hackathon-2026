@@ -1,4 +1,6 @@
 import { LoopCard } from '@/components/loop-card'
+import { ScanButton } from '@/components/scan-button'
+import { scanConfigured } from '@/lib/agent'
 import { groupByStatus, STATUS_LABEL, STATUS_ORDER, summarize } from '@/lib/format'
 import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
 
@@ -22,11 +24,14 @@ export default async function Home() {
 
   return (
     <div className="space-y-10">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {greeting}, {USER_NAME}
-        </h1>
-        <p className="mt-1 text-muted">{summarize(groups)}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {greeting}, {USER_NAME}
+          </h1>
+          <p className="mt-1 text-muted">{summarize(groups)}</p>
+        </div>
+        <ScanButton configured={scanConfigured} />
       </div>
       {STATUS_ORDER.map((status) => {
         const items = groups.get(status) ?? []

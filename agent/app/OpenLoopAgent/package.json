@@ -15,6 +15,7 @@
     "deploy-runtime": "node scripts/deploy-runtime.mjs"
   },
   "dependencies": {
+    "@openloop/ledger-dynamo": "workspace:*",
     "@openloop/shared": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
     "@strands-agents/sdk": "^1.17.0",
