@@ -21,11 +21,15 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 ## In progress
 
-Work is tracked as GitHub issues on the submission milestone (`must-ship` first, then `stretch`). Claim one by assigning yourself; see `CONTRIBUTING.md` *Claiming work*.
+Work is tracked as GitHub issues on the submission milestone (`must-ship` first, then `stretch`); each has an owner. Claim anything unassigned by assigning yourself; see `CONTRIBUTING.md` *Claiming work*.
 
-| Issue | Workstream | Who |
+| Track | Owner | Issues |
 |---|---|---|
-| — | Nothing claimed yet | — |
+| Web | Omggdavidd | #17 loop page effects, #18 dashboard polish, #13 catch me up (web half) |
+| Agent | Ojulari123 | #14 failure paths, #15 calibration, #16 scan speed, #29 demo reset, #13 catch me up (agent half) |
+| Docs and demo | ab00bae | #22 README, diagram, demo script; #30 observability evidence (with Omggdavidd) |
+| Infra | Omggdavidd | #19 Vercel deploy |
+| Stretch, unassigned | — | #20 live Gmail, #21 Google sinks, #31 command bar |
 
 ## Recently completed
 
@@ -38,7 +42,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 
 ## Next up
 
-Must-ship, in the order the demo needs them: #17 loop page shows effects, #13 catch me up, #14 failure paths, #18 dashboard polish, #19 Vercel deploy, #22 README and diagram, #23 demo script and video, #24 submission day. Owner-only: #25 team setup. Quality: #15 calibration, #16 scan speed. Stretch after must-ship: #20 live Gmail, #21 Google sinks.
+Must-ship in the order the demo needs them: #17, #29, #13, #14, #18, #19, #22, #30. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
 
 ## Known issues
 
@@ -54,4 +58,4 @@ Must-ship, in the order the demo needs them: #17 loop page shows effects, #13 ca
 
 ## Workstreams
 
-Collaborators: tdare514, Ojulari123, ab00bae, Omggdavidd (admin). Three natural tracks, unassigned until people claim issues: agent (`area:agent`), web (`area:web`), docs and demo (`area:docs`). Infra (`area:infra`) is David's account work.
+Collaborators: Omggdavidd (admin), Ojulari123, ab00bae, tdare514. Tracks and owners are in *In progress*; tdare514 has no track yet and can take a stretch issue or pair on web.
