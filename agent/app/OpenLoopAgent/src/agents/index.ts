@@ -1,5 +1,6 @@
 import {
   type EmailMessage,
+  type Evidence,
   ExtractorOutput,
   type IngestionSource,
   InvestigatorOutput,
@@ -11,7 +12,7 @@ import { Agent, type Model } from '@strands-agents/sdk'
 import { renderThread } from '../render'
 import { inboxTools } from '../tools/inbox'
 import { ledgerTools } from '../tools/ledger'
-import { EXTRACTOR_PROMPT, INVESTIGATOR_PROMPT, RISK_JUDGE_PROMPT } from './prompts'
+import { EXTRACTOR_PROMPT, INVESTIGATOR_PROMPT, RISK_JUDGE_PROMPT, UPDATE_PROMPT } from './prompts'
 
 /** The specialist roles as plain async functions so the orchestrator can be tested with stubs (ADR-0003). */
 export interface Specialists {
@@ -36,6 +37,14 @@ export interface Specialists {
     evidence: InvestigatorOutput['evidence']
     now: string
   }): Promise<RiskJudgment>
+  /** Delta path (plan step 7): new messages arrived in a thread that already has a loop. */
+  update(input: {
+    loop: OpenLoop
+    existingEvidence: Evidence[]
+    newMessages: EmailMessage[]
+    thread: EmailMessage[]
+    now: string
+  }): Promise<InvestigatorOutput>
 }
 
 export interface SpecialistDeps {
@@ -68,6 +77,23 @@ export function createSpecialists({ model, source, store, userId }: SpecialistDe
       })
       const result = await agent.invoke(
         `Today is ${now}.\n\nCandidate responsibility:\n${JSON.stringify(candidate, null, 2)}\n\nOriginating thread:\n${renderThread(thread)}`,
+      )
+      return InvestigatorOutput.parse(result.structuredOutput)
+    },
+
+    async update({ loop, existingEvidence, newMessages, thread, now }) {
+      const agent = new Agent({
+        model,
+        systemPrompt: UPDATE_PROMPT,
+        tools: [...inboxTools(source), ...ledgerTools(store, userId)],
+        structuredOutputSchema: InvestigatorOutput,
+        printer: false,
+      })
+      const known = existingEvidence
+        .map((e) => `${e.sourceId} (${e.supports}): ${e.excerpt}`)
+        .join('\n')
+      const result = await agent.invoke(
+        `Today is ${now}.\n\nTracked responsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence already recorded:\n${known || '(none)'}\n\nNew messages in the thread:\n${renderThread(newMessages)}\n\nFull thread for context:\n${renderThread(thread)}`,
       )
       return InvestigatorOutput.parse(result.structuredOutput)
     },

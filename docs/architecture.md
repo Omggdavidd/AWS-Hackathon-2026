@@ -1,6 +1,6 @@
 # Architecture
 
-Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `packages/ledger-dynamo/`, `demo/`, `web/` (local or DynamoDB ledger, Scan button invoking the deployed runtime), `agent/` deployed to AgentCore Runtime writing to DynamoDB. Not yet: delta updates, action execution, live Gmail. Update this file as the rest lands; rationale lives in the ADRs, not here.
+Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `packages/ledger-dynamo/`, `demo/`, `web/` (local or DynamoDB ledger, Scan button invoking the deployed runtime), `agent/` deployed to AgentCore Runtime writing to DynamoDB. Not yet: action execution, live Gmail. Update this file as the rest lands; rationale lives in the ADRs, not here.
 
 ## 1. Problem and shape
 
@@ -23,7 +23,7 @@ Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `Ledger
 
 1. The user connects Google (or selects demo mode) in the web app. The server stores the refresh token per user.
 2. A scan is triggered (first backfill over a bounded window, later deltas). The web server invokes the AgentCore runtime with a session id, the user id, the ingestion mode and a short-lived Google access token when live.
-3. Inside the runtime, the Orchestrator feeds each candidate message or event to the Extractor. Candidates that describe a responsibility go to the Investigator, which searches related and later sources for resolution or change. The Risk Judge assigns tier, priority and next action. The Orchestrator writes the loop, evidence and audit event through the ledger adapter and decides whether the user must be interrupted.
+3. Inside the runtime, the Orchestrator groups messages by thread. A thread that already has a loop takes the delta path: only unseen messages go to the Investigator, which records evidence and may transition the loop with a reason. A new thread goes to the Extractor. Candidates that describe a responsibility go to the Investigator, which searches related and later sources for resolution or change. The Risk Judge assigns tier, priority and next action. The Orchestrator writes the loop, evidence and audit event through the ledger adapter and decides whether the user must be interrupted.
 4. Low-risk actions execute immediately via the Action Agent; medium ones are prepared; high ones become `ProposedAction` records awaiting approval.
 5. The web app reads the ledger directly (same adapter, DynamoDB) to render the dashboard, detail, timeline and approval queue. The Scan button posts to `/api/scan`, which invokes the runtime with `ledger: dynamo` and proxies the progress stream. Approving an action invokes the runtime again with the action id; the Action Agent executes it only if the record is `APPROVED`.
 

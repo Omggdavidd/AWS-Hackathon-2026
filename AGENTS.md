@@ -63,6 +63,7 @@ pnpm --filter @openloop/shared test  # one workspace
 pnpm --filter @openloop/web dev    # http://localhost:3000, seeded from demo/seed-ledger.json
 pnpm --filter @openloop/web build  # production build; run before a web PR
 pnpm --filter @openloop/agent scan -- --reset   # real model over demo inbox (~4 min, needs AWS creds)
+pnpm --filter @openloop/agent scan -- --delta   # next-morning batch on top; exercises the update path
 pnpm --filter @openloop/agent dev  # runtime server on :8080
 pnpm --filter @openloop/agent deploy-runtime  # deploy to AgentCore Runtime (never bare `agentcore deploy`, see agent/README.md)
 pnpm --filter @openloop/ledger-dynamo create-table   # idempotent; OPENLOOP_LEDGER_TABLE overrides the name

@@ -5,6 +5,7 @@ import { FixtureSource, type LedgerStore, LocalLedgerStore } from '@openloop/sha
 import { BedrockAgentCoreApp } from 'bedrock-agentcore/runtime'
 import { z } from 'zod'
 import seedInbox from '../../../demo/seed-inbox.json' with { type: 'json' }
+import seedInboxDelta from '../../../demo/seed-inbox-delta.json' with { type: 'json' }
 import { createSpecialists } from './src/agents'
 import { loadModel } from './src/model'
 import { runScan } from './src/scan'
@@ -19,8 +20,13 @@ const requestSchema = z.object({
   userId: z.string().min(1),
   /** Without a path, the demo inbox bundled into the runtime is used (the deployed bundle has no demo/ directory). */
   source: z
-    .object({ kind: z.literal('fixture'), path: z.string().optional() })
-    .default({ kind: 'fixture' }),
+    .object({
+      kind: z.literal('fixture'),
+      path: z.string().optional(),
+      /** `delta` overlays the next-morning batch (demo/seed-inbox-delta.json) for the delta-path demo. */
+      variant: z.enum(['base', 'delta']).default('base'),
+    })
+    .default({ kind: 'fixture', variant: 'base' }),
   /** Where loops are written. Local JSON is ephemeral on the Runtime; DynamoDB is shared with the web app (ADR-0009). */
   ledger: z
     .discriminatedUnion('kind', [
@@ -40,7 +46,9 @@ const app = new BedrockAgentCoreApp({
     async *process(payload) {
       const source = payload.source.path
         ? await FixtureSource.load(payload.source.path)
-        : FixtureSource.fromData(seedInbox)
+        : payload.source.variant === 'delta'
+          ? FixtureSource.fromDataWithDelta(seedInbox, seedInboxDelta)
+          : FixtureSource.fromData(seedInbox)
       const store: LedgerStore =
         payload.ledger.kind === 'dynamo'
           ? new DynamoLedgerStore({ tableName: payload.ledger.table })

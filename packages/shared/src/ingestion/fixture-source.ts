@@ -9,6 +9,17 @@ const FixtureFile = z.object({
 })
 export type FixtureFile = z.infer<typeof FixtureFile>
 
+/** Overlay a later batch of messages and events on a base fixture; later `persona.now` wins. */
+export function mergeFixtures(base: FixtureFile, delta: FixtureFile): FixtureFile {
+  const seen = new Set(base.messages.map((m) => m.id))
+  const seenEvents = new Set(base.events.map((e) => e.id))
+  return {
+    persona: delta.persona,
+    messages: [...base.messages, ...delta.messages.filter((m) => !seen.has(m.id))],
+    events: [...base.events, ...delta.events.filter((e) => !seenEvents.has(e.id))],
+  }
+}
+
 /** Seeded inbox and calendar for the deterministic demo (SPEC §14). */
 export class FixtureSource implements IngestionSource {
   private constructor(readonly fixture: FixtureFile) {}
@@ -20,6 +31,11 @@ export class FixtureSource implements IngestionSource {
 
   static fromData(data: unknown): FixtureSource {
     return new FixtureSource(FixtureFile.parse(data))
+  }
+
+  /** Base inbox plus a later batch (see demo/README.md). */
+  static fromDataWithDelta(base: unknown, delta: unknown): FixtureSource {
+    return new FixtureSource(mergeFixtures(FixtureFile.parse(base), FixtureFile.parse(delta)))
   }
 
   async listMessages(query: MessageQuery = {}): Promise<EmailMessage[]> {

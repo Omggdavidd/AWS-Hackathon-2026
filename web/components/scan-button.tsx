@@ -7,10 +7,25 @@ type ScanEvent =
   | { type: 'thread'; threadId: string; subject: string }
   | { type: 'skipped'; threadId: string; reason: string }
   | { type: 'loop'; loop: { title: string; status: string } }
-  | { type: 'summary'; summary: { threads: number; created: number; skipped: number } }
+  | { type: 'updated'; loop: { title: string }; from: string; to: string }
+  | {
+      type: 'summary'
+      summary: { threads: number; created: number; updated: number; skipped: number }
+    }
 
-/** Runs a scan on the deployed agent and shows progress; the dashboard refreshes as loops land. */
-export function ScanButton({ configured }: { configured: boolean }) {
+/**
+ * Runs a scan on the deployed agent and shows progress; the dashboard refreshes as loops land.
+ * `variant: 'delta'` replays the next-morning batch so the demo can show loops closing from new mail.
+ */
+export function ScanButton({
+  configured,
+  variant = 'base',
+  label = 'Scan inbox',
+}: {
+  configured: boolean
+  variant?: 'base' | 'delta'
+  label?: string
+}) {
   const router = useRouter()
   const [running, setRunning] = useState(false)
   const [lines, setLines] = useState<{ id: number; text: string }[]>([])
@@ -22,7 +37,7 @@ export function ScanButton({ configured }: { configured: boolean }) {
     setLines([])
     setError(undefined)
     try {
-      const res = await fetch('/api/scan', { method: 'POST' })
+      const res = await fetch(`/api/scan?variant=${variant}`, { method: 'POST' })
       if (!res.ok || !res.body) throw new Error(await res.text())
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
       let buffer = ''
@@ -43,7 +58,10 @@ export function ScanButton({ configured }: { configured: boolean }) {
             setNextId((id) => id + 1)
             setLines((prev) => [...prev.slice(-11), { id: nextId + prev.length, text }])
           }
-          if (event.type === 'loop' && Date.now() - lastRefresh > 5000) {
+          if (
+            (event.type === 'loop' || event.type === 'updated') &&
+            Date.now() - lastRefresh > 5000
+          ) {
             lastRefresh = Date.now()
             router.refresh()
           }
@@ -70,7 +88,7 @@ export function ScanButton({ configured }: { configured: boolean }) {
         }
         className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {running ? 'Scanning…' : 'Scan inbox'}
+        {running ? 'Scanning…' : label}
       </button>
       {(lines.length > 0 || error) && (
         <ol className="space-y-0.5 font-mono text-xs text-muted">
@@ -101,8 +119,10 @@ function describe(e: ScanEvent): string | undefined {
       return `  no action needed`
     case 'loop':
       return `  ${e.loop.status.replace('_', ' ').toLowerCase()}: ${e.loop.title}`
+    case 'updated':
+      return `  ${e.loop.title}: ${e.from.replace('_', ' ').toLowerCase()} → ${e.to.replace('_', ' ').toLowerCase()}`
     case 'summary':
-      return `Done. ${e.summary.created} open loops from ${e.summary.threads} threads.`
+      return `Done. ${e.summary.created} new, ${e.summary.updated} updated, from ${e.summary.threads} threads.`
     default:
       return undefined
   }

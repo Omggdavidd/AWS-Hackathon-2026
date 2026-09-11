@@ -11,9 +11,11 @@ import { runScan } from '../src/scan'
  *   pnpm --filter @openloop/agent scan            # .openloop/agent-ledger.json at the repo root
  *   pnpm --filter @openloop/agent scan -- --reset # start from an empty ledger
  *   pnpm --filter @openloop/agent scan -- --dynamo openloop-ledger   # write to the DynamoDB table instead
+ *   pnpm --filter @openloop/agent scan -- --delta                     # next-morning batch on top of the base inbox
  */
 const repoRoot = path.resolve(import.meta.dirname, '../../../..')
 const reset = process.argv.includes('--reset')
+const delta = process.argv.includes('--delta')
 const dynamoIdx = process.argv.indexOf('--dynamo')
 const dynamoTable = dynamoIdx >= 0 ? process.argv[dynamoIdx + 1] : undefined
 const ledgerPath = path.join(repoRoot, '.openloop', 'agent-ledger.json')
@@ -21,7 +23,13 @@ const userId = 'user-alex'
 
 if (reset) await rm(ledgerPath, { force: true })
 await mkdir(path.dirname(ledgerPath), { recursive: true })
-const source = await FixtureSource.load(path.join(repoRoot, 'demo', 'seed-inbox.json'))
+const base = (await FixtureSource.load(path.join(repoRoot, 'demo', 'seed-inbox.json'))).fixture
+const source = delta
+  ? FixtureSource.fromDataWithDelta(
+      base,
+      (await FixtureSource.load(path.join(repoRoot, 'demo', 'seed-inbox-delta.json'))).fixture,
+    )
+  : FixtureSource.fromData(base)
 const store: LedgerStore = dynamoTable
   ? new DynamoLedgerStore({ tableName: dynamoTable })
   : await LocalLedgerStore.fromFile(ledgerPath)
