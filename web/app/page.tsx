@@ -31,7 +31,10 @@ export default async function Home() {
           </h1>
           <p className="mt-1 text-muted">{summarize(groups)}</p>
         </div>
-        <ScanButton configured={scanConfigured} />
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <ScanButton configured={scanConfigured} />
+          <ScanButton configured={scanConfigured} variant="delta" label="Check for new mail" />
+        </div>
       </div>
       {STATUS_ORDER.map((status) => {
         const items = groups.get(status) ?? []

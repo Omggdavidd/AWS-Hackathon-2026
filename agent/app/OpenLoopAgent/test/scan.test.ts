@@ -5,6 +5,7 @@ import type { Specialists } from '../src/agents'
 import { runScan } from '../src/scan'
 
 const seed = fileURLToPath(new URL('../../../../demo/seed-inbox.json', import.meta.url))
+const deltaSeed = fileURLToPath(new URL('../../../../demo/seed-inbox-delta.json', import.meta.url))
 const now = '2026-09-10T13:00:00.000Z'
 
 /** Deterministic stand-ins for the model-backed roles. */
@@ -44,6 +45,21 @@ const stubs: Specialists = {
       ...(sent ? { waitingOn: 'Bill Okafor' } : {}),
       confidence: 0.9,
       rationale: 'stub',
+    }
+  },
+  async update({ loop, newMessages }) {
+    const resolving = newMessages.find((m) => /payment received|approved/i.test(m.body))
+    return {
+      evidence: newMessages.map((m) => ({
+        sourceRef: { sourceType: 'email', sourceId: m.id, threadId: m.threadId },
+        observedAt: m.date,
+        excerpt: m.snippet,
+        supports: m === resolving ? 'RESOLVED' : 'UPDATED',
+        confidence: 0.9,
+      })),
+      proposedStatus: resolving ? 'RESOLVED' : loop.status,
+      confidence: 0.9,
+      rationale: resolving ? 'stub: resolved by new message' : 'stub: informational',
     }
   },
   async judge({ loop }) {
@@ -99,6 +115,61 @@ describe('runScan', () => {
     const audit = await store.listAudit('u')
     expect(audit.filter((a) => a.kind === 'loop_created')).toHaveLength(9)
     expect(audit.some((a) => a.kind === 'scan_completed')).toBe(true)
+  })
+
+  it('delta path: new messages update existing loops instead of duplicating them', async () => {
+    const base = (await FixtureSource.load(seed)).fixture
+    const delta = (await FixtureSource.load(deltaSeed)).fixture
+    const store = new LocalLedgerStore()
+    await runScan({
+      source: FixtureSource.fromData(base),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+    })
+
+    const later = '2026-09-11T13:00:00.000Z'
+    const second = await runScan({
+      source: FixtureSource.fromDataWithDelta(base, delta),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now: later,
+    })
+    expect(second).toMatchObject({ threads: 11, created: 1, updated: 2 })
+
+    const loops = await store.listLoops('u')
+    expect(loops).toHaveLength(10)
+    const deposit = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))
+    expect(deposit?.status).toBe('RESOLVED')
+    expect(deposit?.resolvedAt).toBe(later)
+    expect(deposit?.sourceRefs.map((r) => r.sourceId)).toContain('msg-014')
+    expect((await store.listEvidence(deposit?.id ?? '')).map((e) => e.sourceId)).toEqual([
+      'msg-001',
+      'msg-014',
+    ])
+
+    const issue = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-issue1'))
+    expect(issue?.status).toBe('RESOLVED')
+    const flight = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-flight'))
+    expect(flight?.status).toBe('NEEDS_YOU')
+    expect((await store.listEvidence(flight?.id ?? '')).map((e) => e.sourceId)).toContain('msg-016')
+
+    const audit = await store.listAudit('u', { loopId: deposit?.id ?? '' })
+    expect(audit[0]).toMatchObject({
+      kind: 'state_changed',
+      details: { from: 'NEEDS_YOU', to: 'RESOLVED' },
+    })
+
+    const third = await runScan({
+      source: FixtureSource.fromDataWithDelta(base, delta),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now: later,
+    })
+    expect(third).toMatchObject({ created: 0, updated: 0, skipped: 11 })
   })
 
   it('is idempotent: a second scan skips threads that already produced a loop', async () => {

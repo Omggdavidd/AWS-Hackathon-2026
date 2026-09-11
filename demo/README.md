@@ -19,4 +19,13 @@ Deterministic seed data for the five-minute demo (`docs/hackathon/SPEC.md` §14,
 | `thr-streaming` | Card declined, $15.99: **Needs You**, low |
 | `thr-newsletter` | Not a responsibility, no loop |
 
-Change either file only with a matching update to this table, the other file and the tests in `packages/shared/test/fixtures.test.ts`.
+`seed-inbox-delta.json` is the "next morning" batch for the delta path (plan step 7): merged on top of the base inbox by `mergeFixtures`, it must update existing loops rather than create duplicates.
+
+| Delta message | Expected outcome |
+|---|---|
+| `msg-014` Bursar "Payment received" | `thr-deposit` loop **Needs You → Resolved**, receipt as resolving evidence |
+| `msg-015` Bill "Approved" | `thr-issue1` loop **Waiting → Resolved** |
+| `msg-016` gate assignment | `thr-flight` loop stays **Watching**, new evidence only |
+| `msg-017` library due date | new loop `thr-library`, **Needs You**, due Sep 18 |
+
+Change any file only with a matching update to these tables, the other files and the tests in `packages/shared/test/fixtures.test.ts`.

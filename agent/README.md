@@ -18,6 +18,7 @@ agent/
 
 ```
 pnpm --filter @openloop/agent scan -- --reset   # real model over the demo inbox, ~4 min, writes .openloop/agent-ledger.json
+pnpm --filter @openloop/agent scan -- --delta   # then the next-morning batch (demo/seed-inbox-delta.json): updates, not duplicates
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm --filter @openloop/agent dev               # runtime server on :8080 (same as agentcore dev, without the inspector)
 agentcore dev                                   # interactive local runtime with inspector (needs a real terminal)
@@ -35,7 +36,7 @@ CLI notes (v0.28.1):
 - `agentcore/aws-targets.json` holds the deploy target (account and region). `agentcore/.cli/deployed-state.json` is written by deploy and is committed on purpose.
 - Deployed: stack `AgentCore-OpenLoop-default`, runtime `OpenLoop_OpenLoopAgent-CA60RSCE0z`, `us-east-1`. Logs: `/aws/bedrock-agentcore/runtimes/OpenLoop_OpenLoopAgent-CA60RSCE0z-DEFAULT`. Invoke from a shell with `aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn <arn> --runtime-session-id <33+ chars> --payload <base64 json> out.txt`.
 
-Invocation payload (validated by the Zod schema in `main.ts`). Without `source.path` the demo inbox bundled into the runtime is used. The ledger is either the DynamoDB table shared with the web app (the runtime's role allows `openloop-ledger*` via `iam/dynamodb-ledger.json`, referenced from `agentcore.json` `additionalPolicies`) or a local file, which on the Runtime lives only for the session:
+Invocation payload (validated by the Zod schema in `main.ts`). Without `source.path` the demo inbox bundled into the runtime is used; `source.variant: "delta"` overlays the bundled next-morning batch so a second scan updates existing loops (the delta path). The ledger is either the DynamoDB table shared with the web app (the runtime's role allows `openloop-ledger*` via `iam/dynamodb-ledger.json`, referenced from `agentcore.json` `additionalPolicies`) or a local file, which on the Runtime lives only for the session:
 
 ```json
 { "command": "scan", "userId": "user-alex", "source": { "kind": "fixture" }, "ledger": { "kind": "dynamo", "table": "openloop-ledger" } }

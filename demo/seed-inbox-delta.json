@@ -1,0 +1,54 @@
+{
+  "persona": {
+    "name": "Alex Rivera",
+    "email": "alex.rivera@student.northgate.edu",
+    "now": "2026-09-11T09:00:00-04:00"
+  },
+  "messages": [
+    {
+      "id": "msg-014",
+      "threadId": "thr-deposit",
+      "from": "Bursar's Office <bursar@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Re: Action required: Fall registration deposit",
+      "date": "2026-09-10T16:40:00-04:00",
+      "snippet": "Payment received. Your $200 registration deposit was posted today and your registration is secured.",
+      "body": "Dear Alex,\n\nPayment received. Your $200 registration deposit was posted on September 10 and your Fall course registration is secured. No further action is needed.\n\nBursar's Office\nNorthgate University",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-015",
+      "threadId": "thr-issue1",
+      "from": "Bill Okafor <bill.okafor@brightpath.io>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Re: Issue #1 review",
+      "date": "2026-09-10T18:05:00-04:00",
+      "snippet": "Thanks Alex, this looks good. Approved, I'll bring it to sprint planning.",
+      "body": "Thanks Alex, this looks good. Approved. I'll bring it to sprint planning on Monday, nothing more needed from you.\n\nBill",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-016",
+      "threadId": "thr-flight",
+      "from": "Northwind Air <itinerary@northwindair.example>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Gate assignment: NW 0412 on October 17",
+      "date": "2026-09-11T07:15:00-04:00",
+      "snippet": "Your flight will depart from Terminal 3, Gate B22. Departure time 21:55 is unchanged.",
+      "body": "Your flight NW 0412 on October 17 will depart from Terminal 3, Gate B22. Departure time 21:55 is unchanged. No action is required.",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-017",
+      "threadId": "thr-library",
+      "from": "Northgate Library <circulation@library.northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Item due September 18: Introduction to Algorithms",
+      "date": "2026-09-11T08:00:00-04:00",
+      "snippet": "The item you borrowed is due September 18. Return or renew online to avoid a $1/day fine.",
+      "body": "Hi Alex,\n\nThe item you borrowed, Introduction to Algorithms, is due on September 18, 2026. Return it or renew online to avoid a $1 per day late fine.\n\nNorthgate Library",
+      "labels": ["INBOX"]
+    }
+  ],
+  "events": []
+}
