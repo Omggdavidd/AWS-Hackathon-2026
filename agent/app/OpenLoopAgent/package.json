@@ -10,7 +10,9 @@
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "scan": "tsx scripts/scan.ts"
+    "scan": "tsx scripts/scan.ts",
+    "prepare-deploy": "node scripts/prepare-deploy.mjs",
+    "deploy-runtime": "node scripts/deploy-runtime.mjs"
   },
   "dependencies": {
     "@openloop/shared": "workspace:*",

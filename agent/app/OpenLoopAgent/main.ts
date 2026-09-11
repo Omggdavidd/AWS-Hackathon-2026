@@ -1,6 +1,9 @@
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { FixtureSource, LocalLedgerStore } from '@openloop/shared'
 import { BedrockAgentCoreApp } from 'bedrock-agentcore/runtime'
 import { z } from 'zod'
+import seedInbox from '../../../demo/seed-inbox.json' with { type: 'json' }
 import { createSpecialists } from './src/agents'
 import { loadModel } from './src/model'
 import { runScan } from './src/scan'
@@ -13,12 +16,17 @@ import { runScan } from './src/scan'
 const requestSchema = z.object({
   command: z.literal('scan').default('scan'),
   userId: z.string().min(1),
+  /** Without a path, the demo inbox bundled into the runtime is used (the deployed bundle has no demo/ directory). */
   source: z
-    .object({ kind: z.literal('fixture'), path: z.string().default('demo/seed-inbox.json') })
-    .default({ kind: 'fixture', path: 'demo/seed-inbox.json' }),
+    .object({ kind: z.literal('fixture'), path: z.string().optional() })
+    .default({ kind: 'fixture' }),
+  /** Local JSON ledger; defaults to a temp file, which on the Runtime lives only for the session (DynamoDB is plan step 9). */
   ledger: z
-    .object({ kind: z.literal('local'), path: z.string().default('.openloop/ledger.json') })
-    .default({ kind: 'local', path: '.openloop/ledger.json' }),
+    .object({
+      kind: z.literal('local'),
+      path: z.string().default(path.join(tmpdir(), 'openloop-ledger.json')),
+    })
+    .default({ kind: 'local', path: path.join(tmpdir(), 'openloop-ledger.json') }),
   now: z.string().optional(),
 })
 
@@ -26,7 +34,9 @@ const app = new BedrockAgentCoreApp({
   invocationHandler: {
     requestSchema,
     async *process(payload) {
-      const source = await FixtureSource.load(payload.source.path)
+      const source = payload.source.path
+        ? await FixtureSource.load(payload.source.path)
+        : FixtureSource.fromData(seedInbox)
       const store = await LocalLedgerStore.fromFile(payload.ledger.path)
       const model = loadModel()
       const specialists = createSpecialists({ model, source, store, userId: payload.userId })

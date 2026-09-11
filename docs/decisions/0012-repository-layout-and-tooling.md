@@ -36,7 +36,7 @@ Deviation from the playbook (§15): `web/` instead of nested `apps/`, and the CL
 
 * Good, because schemas are imported, not copied, and one `pnpm install` sets up everything.
 * Good, because the agent can still be developed and deployed with the CLI from `agent/` exactly as documented.
-* Bad, because `agentcore deploy` bundles with esbuild, so a `workspace:*` dependency on `packages/shared` must bundle cleanly; verified on the first deploy in Phase 2, with a fallback of publishing shared code into the agent by a build step.
+* Bad, because `agentcore deploy` bundles with esbuild, so a `workspace:*` dependency on `packages/shared` must bundle cleanly. Verified 2026-09-11: the shared package bundles fine, but the CDK bundler's copy of dynamically loaded runtime packages assumes an npm layout; `agent/app/OpenLoopAgent/scripts/prepare-deploy.mjs` materializes them before every deploy.
 * Bad, because the generator's own `AGENTS.md` and `README.md` inside `agent/` must be trimmed to avoid contradicting the root files.
 
 ## More Information
