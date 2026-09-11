@@ -59,6 +59,7 @@ Lightweight workflow for a fast-moving hackathon team working with AI coding age
 ## Conflicts and stale branches
 
 - The branch author resolves conflicts by rebasing. Ask the other author when intent is unclear.
+- A PR that shows no CI checks at all is almost always conflicting with `main`: GitHub runs no workflows when it cannot build the merge commit. Rebase, push, and the checks appear.
 - A branch more than two days behind `main` is stale: rebase it before doing anything else, and re-run the checks, since `main` may have changed the ground under it.
 - A branch nobody has touched for a week gets closed or its PR marked draft; reopen from a fresh rebase when work resumes.
 - `STATUS.md`: keep both sides' facts, then re-read the whole file so it still describes *now*.

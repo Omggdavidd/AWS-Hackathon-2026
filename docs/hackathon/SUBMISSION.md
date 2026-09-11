@@ -6,7 +6,6 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 
 | Item | When |
 |---|---|
-| AWS $50 promotional credit request | Thu Sep 11, 2026, 12:00 PM PT / 3:00 PM ET, while supplies last |
 | Internal submission target | Mon Sep 14, 2026, 7:00 PM ET (one-hour buffer) |
 | Official submission deadline | Mon Sep 14, 2026, 5:00 PM PT / 8:00 PM ET |
 | Judging | Sep 15 9:00 AM PT to Oct 8 5:00 PM PT (project must stay available and free to judge) |
@@ -16,7 +15,7 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 
 - [ ] Every team member registered on Devpost; one authorized submission representative named
 - [ ] Every team member confirmed eligible (age of majority, not in an excluded territory, not a Quebec resident)
-- [ ] AWS credits requested
+- [x] AWS credits: none left (organizers confirmed 2026-09-11). The AWS account is self-funded; set a $25 budget alarm.
 - [ ] AWS Builder ID created for the representative
 
 ## Required assets
