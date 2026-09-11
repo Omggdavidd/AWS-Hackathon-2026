@@ -10,10 +10,21 @@ Requires Node 22 and pnpm 12 (`npm install -g pnpm@12.3.4` if corepack complains
 git clone https://github.com/Omggdavidd/AWS-Hackathon-2026.git
 cd AWS-Hackathon-2026
 pnpm install
-pnpm check          # lint, typecheck, tests, context check
+pnpm check                          # lint, typecheck, tests, context check
+pnpm --filter @openloop/web dev     # http://localhost:3000 on the seeded local ledger, no AWS needed
 ```
 
-The shared schema package and the seeded demo data exist today. The web app and the agent arrive next; their READMEs will carry the run commands.
+That is enough for frontend work: the dashboard runs on `demo/seed-ledger.json`, the ledger the agent is expected to produce.
+
+To run the agent or the full path you need AWS credentials for the team account (ask David for an IAM user, then `aws configure` with region `us-east-1`):
+
+```
+pnpm --filter @openloop/agent scan -- --reset          # real model over the demo inbox, ~4 min
+pnpm --filter @openloop/agent scan -- --delta          # next-morning batch: updates, not duplicates
+pnpm --filter @openloop/agent scan -- --handle         # execute every allowed action
+cp web/.env.example web/.env.local                     # point the web app at DynamoDB and the deployed runtime
+pnpm --filter @openloop/agent deploy-runtime           # deploy the agent (only if you changed agent/)
+```
 
 ## Working here
 

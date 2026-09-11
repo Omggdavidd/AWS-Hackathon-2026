@@ -21,9 +21,11 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 ## In progress
 
-| Workstream | Branch / PR | Notes |
+Work is tracked as GitHub issues on the submission milestone (`must-ship` first, then `stretch`). Claim one by assigning yourself; see `CONTRIBUTING.md` *Claiming work*.
+
+| Issue | Workstream | Who |
 |---|---|---|
-| Web dashboard shell (plan step 5) | — | Starting; reads `LocalLedgerStore` seeded from `demo/` |
+| — | Nothing claimed yet | — |
 
 ## Recently completed
 
@@ -36,11 +38,7 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 ## Next up
 
-1. Add teammates as GitHub collaborators, then raise the ruleset's required approvals from 0 to 1.
-2. Register everyone on Devpost (`docs/hackathon/SUBMISSION.md`). AWS credits are exhausted; the AWS account is self-funded with a $25 budget alarm.
-3. Vercel project (David) so the web app has a live URL; Google Cloud project only when the live-Gmail stretch starts.
-4. Plan step 12: "Catch me up" summary; step 13: failure paths (duplicate message, ambiguous deadline, unsafe action).
-5. Team onboarding: GitHub issues per remaining plan step, collaborators added, ruleset approvals raised to 1.
+Must-ship, in the order the demo needs them: #17 loop page shows effects, #13 catch me up, #14 failure paths, #18 dashboard polish, #19 Vercel deploy, #22 README and diagram, #23 demo script and video, #24 submission day. Owner-only: #25 team setup. Quality: #15 calibration, #16 scan speed. Stretch after must-ship: #20 live Gmail, #21 Google sinks.
 
 ## Known issues
 
@@ -56,4 +54,4 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 ## Workstreams
 
-None established yet. `SPEC.md` §16 suggests an agent/AWS, frontend/product and integrations/data split; ownership is not assigned until the team decides.
+Three natural tracks, unassigned until people claim issues: agent (`area:agent`), web (`area:web`), docs and demo (`area:docs`). Infra (`area:infra`) is David's account work.
