@@ -21,6 +21,17 @@ Lightweight workflow for a fast-moving hackathon team working with AI coding age
 8. Squash merge, delete the branch.
 9. Everyone else pulls `main`.
 
+## Claiming work
+
+Work is tracked as GitHub issues with labels `area:*`, `must-ship`, `stretch`, all on the submission milestone. To take something:
+
+1. Assign yourself on the issue and say so in the team channel. One person per issue; split it if two people want it.
+2. Branch as `<type>/<issue>-<short-description>` and put `Closes #<issue>` in the PR body so the issue closes on merge.
+3. If you discover new work, open an issue with the same shape (why, what, acceptance, pointers) rather than a note in chat.
+4. `STATUS.md` *In progress* lists issue numbers, not names; update it in your PR when you start and when you finish.
+
+Must-ship issues before stretch issues. The milestone is the deadline.
+
 ## Branches
 
 - Branch from an up-to-date `main`: `git fetch origin && git switch -c <name> origin/main`.

@@ -80,7 +80,7 @@ Load only what the task needs, in this order:
 
 1. This file (auto-loaded by most tools).
 2. `STATUS.md`: current phase, what works, what is in flight, what is blocked. Some tools auto-load it; read it if it is not already in your context.
-3. The task: issue, PR or the user's request. Restate it in one sentence. Ask if it is materially ambiguous.
+3. The task: the GitHub issue (`gh issue view <n>`), PR or the user's request. Restate it in one sentence. Ask if it is materially ambiguous. Work not covered by an issue gets one first (`.github/ISSUE_TEMPLATE/task.md`).
 4. Confirm the branch: `git status -sb`. Never work on `main`; branch as `CONTRIBUTING.md` describes.
 5. `docs/architecture.md` if the change touches more than one component or a public interface.
 6. ADRs relevant to your area: scan titles in `docs/decisions/README.md`, open only those that apply. Same for `docs/plans/`.
