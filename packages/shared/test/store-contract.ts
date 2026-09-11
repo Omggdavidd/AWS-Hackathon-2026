@@ -98,7 +98,11 @@ export function runStoreContract(name: string, make: () => Promise<LedgerStore>)
       await store.putAction(act('a1', 'PROPOSED'))
       await store.putAction(act('a2', 'APPROVED'))
       await store.putAction(act('a3', 'PROPOSED', 'loop-2'))
-      expect(await store.getAction('user-1', 'a1')).toMatchObject({ id: 'a1' })
+      expect(await store.getAction('user-1', 'a1')).toMatchObject({
+        id: 'a1',
+        type: 'draft_email',
+        riskTier: 'medium',
+      })
       expect(await store.getAction('user-9', 'a1')).toBeUndefined()
       expect((await store.listActions('user-1', { status: 'PROPOSED' })).map((a) => a.id)).toEqual([
         'a1',

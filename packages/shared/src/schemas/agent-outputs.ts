@@ -63,7 +63,40 @@ export const RiskJudgment = z.object({
 })
 export type RiskJudgment = z.infer<typeof RiskJudgment>
 
-/** Action Agent: what happened when an approved or low-risk action ran. */
+/** Action Agent: the concrete effect to perform for a proposed action (ADR-0005). The sink executes it. */
+export const ActionPlan = z.object({
+  effect: z.discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('draft_email'),
+      to: z.string(),
+      subject: z.string().max(200),
+      body: z.string().max(4000),
+    }),
+    z.object({
+      kind: z.literal('send_email'),
+      to: z.string(),
+      subject: z.string().max(200),
+      body: z.string().max(4000),
+    }),
+    z.object({
+      kind: z.literal('calendar_event'),
+      title: z.string().max(200),
+      start: IsoDateTime,
+      end: IsoDateTime,
+      location: z.string().max(200).optional(),
+      eventId: z.string().optional(),
+    }),
+    z.object({ kind: z.literal('reminder'), at: IsoDateTime, note: z.string().max(300) }),
+    z.object({ kind: z.literal('archive_thread'), threadId: z.string() }),
+    z.object({ kind: z.literal('note'), text: z.string().max(500) }),
+  ]),
+  summary: z.string().max(200),
+  /** Status the loop should move to once the effect is done, if it changes (for example WAITING after a follow-up). */
+  loopStatusAfter: LoopStatus.optional(),
+})
+export type ActionPlan = z.infer<typeof ActionPlan>
+
+/** What happened when an action ran. */
 export const ActionResult = z.object({
   success: z.boolean(),
   summary: z.string().max(300),

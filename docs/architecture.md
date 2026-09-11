@@ -1,6 +1,6 @@
 # Architecture
 
-Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `packages/ledger-dynamo/`, `demo/`, `web/` (local or DynamoDB ledger, Scan button invoking the deployed runtime), `agent/` deployed to AgentCore Runtime writing to DynamoDB. Not yet: action execution, live Gmail. Update this file as the rest lands; rationale lives in the ADRs, not here.
+Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `packages/ledger-dynamo/`, `demo/`, `web/` (local or DynamoDB ledger, Scan button invoking the deployed runtime), `agent/` deployed to AgentCore Runtime writing to DynamoDB. Not yet: live Gmail and Calendar sinks (effects are simulated by `FixtureActionSink`). Update this file as the rest lands; rationale lives in the ADRs, not here.
 
 ## 1. Problem and shape
 
@@ -12,7 +12,7 @@ Open Loops turns email and calendar into a persistent, evidence-backed ledger of
 |---|---|---|
 | `web/` (Next.js) | Dashboard with the four states, loop detail with evidence and timeline, approval queue, activity feed, command bar, "catch me up"; Google OAuth callback and token storage; invoking the agent runtime server-side | Call Bedrock or Google APIs from the browser; hold business rules about state transitions |
 | `agent/app/OpenLoopAgent/` (Strands) | The pipeline: Extractor, Investigator, Risk Judge, Action Agent as structured-output Agents behind the `Specialists` interface; the Orchestrator (`scan.ts`) is code that runs them per thread and writes the ledger; custom tools for inbox, calendar and ledger | Write to the ledger except through the shared adapter; execute a high-risk action that is not `APPROVED` |
-| `packages/shared/` | Zod schemas for OpenLoop, Evidence, ProposedAction, AuditEvent and every agent output; the `LedgerStore` adapter interface; the local adapter; state-transition rules; the store contract suite | Depend on Next.js, AWS SDK or Strands |
+| `packages/shared/` | Zod schemas for OpenLoop, Evidence, ProposedAction, AuditEvent and every agent output; the `LedgerStore` adapter interface; the local adapter; state-transition rules; the `ActionSink` interface, the `mayExecute` policy gate and the fixture sink; the store contract suite | Depend on Next.js, AWS SDK or Strands |
 | `packages/ledger-dynamo/` | `DynamoLedgerStore`: one table, keys `USER#id / LOOP#id`, `USER#id / ACTION#id`, `USER#id / AUDIT#at#id`, `LOOP#id / EVIDENCE#at#id`; strongly consistent reads; table script | Hold business rules |
 | `demo/` | Seeded Gmail-like messages and calendar events for the §14 scenario, plus expected loops | Contain real personal data |
 | DynamoDB table (AWS) | Durable ledger, one table, single-table keys | Be the only place the schema is defined |
@@ -24,8 +24,8 @@ Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `Ledger
 1. The user connects Google (or selects demo mode) in the web app. The server stores the refresh token per user.
 2. A scan is triggered (first backfill over a bounded window, later deltas). The web server invokes the AgentCore runtime with a session id, the user id, the ingestion mode and a short-lived Google access token when live.
 3. Inside the runtime, the Orchestrator groups messages by thread. A thread that already has a loop takes the delta path: only unseen messages go to the Investigator, which records evidence and may transition the loop with a reason. A new thread goes to the Extractor. Candidates that describe a responsibility go to the Investigator, which searches related and later sources for resolution or change. The Risk Judge assigns tier, priority and next action. The Orchestrator writes the loop, evidence and audit event through the ledger adapter and decides whether the user must be interrupted.
-4. Low-risk actions execute immediately via the Action Agent; medium ones are prepared; high ones become `ProposedAction` records awaiting approval.
-5. The web app reads the ledger directly (same adapter, DynamoDB) to render the dashboard, detail, timeline and approval queue. The Scan button posts to `/api/scan`, which invokes the runtime with `ledger: dynamo` and proxies the progress stream. Approving an action invokes the runtime again with the action id; the Action Agent executes it only if the record is `APPROVED`.
+4. Proposed actions are records. `handle` runs every action `mayExecute` allows (low risk, and prepare-type medium risk such as drafts, calendar events, reminders) through the Action Agent, which produces a concrete effect, and an `ActionSink`, which performs it and returns a source ref recorded as evidence. High-risk actions wait as `PROPOSED`.
+5. The web app reads the ledger directly (same adapter, DynamoDB) to render the dashboard, detail, timeline and approval queue. The Scan button posts to `/api/scan`, which invokes the runtime with `ledger: dynamo` and proxies the progress stream. Approving an action marks it `APPROVED` and invokes the runtime's `execute` command with the action id; the gate re-checks the status in code before any effect runs.
 
 ## 4. Boundaries and invariants
 

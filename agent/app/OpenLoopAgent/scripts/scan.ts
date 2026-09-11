@@ -1,7 +1,13 @@
 import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { DynamoLedgerStore } from '@openloop/ledger-dynamo'
-import { FixtureSource, type LedgerStore, LocalLedgerStore } from '@openloop/shared'
+import {
+  FixtureActionSink,
+  FixtureSource,
+  type LedgerStore,
+  LocalLedgerStore,
+} from '@openloop/shared'
+import { handleWhatYouCan } from '../src/actions'
 import { createSpecialists } from '../src/agents'
 import { loadModel } from '../src/model'
 import { runScan } from '../src/scan'
@@ -12,10 +18,12 @@ import { runScan } from '../src/scan'
  *   pnpm --filter @openloop/agent scan -- --reset # start from an empty ledger
  *   pnpm --filter @openloop/agent scan -- --dynamo openloop-ledger   # write to the DynamoDB table instead
  *   pnpm --filter @openloop/agent scan -- --delta                     # next-morning batch on top of the base inbox
+ *   pnpm --filter @openloop/agent scan -- --handle                    # execute every allowed proposed action instead of scanning
  */
 const repoRoot = path.resolve(import.meta.dirname, '../../../..')
 const reset = process.argv.includes('--reset')
 const delta = process.argv.includes('--delta')
+const handle = process.argv.includes('--handle')
 const dynamoIdx = process.argv.indexOf('--dynamo')
 const dynamoTable = dynamoIdx >= 0 ? process.argv[dynamoIdx + 1] : undefined
 const ledgerPath = path.join(repoRoot, '.openloop', 'agent-ledger.json')
@@ -36,6 +44,22 @@ const store: LedgerStore = dynamoTable
 const specialists = createSpecialists({ model: loadModel(), source, store, userId })
 
 const started = Date.now()
+if (handle) {
+  const result = await handleWhatYouCan({
+    store,
+    source,
+    sink: new FixtureActionSink(),
+    userId,
+    specialists,
+    now: source.fixture.persona.now,
+  })
+  for (const h of result.handled) console.log(`✓ ${h.status.padEnd(9)} ${h.summary}`)
+  for (const n of result.needsYou) console.log(`→ needs you: ${n.summary} (${n.reason})`)
+  console.log(
+    `\nhandled ${result.handled.length}, needs you ${result.needsYou.length}, in ${Math.round((Date.now() - started) / 1000)}s`,
+  )
+  process.exit(0)
+}
 const summary = await runScan({
   source,
   store,

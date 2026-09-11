@@ -64,6 +64,7 @@ pnpm --filter @openloop/web dev    # http://localhost:3000, seeded from demo/see
 pnpm --filter @openloop/web build  # production build; run before a web PR
 pnpm --filter @openloop/agent scan -- --reset   # real model over demo inbox (~4 min, needs AWS creds)
 pnpm --filter @openloop/agent scan -- --delta   # next-morning batch on top; exercises the update path
+pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed action on the local ledger
 pnpm --filter @openloop/agent dev  # runtime server on :8080
 pnpm --filter @openloop/agent deploy-runtime  # deploy to AgentCore Runtime (never bare `agentcore deploy`, see agent/README.md)
 pnpm --filter @openloop/ledger-dynamo create-table   # idempotent; OPENLOOP_LEDGER_TABLE overrides the name
@@ -100,6 +101,7 @@ Do not read the whole `docs/` tree or every ADR by default.
 - Records cross package boundaries only as parsed Zod types from `@openloop/shared`. Never hand-write a record shape in `web/` or `agent/`.
 - Imports inside packages are extensionless (bundler resolution); Turbopack and esbuild both consume the shared package as TypeScript source.
 - In `web/`, credentials and the ledger are server-side only (`server-only` import in `lib/ledger.ts`). Client components receive plain data.
+- Effects (email drafts, calendar events, reminders) go only through an `ActionSink`, and only after `mayExecute` in `@openloop/shared` allows it. Never call a sink from a prompt-driven path without that gate.
 - Specialist agents are plain async functions behind the `Specialists` interface; the orchestrator is tested with stubs and never needs a model in CI. Every model output is parsed with its Zod schema before use.
 - Prompt changes are verified by rerunning the scan against `demo/seed-inbox.json` and comparing with `demo/README.md`; note remaining differences in `agent/README.md`.
 
