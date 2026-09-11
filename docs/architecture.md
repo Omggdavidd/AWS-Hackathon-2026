@@ -1,6 +1,6 @@
 # Architecture
 
-Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `demo/`, `web/` on the local ledger, and `agent/` scanning fixtures into a local ledger. Not yet: web invoking the runtime, DynamoDB, delta updates, action execution, deploy. Update this file as the rest lands; rationale lives in the ADRs, not here.
+Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `demo/`, `web/` on the local ledger, and `agent/` scanning fixtures into a local ledger, deployed to AgentCore Runtime. Not yet: web invoking the runtime, DynamoDB, delta updates, action execution. Update this file as the rest lands; rationale lives in the ADRs, not here.
 
 ## 1. Problem and shape
 
@@ -38,7 +38,7 @@ Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `Ledger
 
 ## 5. Deployment
 
-- Agent: `agentcore deploy` from `agent/` to AgentCore Runtime in `us-east-1` (CodeZip, arm64, Node 22). Invoked with IAM SigV4 from the web server.
+- Agent: `pnpm --filter @openloop/agent deploy-runtime` to AgentCore Runtime in `us-east-1` (CodeZip, arm64, Node 22): stack `AgentCore-OpenLoop-default`, runtime `OpenLoop_OpenLoopAgent-CA60RSCE0z`. Invoked with IAM SigV4 from the web server.
 - Web: Vercel, production from `main`, preview per PR. Environment: AWS credentials scoped to `InvokeAgentRuntime` and the DynamoDB table, Google OAuth client, table name, runtime ARN.
 - Data: one DynamoDB table created by a script in `scripts/`. Local development uses the in-process adapter; `agentcore dev` runs the agent locally.
 - Models: Bedrock, `global.anthropic.claude-sonnet-4-6` by default.

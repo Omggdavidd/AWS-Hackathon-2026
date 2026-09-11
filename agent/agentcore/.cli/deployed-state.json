@@ -1,3 +1,17 @@
 {
-  "targets": {}
+  "targets": {
+    "default": {
+      "resources": {
+        "runtimes": {
+          "OpenLoopAgent": {
+            "runtimeId": "OpenLoop_OpenLoopAgent-CA60RSCE0z",
+            "runtimeArn": "arn:aws:bedrock-agentcore:us-east-1:970547374543:runtime/OpenLoop_OpenLoopAgent-CA60RSCE0z",
+            "roleArn": "arn:aws:iam::970547374543:role/AgentCore-OpenLoop-defaul-ApplicationAgentOpenLoopA-mOe2UY9qBuSY"
+          }
+        },
+        "stackName": "AgentCore-OpenLoop-default",
+        "deployHash": "a628dbe04e2d2251"
+      }
+    }
+  }
 }

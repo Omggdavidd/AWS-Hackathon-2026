@@ -63,6 +63,7 @@ pnpm --filter @openloop/web dev    # http://localhost:3000, seeded from demo/see
 pnpm --filter @openloop/web build  # production build; run before a web PR
 pnpm --filter @openloop/agent scan -- --reset   # real model over demo inbox (~4 min, needs AWS creds)
 pnpm --filter @openloop/agent dev  # runtime server on :8080
+pnpm --filter @openloop/agent deploy-runtime  # deploy to AgentCore Runtime (never bare `agentcore deploy`, see agent/README.md)
 python3 scripts/check_context.py   # deterministic context check (also run by CI)
 ```
 

@@ -21,19 +21,30 @@ pnpm --filter @openloop/agent scan -- --reset   # real model over the demo inbox
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm --filter @openloop/agent dev               # runtime server on :8080 (same as agentcore dev, without the inspector)
 agentcore dev                                   # interactive local runtime with inspector (needs a real terminal)
-agentcore deploy / status / invoke / logs       # AWS; first deploy bootstraps CDK
+pnpm --filter @openloop/agent deploy-runtime            # prepare-deploy + agentcore deploy -y --json (~1-2 min)
+agentcore deploy --dry-run -y --json            # synth only; check agentcore/cdk/cdk.out/asset.*.zip has _deps/
+agentcore status --json                         # runtime ARN and state
+agentcore logs                                  # CloudWatch logs
 ```
 
-Invocation payload (validated by the Zod schema in `main.ts`):
+CLI notes (v0.28.1):
+
+- Any command run without a non-interactive flag opens the CLI's terminal UI and hangs in a script or agent session. Always pass `-y`, `--json`, or another flag marked non-interactive.
+- `agentcore package` fails with "The esbuild JavaScript API cannot be bundled" (upstream issue aws/agentcore-cli#2125). Deploy does not use it: the CDK stack bundles `app/OpenLoopAgent/main.ts` itself (about 2 MB, includes `@openloop/shared` and the embedded demo inbox). Do not set `ESBUILD_BINARY_PATH`; it breaks CDK synth, which uses its own esbuild.
+- **Always deploy through `pnpm --filter @openloop/agent deploy-runtime`.** The CDK bundler copies a fixed list of packages that `bedrock-agentcore` loads dynamically (`@fastify/sse`, `ws`, `readable-stream`, …) from `app/OpenLoopAgent/node_modules` into the zip, and silently skips what it cannot find. Under pnpm those are transitive or symlinked, so a bare `agentcore deploy` ships a runtime that crashes on start with "Cannot find module '@fastify/sse'". `scripts/prepare-deploy.mjs` materializes them as real directories first.
+- `agentcore/aws-targets.json` holds the deploy target (account and region). `agentcore/.cli/deployed-state.json` is written by deploy and is committed on purpose.
+- Deployed: stack `AgentCore-OpenLoop-default`, runtime `OpenLoop_OpenLoopAgent-CA60RSCE0z`, `us-east-1`. Logs: `/aws/bedrock-agentcore/runtimes/OpenLoop_OpenLoopAgent-CA60RSCE0z-DEFAULT`. Invoke from a shell with `aws bedrock-agentcore invoke-agent-runtime --agent-runtime-arn <arn> --runtime-session-id <33+ chars> --payload <base64 json> out.txt`.
+
+Invocation payload (validated by the Zod schema in `main.ts`). Without `source.path` the demo inbox bundled into the runtime is used; without `ledger.path` a temp file is used, which on the Runtime lives only for the session (DynamoDB arrives with plan step 9):
 
 ```json
-{ "command": "scan", "userId": "user-alex", "source": { "kind": "fixture", "path": "demo/seed-inbox.json" }, "ledger": { "kind": "local", "path": ".openloop/ledger.json" } }
+{ "command": "scan", "userId": "user-alex", "source": { "kind": "fixture" }, "ledger": { "kind": "local", "path": ".openloop/ledger.json" } }
 ```
 
 Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted. `OPENLOOP_MODEL_ID` overrides the model.
 
 ## Known calibration
 
-Against `demo/seed-ledger.json` the pipeline produces the same 9 loops and states, except the rescheduled club meeting, which the Investigator still marks Needs You rather than Watching. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
+Against `demo/seed-ledger.json` the pipeline produces the same 9 loops and states, except the rescheduled club meeting, which the Investigator marks Needs You rather than Watching in about half the runs. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
 
 `AGENTS.md` here is the CLI's own guide to `agentcore/` config and applies alongside the root `AGENTS.md`.
