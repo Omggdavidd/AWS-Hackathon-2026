@@ -169,7 +169,11 @@ export class DynamoLedgerStore implements LedgerStore {
   }
 }
 
+const LEGACY_MARKERS = new Set(['loop', 'evidence', 'audit'])
+
 function strip<T>(item: Record<string, unknown>): T {
-  const { PK: _pk, SK: _sk, type: _type, ...rest } = item
+  const { PK: _pk, SK: _sk, _kind, ...rest } = item
+  // Rows written before the `_kind` marker carried the marker in `type`; drop it only when it is a marker value.
+  if (typeof rest.type === 'string' && LEGACY_MARKERS.has(rest.type)) delete rest.type
   return rest as T
 }

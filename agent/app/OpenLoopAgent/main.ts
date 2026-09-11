@@ -1,11 +1,17 @@
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { DynamoLedgerStore } from '@openloop/ledger-dynamo'
-import { FixtureSource, type LedgerStore, LocalLedgerStore } from '@openloop/shared'
+import {
+  FixtureActionSink,
+  FixtureSource,
+  type LedgerStore,
+  LocalLedgerStore,
+} from '@openloop/shared'
 import { BedrockAgentCoreApp } from 'bedrock-agentcore/runtime'
 import { z } from 'zod'
 import seedInbox from '../../../demo/seed-inbox.json' with { type: 'json' }
 import seedInboxDelta from '../../../demo/seed-inbox-delta.json' with { type: 'json' }
+import { executeAction, handleWhatYouCan } from './src/actions'
 import { createSpecialists } from './src/agents'
 import { loadModel } from './src/model'
 import { runScan } from './src/scan'
@@ -16,7 +22,9 @@ import { runScan } from './src/scan'
  * later, live Gmail and DynamoDB (plan steps 9 and the live-Gmail stretch).
  */
 const requestSchema = z.object({
-  command: z.literal('scan').default('scan'),
+  /** scan: ingest into the ledger. handle: execute every allowed proposed action. execute: one action by id (after approval). */
+  command: z.enum(['scan', 'handle', 'execute']).default('scan'),
+  actionId: z.string().optional(),
   userId: z.string().min(1),
   /** Without a path, the demo inbox bundled into the runtime is used (the deployed bundle has no demo/ directory). */
   source: z
@@ -55,6 +63,28 @@ const app = new BedrockAgentCoreApp({
           : await LocalLedgerStore.fromFile(payload.ledger.path)
       const model = loadModel()
       const specialists = createSpecialists({ model, source, store, userId: payload.userId })
+      if (payload.command !== 'scan') {
+        const opts = {
+          store,
+          source,
+          sink: new FixtureActionSink(),
+          userId: payload.userId,
+          specialists,
+          ...(payload.now ? { now: payload.now } : {}),
+        }
+        if (payload.command === 'execute') {
+          if (!payload.actionId) throw new Error('actionId is required for execute')
+          yield {
+            data: JSON.stringify({
+              type: 'executed',
+              ...(await executeAction(opts, payload.actionId)),
+            }),
+          }
+        } else {
+          yield { data: JSON.stringify({ type: 'handled', ...(await handleWhatYouCan(opts)) }) }
+        }
+        return
+      }
       const events: string[] = []
       const summary = await runScan({
         source,

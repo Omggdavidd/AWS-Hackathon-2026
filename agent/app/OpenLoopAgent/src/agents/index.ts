@@ -1,4 +1,5 @@
 import {
+  ActionPlan,
   type EmailMessage,
   type Evidence,
   ExtractorOutput,
@@ -6,13 +7,20 @@ import {
   InvestigatorOutput,
   type LedgerStore,
   type OpenLoop,
+  type ProposedAction,
   RiskJudgment,
 } from '@openloop/shared'
 import { Agent, type Model } from '@strands-agents/sdk'
 import { renderThread } from '../render'
 import { inboxTools } from '../tools/inbox'
 import { ledgerTools } from '../tools/ledger'
-import { EXTRACTOR_PROMPT, INVESTIGATOR_PROMPT, RISK_JUDGE_PROMPT, UPDATE_PROMPT } from './prompts'
+import {
+  ACTION_PROMPT,
+  EXTRACTOR_PROMPT,
+  INVESTIGATOR_PROMPT,
+  RISK_JUDGE_PROMPT,
+  UPDATE_PROMPT,
+} from './prompts'
 
 /** The specialist roles as plain async functions so the orchestrator can be tested with stubs (ADR-0003). */
 export interface Specialists {
@@ -45,6 +53,14 @@ export interface Specialists {
     thread: EmailMessage[]
     now: string
   }): Promise<InvestigatorOutput>
+  /** Action Agent (plan steps 10-11): turn an allowed proposed action into a concrete effect. */
+  plan(input: {
+    loop: OpenLoop
+    evidence: Evidence[]
+    action: ProposedAction
+    thread: EmailMessage[]
+    now: string
+  }): Promise<ActionPlan>
 }
 
 export interface SpecialistDeps {
@@ -96,6 +112,19 @@ export function createSpecialists({ model, source, store, userId }: SpecialistDe
         `Today is ${now}.\n\nTracked responsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence already recorded:\n${known || '(none)'}\n\nNew messages in the thread:\n${renderThread(newMessages)}\n\nFull thread for context:\n${renderThread(thread)}`,
       )
       return InvestigatorOutput.parse(result.structuredOutput)
+    },
+
+    async plan({ loop, evidence, action, thread, now }) {
+      const agent = new Agent({
+        model,
+        systemPrompt: ACTION_PROMPT,
+        structuredOutputSchema: ActionPlan,
+        printer: false,
+      })
+      const result = await agent.invoke(
+        `Today is ${now}. The user is Alex Rivera <alex.rivera@student.northgate.edu>.\n\nResponsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence:\n${JSON.stringify(evidence, null, 2)}\n\nProposed action:\n${JSON.stringify(action, null, 2)}\n\nThread:\n${renderThread(thread)}`,
+      )
+      return ActionPlan.parse(result.structuredOutput)
     },
 
     async judge({ loop, evidence, now }) {

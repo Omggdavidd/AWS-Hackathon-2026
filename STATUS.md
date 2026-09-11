@@ -17,7 +17,7 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 - `demo/seed-inbox.json` (13 messages, 3 events) and `demo/seed-ledger.json` (the 9 loops the agent should produce), both validated by tests.
 - `web/`: dashboard with the four states, loop detail (why it exists, evidence, confidence, consequence, proposed actions, timeline), approve/decline and "I already did this" server actions, activity feed. Runs on the local ledger seeded from the demo.
 - `packages/ledger-dynamo`: DynamoDB ledger passing the shared contract suite against a real table; tables `openloop-ledger` and `openloop-ledger-test` exist in `us-east-1`.
-- `agent/`: AgentCore project with the Strands pipeline (Extractor, Investigator with inbox and ledger tools, Risk Judge, update path for new mail in tracked threads; all structured output on Claude Sonnet 4.6). A real scan of the demo inbox produces 9 loops with the expected states in about 4 minutes, writing evidence, proposed actions (high-risk ones gated) and audit events through the shared ledger. Deployed to AgentCore Runtime (`AgentCore-OpenLoop-default`, `us-east-1`) writing to DynamoDB; invoked end to end from the AWS CLI and from the web app's Scan button.
+- `agent/`: AgentCore project with the Strands pipeline (Extractor, Investigator with inbox and ledger tools, Risk Judge, update path for new mail in tracked threads, Action Agent; all structured output on Claude Sonnet 4.6). `handle` executes allowed actions through a simulated sink; `execute` runs one approved action; high risk never executes without approval (enforced in code, tested). A real scan of the demo inbox produces 9 loops with the expected states in about 4 minutes, writing evidence, proposed actions (high-risk ones gated) and audit events through the shared ledger. Deployed to AgentCore Runtime (`AgentCore-OpenLoop-default`, `us-east-1`) writing to DynamoDB; invoked end to end from the AWS CLI and from the web app's Scan button.
 
 ## In progress
 
@@ -38,8 +38,9 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 1. Add teammates as GitHub collaborators, then raise the ruleset's required approvals from 0 to 1.
 2. Register everyone on Devpost (`docs/hackathon/SUBMISSION.md`). AWS credits are exhausted; the AWS account is self-funded with a $25 budget alarm.
-3. Plan steps 10 and 11: Action Agent execution for low-risk actions, approval flow end to end.
-4. Vercel project (David) so the web app has a live URL; Google Cloud project only when the live-Gmail stretch starts.
+3. Vercel project (David) so the web app has a live URL; Google Cloud project only when the live-Gmail stretch starts.
+4. Plan step 12: "Catch me up" summary; step 13: failure paths (duplicate message, ambiguous deadline, unsafe action).
+5. Team onboarding: GitHub issues per remaining plan step, collaborators added, ruleset approvals raised to 1.
 
 ## Known issues
 

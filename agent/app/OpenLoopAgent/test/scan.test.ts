@@ -62,6 +62,9 @@ const stubs: Specialists = {
       rationale: resolving ? 'stub: resolved by new message' : 'stub: informational',
     }
   },
+  async plan({ action }) {
+    return { effect: { kind: 'note', text: `stub effect for ${action.type}` }, summary: 'stub' }
+  },
   async judge({ loop }) {
     const high = loop.actionType === 'pay'
     return {

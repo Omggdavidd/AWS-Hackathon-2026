@@ -1,3 +1,4 @@
+import { HandleButton } from '@/components/handle-button'
 import { LoopCard } from '@/components/loop-card'
 import { ScanButton } from '@/components/scan-button'
 import { scanConfigured } from '@/lib/agent'
@@ -34,6 +35,7 @@ export default async function Home() {
         <div className="flex shrink-0 flex-col items-end gap-2">
           <ScanButton configured={scanConfigured} />
           <ScanButton configured={scanConfigured} variant="delta" label="Check for new mail" />
+          <HandleButton configured={scanConfigured} />
         </div>
       </div>
       {STATUS_ORDER.map((status) => {
