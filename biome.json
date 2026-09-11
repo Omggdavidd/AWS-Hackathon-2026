@@ -12,7 +12,9 @@
       "!**/dist",
       "!**/.next",
       "!**/next-env.d.ts",
-      "!agent/agentcore/cdk/cdk.out"
+      "!agent/agentcore/cdk",
+      "!agent/agentcore/.llm-context",
+      "!agent/agentcore/.cli"
     ]
   },
   "formatter": {
