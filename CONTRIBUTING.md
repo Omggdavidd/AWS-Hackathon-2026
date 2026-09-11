@@ -57,7 +57,7 @@ Must-ship issues before stretch issues. The milestone is the deadline.
 2. Fill in the template. The checklist is short on purpose; every box means something.
 3. Keep it reviewable: one logical change, ideally under ~400 changed lines. Split otherwise.
 4. CI must be green: `context-check`, `secret-scan`, and build/test jobs as they are added.
-5. One approval from a teammate who did not write it. During crunch, docs-only or trivially safe PRs may be merged by the author after posting in the team channel and waiting 15 minutes with no objection.
+5. One approval from a teammate who did not write it (enforced by the ruleset). Keep PRs small so reviews take minutes; docs-only PRs are still reviewed, just quickly.
 6. Squash merge. Delete the branch.
 
 ## Reviews
@@ -85,4 +85,4 @@ Must-ship issues before stretch issues. The milestone is the deadline.
 
 ## Recommended `main` protection (repo admin, one-time)
 
-A `main` ruleset is active: pull request required, squash merge only, status checks `context-check`, `secret-scan` and `workspace-checks` required, linear history, no force pushes or deletion. Required approvals are 0 while the repo has one collaborator; raise to 1 in GitHub → Settings → Rules → `main` as soon as teammates are added.
+A `main` ruleset is active: pull request required, squash merge only, status checks `context-check`, `secret-scan` and `workspace-checks` required, linear history, no force pushes or deletion. One approval from a teammate who did not write the change is required; nobody, including the owner, bypasses it.

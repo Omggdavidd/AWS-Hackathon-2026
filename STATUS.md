@@ -54,4 +54,4 @@ Must-ship, in the order the demo needs them: #17 loop page shows effects, #13 ca
 
 ## Workstreams
 
-Three natural tracks, unassigned until people claim issues: agent (`area:agent`), web (`area:web`), docs and demo (`area:docs`). Infra (`area:infra`) is David's account work.
+Collaborators: tdare514, Ojulari123, ab00bae, Omggdavidd (admin). Three natural tracks, unassigned until people claim issues: agent (`area:agent`), web (`area:web`), docs and demo (`area:docs`). Infra (`area:infra`) is David's account work.
