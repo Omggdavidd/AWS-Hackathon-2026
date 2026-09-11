@@ -6,3 +6,8 @@ packages:
 # Dependencies allowed to run install scripts (pnpm 12 blocks them by default).
 allowBuilds:
   esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@aws-sdk/client-bedrock-agentcore@3.1131.0'
+  - '@aws-sdk/client-dynamodb@3.1131.0'
+  - '@aws-sdk/lib-dynamodb@3.1131.0'
