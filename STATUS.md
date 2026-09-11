@@ -26,19 +26,19 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 ## Recently completed
 
 - 2026-09-10 Phase 0 foundation (f1156d9); Phase 1 merged (#1); workspace scaffold and shared package merged (#2); `main` ruleset enabled; MIT license added.
+- 2026-09-11 Web dashboard shell merged (#4). AWS account, IAM user, CLI and Bedrock access verified.
 
 ## Blocked
 
-- First model call waits on the Bedrock Anthropic use-case form for the AWS account.
-- Deploying and running the agent against Bedrock waits on the AWS account (plan step 2). Scaffolding does not.
+- Nothing external. AWS is ready: personal account, `openloop-dev` IAM user with AdministratorAccess, CLI configured on David's machine in `us-east-1`, Bedrock use-case form accepted, Claude Sonnet 4.6 answers. Google Cloud and Vercel projects not yet created (needed for plan steps 16 and the live-Gmail stretch).
 
 ## Next up
 
 1. Add teammates as GitHub collaborators, then raise the ruleset's required approvals from 0 to 1.
 2. Register everyone on Devpost (`docs/hackathon/SUBMISSION.md`). AWS credits are exhausted; the AWS account is self-funded with a $25 budget alarm.
-3. Account chores: Bedrock Anthropic use-case form, install AWS CLI and `@aws/agentcore`, first deploy of the template (CDK bootstrap), Google Cloud project in Testing, Vercel project. Owners in `docs/plans/2026-09-10-mvp.md` *Unresolved questions*.
-4. Plan step 4: `agent/` from the AgentCore template with the graph skeleton (the CLI scaffolds without AWS credentials; `agentcore dev` needs Bedrock access to answer).
-5. Plan step 6: Extractor with structured output over fixture messages, compared against `demo/seed-ledger.json`.
+3. Plan step 4: `agent/` from the AgentCore template with the graph skeleton, running under `agentcore dev` against Bedrock; first `agentcore deploy` to bootstrap CDK.
+4. Plan step 6: Extractor with structured output over fixture messages, compared against `demo/seed-ledger.json`.
+5. Vercel project (David) so the web app has a live URL; Google Cloud project only when the live-Gmail stretch starts.
 
 ## Known issues
 
