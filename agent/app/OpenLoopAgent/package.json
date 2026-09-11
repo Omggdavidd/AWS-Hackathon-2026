@@ -1,0 +1,28 @@
+{
+  "name": "@openloop/agent",
+  "version": "0.1.0",
+  "description": "Open Loops Strands agent on AgentCore Runtime",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "scan": "tsx scripts/scan.ts"
+  },
+  "dependencies": {
+    "@openloop/shared": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
+    "@strands-agents/sdk": "^1.17.0",
+    "bedrock-agentcore": "^0.4.3",
+    "tsx": "^4.19.0",
+    "zod": "^4.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.11"
+  }
+}

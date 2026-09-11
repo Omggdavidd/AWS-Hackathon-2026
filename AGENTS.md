@@ -19,7 +19,7 @@ Work moves through phases defined in `docs/process/phases.md`. `STATUS.md` state
 | `packages/shared/` | `@openloop/shared`: Zod schemas for every record and agent output, `LedgerStore` interface with `LocalLedgerStore`, state transitions, `IngestionSource` with `FixtureSource`. No framework dependencies. |
 | `demo/` | Seeded inbox and calendar for the deterministic demo, with the expected outcome per thread in its README. |
 | `web/` | `@openloop/web`, Next.js 16: dashboard, loop detail with evidence and timeline, approvals, activity feed. Server components and server actions only touch the ledger through `@openloop/shared`. |
-| `agent/` | AgentCore CLI project: `agentcore/` config and `app/OpenLoopAgent/` Strands graph. Not yet created (plan step 4). |
+| `agent/` | AgentCore CLI project. `agentcore/` holds CLI config and generated CDK (never hand-edit `cdk/`); `app/OpenLoopAgent/` is `@openloop/agent`: runtime entry point, specialist agents, tools, orchestrator. Run `agentcore` commands from `agent/`. |
 | `scripts/` | Repo tooling. `check_context.py` is the deterministic context check used by CI and hooks. |
 | `docs/` | Architecture, decisions (ADRs), hackathon material, plans, process. |
 | `.claude/` | Claude Code project config: settings, skills. Committed and shared. |
@@ -61,6 +61,8 @@ pnpm test                          # vitest run, all workspaces (pnpm test:watch
 pnpm --filter @openloop/shared test  # one workspace
 pnpm --filter @openloop/web dev    # http://localhost:3000, seeded from demo/seed-ledger.json
 pnpm --filter @openloop/web build  # production build; run before a web PR
+pnpm --filter @openloop/agent scan -- --reset   # real model over demo inbox (~4 min, needs AWS creds)
+pnpm --filter @openloop/agent dev  # runtime server on :8080
 python3 scripts/check_context.py   # deterministic context check (also run by CI)
 ```
 
@@ -93,6 +95,8 @@ Do not read the whole `docs/` tree or every ADR by default.
 - Records cross package boundaries only as parsed Zod types from `@openloop/shared`. Never hand-write a record shape in `web/` or `agent/`.
 - Imports inside packages are extensionless (bundler resolution); Turbopack and esbuild both consume the shared package as TypeScript source.
 - In `web/`, credentials and the ledger are server-side only (`server-only` import in `lib/ledger.ts`). Client components receive plain data.
+- Specialist agents are plain async functions behind the `Specialists` interface; the orchestrator is tested with stubs and never needs a model in CI. Every model output is parsed with its Zod schema before use.
+- Prompt changes are verified by rerunning the scan against `demo/seed-inbox.json` and comparing with `demo/README.md`; note remaining differences in `agent/README.md`.
 
 ## Uncertainty, architecture changes, incomplete work
 

@@ -1,6 +1,6 @@
 # Architecture
 
-Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `demo/`, and `web/` on the local ledger (no agent invocation yet). Update this file as the rest lands; rationale lives in the ADRs, not here.
+Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `demo/`, `web/` on the local ledger, and `agent/` scanning fixtures into a local ledger. Not yet: web invoking the runtime, DynamoDB, delta updates, action execution, deploy. Update this file as the rest lands; rationale lives in the ADRs, not here.
 
 ## 1. Problem and shape
 
@@ -11,7 +11,7 @@ Open Loops turns email and calendar into a persistent, evidence-backed ledger of
 | Unit | Responsible for | Must not |
 |---|---|---|
 | `web/` (Next.js) | Dashboard with the four states, loop detail with evidence and timeline, approval queue, activity feed, command bar, "catch me up"; Google OAuth callback and token storage; invoking the agent runtime server-side | Call Bedrock or Google APIs from the browser; hold business rules about state transitions |
-| `agent/app/OpenLoopAgent/` (Strands) | The graph: Extractor, Investigator, Risk Judge, Action Agent, Orchestrator; custom tools for Gmail, Calendar and the ledger; structured outputs | Write to the ledger except through the shared adapter; execute a high-risk action that is not `APPROVED` |
+| `agent/app/OpenLoopAgent/` (Strands) | The pipeline: Extractor, Investigator, Risk Judge, Action Agent as structured-output Agents behind the `Specialists` interface; the Orchestrator (`scan.ts`) is code that runs them per thread and writes the ledger; custom tools for inbox, calendar and ledger | Write to the ledger except through the shared adapter; execute a high-risk action that is not `APPROVED` |
 | `packages/shared/` | Zod schemas for OpenLoop, Evidence, ProposedAction, AuditEvent and every agent output; the `LedgerStore` adapter interface; the local adapter; state-transition rules | Depend on Next.js, AWS SDK or Strands |
 | `demo/` | Seeded Gmail-like messages and calendar events for the §14 scenario, plus expected loops | Contain real personal data |
 | DynamoDB table (AWS) | Durable ledger, one table, single-table keys | Be the only place the schema is defined |
