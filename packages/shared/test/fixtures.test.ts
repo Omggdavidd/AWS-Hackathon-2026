@@ -9,7 +9,7 @@ const deltaSeed = fileURLToPath(new URL('../../../demo/seed-inbox-delta.json', i
 describe('demo fixtures', () => {
   it('load and validate against the schemas', async () => {
     const src = await FixtureSource.load(seed)
-    expect(src.fixture.messages).toHaveLength(13)
+    expect(src.fixture.messages).toHaveLength(15)
     expect(src.fixture.events).toHaveLength(3)
   })
 
@@ -76,7 +76,7 @@ describe('demo expected ledger', () => {
       ...src.fixture.events.map((e) => e.id),
     ])
     const loopIds = new Set(loops.map((l: { id: string }) => l.id))
-    expect(loops).toHaveLength(9)
+    expect(loops).toHaveLength(11)
     for (const l of loops)
       for (const r of l.sourceRefs) expect(known.has(r.sourceId), r.sourceId).toBe(true)
     for (const e of evidence) expect(loopIds.has(e.loopId), e.loopId).toBe(true)

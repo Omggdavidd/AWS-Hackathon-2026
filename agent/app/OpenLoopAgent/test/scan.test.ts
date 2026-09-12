@@ -88,8 +88,8 @@ describe('runScan', () => {
     const store = new LocalLedgerStore()
     const summary = await runScan({ source, store, userId: 'u', specialists: stubs, now })
 
-    expect(summary.threads).toBe(10)
-    expect(summary.created).toBe(9)
+    expect(summary.threads).toBe(12)
+    expect(summary.created).toBe(11)
     expect(summary.skipped).toBe(1)
 
     const loops = await store.listLoops('u')
@@ -117,7 +117,7 @@ describe('runScan', () => {
     })
 
     const audit = await store.listAudit('u')
-    expect(audit.filter((a) => a.kind === 'loop_created')).toHaveLength(9)
+    expect(audit.filter((a) => a.kind === 'loop_created')).toHaveLength(11)
     expect(audit.some((a) => a.kind === 'scan_completed')).toBe(true)
   })
 
@@ -141,10 +141,10 @@ describe('runScan', () => {
       specialists: stubs,
       now: later,
     })
-    expect(second).toMatchObject({ threads: 11, created: 1, updated: 2 })
+    expect(second).toMatchObject({ threads: 13, created: 1, updated: 2 })
 
     const loops = await store.listLoops('u')
-    expect(loops).toHaveLength(10)
+    expect(loops).toHaveLength(12)
     const deposit = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))
     expect(deposit?.status).toBe('RESOLVED')
     expect(deposit?.resolvedAt).toBe(later)
@@ -173,7 +173,7 @@ describe('runScan', () => {
       specialists: stubs,
       now: later,
     })
-    expect(third).toMatchObject({ created: 0, updated: 0, skipped: 11 })
+    expect(third).toMatchObject({ created: 0, updated: 0, skipped: 13 })
   })
 
   it('is idempotent: a second scan skips threads that already produced a loop', async () => {
@@ -182,8 +182,8 @@ describe('runScan', () => {
     await runScan({ source, store, userId: 'u', specialists: stubs, now })
     const second = await runScan({ source, store, userId: 'u', specialists: stubs, now })
     expect(second.created).toBe(0)
-    expect(second.skipped).toBe(10)
-    expect(await store.listLoops('u')).toHaveLength(9)
+    expect(second.skipped).toBe(12)
+    expect(await store.listLoops('u')).toHaveLength(11)
   })
 
   it('logs the scan as a pipeline: a line per thread, per role and per outcome', async () => {
@@ -199,8 +199,8 @@ describe('runScan', () => {
       logger: (l) => lines.push(l),
     })
 
-    expect(lines[0]).toMatchObject({ evt: 'scan_started', messages: 13, threads: 10 })
-    expect(lines.at(-1)).toMatchObject({ evt: 'scan_completed', created: 9, skipped: 1 })
+    expect(lines[0]).toMatchObject({ evt: 'scan_started', messages: 15, threads: 12 })
+    expect(lines.at(-1)).toMatchObject({ evt: 'scan_completed', created: 11, skipped: 1 })
     expect(typeof lines.at(-1)?.ms).toBe('number')
 
     // Every role call is timed and attributed to its thread.
