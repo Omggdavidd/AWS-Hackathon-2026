@@ -291,7 +291,7 @@
     {
       "id": "loop-passport",
       "userId": "user-alex",
-      "title": "Passport expires June 2027",
+      "title": "Renew passport before June 2027",
       "category": "travel",
       "status": "WATCHING",
       "owner": "nobody",
@@ -310,8 +310,8 @@
       "updatedAt": "2026-09-10T13:00:00.000Z",
       "requestedBy": "Passport Services",
       "dueAt": "2027-06-12T23:59:00.000Z",
-      "consequence": "None yet; the issuer will write again closer to the date",
-      "nextAction": "None; tracked until it is worth raising"
+      "consequence": "Passport invalid for travel after June 12, 2027",
+      "nextAction": "None yet; renewals open March 12, 2027"
     }
   ],
   "evidence": [
@@ -465,7 +465,7 @@
       "sourceId": "msg-019",
       "threadId": "thr-passport",
       "observedAt": "2026-09-02T13:15:00.000Z",
-      "excerpt": "The passport issued to RIVERA, ALEX expires on June 12, 2027. Nothing needs to be done now.",
+      "excerpt": "It must be renewed before June 12, 2027. Renewal applications open on March 12, 2027; applications submitted before that date cannot be accepted.",
       "supports": "OPEN",
       "confidence": 0.92
     }
