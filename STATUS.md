@@ -27,9 +27,9 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 |---|---|
 | Omggdavidd (hard + front end) | #19 Vercel deploy |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration |
-| tdare514 (medium) | #30 observability evidence, #35 show-source page, #40 two more demo threads |
+| tdare514 (medium) | #30 observability evidence, #37 done cancels actions (from AyomideAw, agreed with Omggdavidd) |
 | ab00bae (medium-easy) | #36 remind/ignore buttons, #39 notification banner |
-| AyomideAw (easiest) | #37 done cancels actions, #38 CI builds web, #22 demo script |
+| AyomideAw (easiest) | #38 CI builds web, #22 demo script |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
 
 One owner per issue and no issue waits on another. Shared files: the loop page (#17 and #35, rebase before ready) and demo fixtures (#14 uses its own file, #40 edits the base inbox). Every issue states why it matters for the submission.

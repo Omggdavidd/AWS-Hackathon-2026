@@ -5,25 +5,15 @@ import { applyTransition } from '@openloop/shared'
 import { revalidatePath } from 'next/cache'
 import { invokeCommand, scanConfigured } from '@/lib/agent'
 import { getStore, USER_ID } from '@/lib/ledger'
+import { resolveLoopByUser } from '@/lib/resolve'
 
-/** "I already did this": the user closes a loop by hand (SPEC §8B). */
+/** "I already did this": the user closes a loop by hand, cancelling what it leaves behind (SPEC §8B). */
 export async function markDone(loopId: string): Promise<void> {
   const store = await getStore()
-  const loop = await store.getLoop(USER_ID, loopId)
-  if (!loop || loop.status === 'RESOLVED') return
-  const now = new Date().toISOString()
-  await store.putLoop(applyTransition(loop, 'RESOLVED', now))
-  await store.appendAudit({
-    id: randomUUID(),
-    userId: USER_ID,
-    loopId,
-    at: now,
-    kind: 'state_changed',
-    actor: 'user',
-    reason: `You marked this as done; ${loop.status} -> RESOLVED`,
-  })
+  if (!(await resolveLoopByUser(store, USER_ID, loopId))) return
   revalidatePath('/')
   revalidatePath(`/loops/${loopId}`)
+  revalidatePath('/activity')
 }
 
 /**
