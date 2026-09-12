@@ -202,8 +202,8 @@ describe('runScan', () => {
       logger: (l) => lines.push(l),
     })
 
-    expect(lines[0]).toMatchObject({ evt: 'scan_started', messages: 13, threads: 10 })
-    expect(lines.at(-1)).toMatchObject({ evt: 'scan_completed', created: 9, skipped: 1 })
+    expect(lines[0]).toMatchObject({ evt: 'scan_started', messages: 15, threads: 12 })
+    expect(lines.at(-1)).toMatchObject({ evt: 'scan_completed', created: 11, skipped: 1 })
     expect(typeof lines.at(-1)?.ms).toBe('number')
 
     // Every role call is timed and attributed to its thread.
