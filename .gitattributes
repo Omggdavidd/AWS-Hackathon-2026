@@ -1,0 +1,7 @@
+# Text files are LF in the repository and on every checkout, so Biome sees the same bytes
+# on Windows as in CI (#57). .editorconfig records the same intent for editors.
+* text=auto eol=lf
+
+# Binary assets, never normalized
+*.png -text
+*.docx -text
