@@ -46,7 +46,7 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
         {loop.sourceRefs.map((ref) => (
           <p key={ref.sourceId} className="text-sm">
             {ref.sourceType === 'email' ? 'Email' : 'Calendar event'}{' '}
-            <span className="font-mono text-muted">{ref.sourceId}</span>
+            <SourceLink loopId={loop.id} sourceId={ref.sourceId} />
           </p>
         ))}
       </Section>
@@ -64,6 +64,8 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
                   <span>{SUPPORTS_LABEL[e.supports]}</span>
                   <span>·</span>
                   <span>{formatPercent(e.confidence)}</span>
+                  <span>·</span>
+                  <SourceLink loopId={loop.id} sourceId={e.sourceId} />
                 </div>
                 <blockquote className="mt-1 border-l-2 border-border pl-3">{e.excerpt}</blockquote>
               </li>
@@ -142,6 +144,18 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
         </ol>
       </Section>
     </article>
+  )
+}
+
+/** Every claim links back to the message or event it came from (SPEC §12). */
+function SourceLink({ loopId, sourceId }: { loopId: string; sourceId: string }) {
+  return (
+    <Link
+      href={`/messages/${sourceId}?loop=${loopId}`}
+      className="font-mono underline decoration-border underline-offset-2 hover:text-foreground"
+    >
+      {sourceId}
+    </Link>
   )
 }
 
