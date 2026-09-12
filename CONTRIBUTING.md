@@ -57,8 +57,9 @@ Must-ship issues before stretch issues. The milestone is the deadline.
 2. Fill in the template. The checklist is short on purpose; every box means something.
 3. Keep it reviewable: one logical change, ideally under ~400 changed lines. Split otherwise.
 4. CI must be green: `context-check`, `secret-scan`, and build/test jobs as they are added.
-5. One approval from a teammate who did not write it (enforced by the ruleset; the admin can bypass when nobody is around). Keep PRs small so reviews take minutes.
-6. Squash merge. Delete the branch.
+5. One approval from a teammate who did not write it (enforced by the ruleset). The admin bypass is for a missing review only, never for a red or not-yet-reported check: `main` was broken once by an admin merge with `workspace-checks` failing. Keep PRs small so reviews take minutes.
+6. After a rebase onto `main`, rerun `pnpm check` and `pnpm --filter @openloop/web build` before pushing. Two PRs touching the same file can auto-merge into something that does not compile (that is how #45 and #46 collided).
+7. Squash merge. Delete the branch.
 
 ## Reviews
 
