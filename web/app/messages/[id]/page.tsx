@@ -1,10 +1,13 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getSource, PERSONA } from '@/lib/inbox'
+import { FieldList } from '@/components/field-list'
+import { formatDateTime } from '@/lib/format'
+import { getSource } from '@/lib/inbox'
+import { backHref, SOURCE_LABEL } from '@/lib/source'
 
 /**
  * The source behind an evidence link (SPEC §8B "Show source", §12). Every claim on a loop page
- * points at a message or event id; this is where that id becomes something a person can read and
+ * cites a message or event id; this is where that id becomes something a person can read and
  * check for themselves.
  */
 export default async function MessagePage({ params, searchParams }: PageProps<'/messages/[id]'>) {
@@ -12,11 +15,7 @@ export default async function MessagePage({ params, searchParams }: PageProps<'/
   const { loop } = await searchParams
   const source = getSource(id)
   if (!source) notFound()
-
-  const back =
-    typeof loop === 'string' && loop.length > 0
-      ? { href: `/loops/${loop}`, label: '← Back to loop' }
-      : { href: '/', label: '← Home' }
+  const back = backHref(loop)
 
   return (
     <article className="space-y-6">
@@ -28,28 +27,27 @@ export default async function MessagePage({ params, searchParams }: PageProps<'/
           {source.kind === 'email' ? source.message.subject : source.event.title}
         </h1>
         <p className="mt-1 text-sm text-muted">
-          {source.kind === 'email' ? 'Email' : 'Calendar event'}{' '}
-          <span className="font-mono">{id}</span>
+          {SOURCE_LABEL[source.kind]} <span className="font-mono">{id}</span>
         </p>
       </div>
 
       {source.kind === 'email' ? (
         <>
-          <Fields
+          <FieldList
             rows={[
               ['From', source.message.from],
-              ['To', source.message.to.join(', ') || PERSONA.email],
-              ['Date', new Date(source.message.date).toLocaleString('en-US')],
+              ['To', source.message.to.join(', ')],
+              ['Date', formatDateTime(source.message.date)],
             ]}
           />
           <Body>{source.message.body}</Body>
         </>
       ) : (
         <>
-          <Fields
+          <FieldList
             rows={[
-              ['Starts', new Date(source.event.start).toLocaleString('en-US')],
-              ['Ends', new Date(source.event.end).toLocaleString('en-US')],
+              ['Starts', formatDateTime(source.event.start)],
+              ['Ends', formatDateTime(source.event.end)],
               ['Where', source.event.location],
               ['With', source.event.attendees.join(', ')],
               ['Status', source.event.status],
@@ -59,21 +57,6 @@ export default async function MessagePage({ params, searchParams }: PageProps<'/
         </>
       )}
     </article>
-  )
-}
-
-/** Skips a row with nothing in it rather than printing an empty label. */
-function Fields({ rows }: { rows: [string, string | undefined][] }) {
-  const present = rows.filter((row): row is [string, string] => Boolean(row[1]))
-  return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-      {present.map(([label, value]) => (
-        <div key={label} className="col-span-2 grid grid-cols-subgrid">
-          <dt className="text-muted">{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
   )
 }
 

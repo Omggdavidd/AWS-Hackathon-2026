@@ -1,9 +1,11 @@
+import type { SourceType } from '@openloop/shared'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { approveAction, cancelAction, markDone } from '@/app/actions'
 import { StatusChip } from '@/components/status-chip'
 import { formatDate, formatDue, formatMoney, formatPercent } from '@/lib/format'
 import { getStore, USER_ID } from '@/lib/ledger'
+import { hasSourcePage, messageHref, SOURCE_LABEL } from '@/lib/source'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,8 +47,8 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
       <Section title="Why this exists">
         {loop.sourceRefs.map((ref) => (
           <p key={ref.sourceId} className="text-sm">
-            {ref.sourceType === 'email' ? 'Email' : 'Calendar event'}{' '}
-            <SourceLink loopId={loop.id} sourceId={ref.sourceId} />
+            {SOURCE_LABEL[ref.sourceType]}{' '}
+            <Source loopId={loop.id} sourceType={ref.sourceType} sourceId={ref.sourceId} />
           </p>
         ))}
       </Section>
@@ -65,7 +67,7 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
                   <span>·</span>
                   <span>{formatPercent(e.confidence)}</span>
                   <span>·</span>
-                  <SourceLink loopId={loop.id} sourceId={e.sourceId} />
+                  <Source loopId={loop.id} sourceType={e.sourceType} sourceId={e.sourceId} />
                 </div>
                 <blockquote className="mt-1 border-l-2 border-border pl-3">{e.excerpt}</blockquote>
               </li>
@@ -147,11 +149,23 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
   )
 }
 
-/** Every claim links back to the message or event it came from (SPEC §12). */
-function SourceLink({ loopId, sourceId }: { loopId: string; sourceId: string }) {
+/**
+ * Every claim points at the message or event it came from (SPEC §12). Evidence the agent wrote
+ * during execution has no page behind it, so its id stays plain text rather than a dead link.
+ */
+function Source({
+  loopId,
+  sourceType,
+  sourceId,
+}: {
+  loopId: string
+  sourceType: SourceType
+  sourceId: string
+}) {
+  if (!hasSourcePage(sourceType)) return <span className="font-mono">{sourceId}</span>
   return (
     <Link
-      href={`/messages/${sourceId}?loop=${loopId}`}
+      href={messageHref(sourceId, loopId)}
       className="font-mono underline decoration-border underline-offset-2 hover:text-foreground"
     >
       {sourceId}
