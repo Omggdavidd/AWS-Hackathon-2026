@@ -23,16 +23,16 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 Work is tracked as GitHub issues on the submission milestone (`must-ship` first, then `stretch`); each has an owner. Claim anything unassigned by assigning yourself; see `CONTRIBUTING.md` *Claiming work*.
 
-| Owner | Issues (do in this order) |
+| Owner | Issues, hardest first within each row |
 |---|---|
-| Omggdavidd | #17 loop page effects, #35 show-source page, #19 Vercel deploy, #18 dashboard polish |
-| Ojulari123 | #29 demo reset script, #13 catch me up, #14 failure paths, #40 two more demo threads, #16 scan speed |
-| tdare514 | #15 calibration, #33 README and diagram, #30 observability evidence |
-| ab00bae | #22 demo script, #39 notification banner |
-| AyomideAw | #38 CI builds web, #36 remind/ignore buttons, #37 done cancels actions |
+| Omggdavidd (hard + front end) | #13 catch me up, #17 loop page effects, #18 dashboard polish, #19 Vercel deploy |
+| Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration |
+| tdare514 (medium) | #30 observability evidence, #35 show-source page, #40 two more demo threads |
+| ab00bae (medium-easy) | #33 README and diagram, #36 remind/ignore buttons, #39 notification banner |
+| AyomideAw (easiest) | #37 done cancels actions, #38 CI builds web, #22 demo script |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
 
-One owner per issue and no issue waits on another. The loop page (#17, #35) is one person; demo fixtures are one person (#14 uses its own file, #40 edits the base inbox).
+One owner per issue and no issue waits on another. Shared files: the loop page (#17 and #35, rebase before ready) and demo fixtures (#14 uses its own file, #40 edits the base inbox). Every issue states why it matters for the submission.
 
 ## Recently completed
 
