@@ -50,6 +50,6 @@ Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1
 
 ## Known calibration
 
-Against `demo/seed-ledger.json` the pipeline produces the same 9 loops and states, except the rescheduled club meeting, which the Investigator marks Needs You rather than Watching in about half the runs. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
+Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and states, except the rescheduled club meeting, which the Investigator sometimes marks Needs You rather than Watching (once in four observed runs on the 12-thread inbox, and previously about half the time on the 10-thread one). Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
 
 `AGENTS.md` here is the CLI's own guide to `agentcore/` config and applies alongside the root `AGENTS.md`.

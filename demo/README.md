@@ -4,7 +4,7 @@ Deterministic seed data for the five-minute demo (`docs/hackathon/SPEC.md` §14,
 
 `seed-inbox.json` is loaded by `FixtureSource` from `@openloop/shared/ingestion`. The persona's `now` is the clock the demo runs against.
 
-`seed-ledger.json` is the ledger the agent is expected to produce from that inbox: 9 loops, their evidence, proposed actions and audit trail. The web app copies it to `.openloop/ledger.json` on first run so the dashboard is populated before the agent exists, and the agent's end-to-end test will compare its output against it.
+`seed-ledger.json` is the ledger the agent is expected to produce from that inbox: 11 loops, their evidence, proposed actions and audit trail. The web app copies it to `.openloop/ledger.json` on first run so the dashboard is populated before the agent exists, and the agent's end-to-end test will compare its output against it.
 
 | Thread | Expected outcome |
 |---|---|
@@ -17,7 +17,11 @@ Deterministic seed data for the five-minute demo (`docs/hackathon/SPEC.md` §14,
 | `thr-dentist` | Due for a visit: **Needs You**, low, propose a slot |
 | `thr-return` | Return window closes Sep 19, $84: **Needs You**, medium |
 | `thr-streaming` | Card declined, $15.99: **Needs You**, low |
+| `thr-form` | Signed participation form by Sep 16: **Needs You**, high, reminder set for the evening before |
+| `thr-passport` | Passport expires June 2027, renewals do not open until March 2027: **Watching**, real and dated but nothing to do yet |
 | `thr-newsletter` | Not a responsibility, no loop |
+
+Base-inbox ids run `msg-001` to `msg-013` plus `msg-018` and `msg-019`; the gap is the delta batch below, which was numbered first. Renumbering it would churn the tests for no gain.
 
 `seed-inbox-delta.json` is the "next morning" batch for the delta path (plan step 7): merged on top of the base inbox by `mergeFixtures`, it must update existing loops rather than create duplicates.
 
