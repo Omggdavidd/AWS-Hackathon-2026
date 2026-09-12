@@ -1,20 +1,53 @@
-/** Two open paths, shared by the wordmark and the sculpture's static fallback. */
+/**
+ * The brand mark: one ring that stops short of closing, and a dot in the gap. The ring is the
+ * responsibility; the dot is the move that closes it. Shared by the wordmark and the hero ring.
+ */
 export function LoopMark() {
   return (
-    <svg viewBox="0 0 48 32" fill="none" aria-hidden="true" className="loop-mark">
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" className="loop-mark">
       <path
-        d="M27 8a11 11 0 1 0 0 16"
+        d="M26.83 14.09A11 11 0 1 1 17.91 5.17"
         stroke="currentColor"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
-      <path
-        d="M21 24a11 11 0 1 0 0-16"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
+      <circle cx="23.78" cy="8.22" r="2.1" className="loop-mark-dot" />
     </svg>
+  )
+}
+
+/**
+ * The hero: the same open ring, drawn to the share of loops that have closed. When every loop is
+ * resolved the ring meets the dot. Pure SVG, animated once on load with CSS, still under
+ * prefers-reduced-motion.
+ */
+export function LoopRing({ closed, total }: { closed: number; total: number }) {
+  const share = total === 0 ? 0 : Math.round((closed / total) * 100)
+  const caption =
+    total === 0 ? 'No loops yet' : closed === total ? 'All closed' : `${closed} of ${total} closed`
+  return (
+    <figure className="loop-ring" aria-label={caption}>
+      <svg viewBox="0 0 200 200" fill="none" aria-hidden="true">
+        <path
+          d="M182.72 85.42A84 84 0 1 1 114.59 17.28"
+          className="ring-track"
+          strokeWidth="11"
+          strokeLinecap="round"
+        />
+        {share > 0 && (
+          <path
+            d="M182.72 85.42A84 84 0 1 1 114.59 17.28"
+            className="ring-progress"
+            pathLength={100}
+            strokeWidth="11"
+            strokeLinecap="round"
+            style={{ '--ring': share } as React.CSSProperties}
+          />
+        )}
+        <circle cx="159.4" cy="40.6" r="7.5" className="ring-dot" />
+      </svg>
+      <figcaption>{caption}</figcaption>
+    </figure>
   )
 }
 

@@ -1,6 +1,6 @@
 import type { OpenLoop } from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
-import { formatDue, groupByStatus, sortLoops, summarize } from './format'
+import { formatDue, groupByStatus, sortLoops, summarize, summaryParts } from './format'
 
 const base: OpenLoop = {
   id: 'x',
@@ -38,8 +38,12 @@ describe('sortLoops and summarize', () => {
       { ...base, id: 'n-crit', priority: 'critical' as const },
     ]
     expect(sortLoops(loops).map((l) => l.id)).toEqual(['n-crit', 'n-low', 'w'])
-    expect(summarize(groupByStatus(loops))).toBe(
-      '2 things need you. 1 is waiting on others. 1 critical.',
-    )
+    expect(summarize(groupByStatus(loops))).toBe('2 things need you. 1 is waiting on others.')
+    expect(summaryParts(groupByStatus(loops)).map((p) => p.section)).toEqual([
+      'needs-you',
+      'waiting',
+    ])
+    expect(summarize(groupByStatus([]))).toBe('Let’s find what needs your attention.')
+    expect(summarize(groupByStatus([{ ...base, status: 'RESOLVED' }]))).toBe('Nothing needs you.')
   })
 })
