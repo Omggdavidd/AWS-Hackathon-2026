@@ -16,7 +16,7 @@ import { LocalLedgerStore } from '@openloop/shared'
  *   pnpm reset-demo --table openloop-ledger --yes                 # delete, then scan through the deployed runtime
  *   pnpm reset-demo --table openloop-ledger --yes --no-scan       # delete only (no AWS Bedrock call)
  *   pnpm reset-demo --table openloop-ledger --yes --user user-bo  # another user id (default user-alex, or OPENLOOP_USER_ID)
- *   pnpm reset-demo --local --yes                                 # reseed the local JSON ledger from demo/seed-ledger.json instead
+ *   pnpm reset-demo --local --yes                                 # reseed the local JSON ledger from demo/seed-ledger.json instead (whole file, rejects --user)
  *   OPENLOOP_LEDGER_TABLE, AWS_REGION, DYNAMODB_ENDPOINT, OPENLOOP_RUNTIME_ARN, OPENLOOP_LEDGER_FILE override the rest
  */
 const local = process.argv.includes('--local')
@@ -24,10 +24,9 @@ const dryRun = process.argv.includes('--dry-run')
 const confirmed = process.argv.includes('--yes')
 const scanAfter = !process.argv.includes('--no-scan')
 const userIdx = process.argv.indexOf('--user')
-const userId =
-  (userIdx >= 0 ? process.argv[userIdx + 1] : undefined) ??
-  process.env.OPENLOOP_USER_ID ??
-  'user-alex'
+const namedUser = userIdx >= 0 ? process.argv[userIdx + 1] : undefined
+const envUser = process.env.OPENLOOP_USER_ID
+const userId = namedUser ?? envUser ?? 'user-alex'
 const tableIdx = process.argv.indexOf('--table')
 const namedTable = tableIdx >= 0 ? process.argv[tableIdx + 1] : undefined
 const table = process.env.OPENLOOP_LEDGER_TABLE ?? 'openloop-ledger'
@@ -52,6 +51,27 @@ function byStatus(statuses: string[]): string {
 }
 
 if (local) {
+  const seed = await LocalLedgerStore.fromFile(seedFile)
+  const seedUsers = [...new Set(seed.snapshot().loops.map((l) => l.userId))]
+  const [seedUser] = seedUsers
+  if (!seedUser || seedUsers.length > 1) {
+    console.log(
+      `refusing to reseed: ${show(seedFile)} must hold exactly one user id, found ${seedUsers.join(', ') || 'none'}`,
+    )
+    process.exit(1)
+  }
+  if (namedUser !== undefined) {
+    console.log(
+      `refusing to reseed: --user ${namedUser} asks for one user, but --local overwrites the whole ledger with ${show(seedFile)}, which holds only ${seedUser}; drop --user, or reset ${namedUser} against the table`,
+    )
+    process.exit(1)
+  }
+  if (envUser !== undefined && envUser !== seedUser) {
+    console.log(
+      `refusing to reseed: OPENLOOP_USER_ID is ${envUser}, but --local overwrites the whole ledger with ${show(seedFile)}, which holds only ${seedUser}, so it cannot produce ${envUser}'s ledger; unset it, or reset ${envUser} against the table`,
+    )
+    process.exit(1)
+  }
   const before = await LocalLedgerStore.fromFile(ledgerFile)
   const snap = before.snapshot()
   console.log(`▸ local ledger  ${show(ledgerFile)}  user ${userId}`)
