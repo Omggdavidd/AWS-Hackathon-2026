@@ -25,6 +25,7 @@ pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm --filter @openloop/agent dev               # runtime server on :8080 (same as agentcore dev, without the inspector)
 agentcore dev                                   # interactive local runtime with inspector (needs a real terminal)
 pnpm --filter @openloop/agent deploy-runtime            # prepare-deploy + agentcore deploy -y --json (~1-2 min)
+# needs the CLI once: npm install -g @aws/agentcore@0.28.1  (the version agent/agentcore was generated with)
 agentcore deploy --dry-run -y --json            # synth only; check agentcore/cdk/cdk.out/asset.*.zip has _deps/
 agentcore status --json                         # runtime ARN and state
 agentcore logs                                  # CloudWatch logs
@@ -47,6 +48,19 @@ Invocation payload (validated by the Zod schema in `main.ts`). Without `source.p
 Commands: `scan` (default), `handle` (execute every proposed action the policy allows and list the rest), `execute` with `actionId` (one action, used by the web after approval), `catch_up` (state changes since the previous catch-up or `since`; the digest is built in code, the model only writes the sentences, and a `catch_up` audit event marks the check). The policy gate is `mayExecute` in `@openloop/shared`: low risk and prepare-type medium risk run automatically; high risk only when the record is `APPROVED`. Effects go through `FixtureActionSink` today (simulated, recorded as evidence with source `action:<id>`); Gmail and Calendar sinks are the live-path stretch.
 
 Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted. `OPENLOOP_MODEL_ID` overrides the model.
+
+## Structured logs
+
+`runScan` and `executeAction` take an optional `logger`. It defaults to silence, so the orchestrator
+stays side-effect free under test; `main.ts` wires `jsonLogger()` so the deployed runtime writes one
+JSON line per pipeline step to stdout for CloudWatch. Locally:
+
+```
+pnpm --filter @openloop/agent scan -- --reset --log-json 2>pipeline.jsonl
+```
+
+Lines go to stderr so they never interleave with the human-readable progress. Line shapes, the
+Logs Insights queries and what to screenshot are in `docs/architecture/observability/`.
 
 ## Known calibration
 

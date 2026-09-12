@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { FixtureSource, LocalLedgerStore } from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
 import type { Specialists } from '../src/agents'
+import type { LogLine } from '../src/log'
 import { runScan } from '../src/scan'
 
 const seed = fileURLToPath(new URL('../../../../demo/seed-inbox.json', import.meta.url))
@@ -186,5 +187,51 @@ describe('runScan', () => {
     expect(second.created).toBe(0)
     expect(second.skipped).toBe(12)
     expect(await store.listLoops('u')).toHaveLength(11)
+  })
+
+  it('logs the scan as a pipeline: a line per thread, per role and per outcome', async () => {
+    const source = await FixtureSource.load(seed)
+    const store = new LocalLedgerStore()
+    const lines: LogLine[] = []
+    await runScan({
+      source,
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      logger: (l) => lines.push(l),
+    })
+
+    expect(lines[0]).toMatchObject({ evt: 'scan_started', messages: 15, threads: 12 })
+    expect(lines.at(-1)).toMatchObject({ evt: 'scan_completed', created: 11, skipped: 1 })
+    expect(typeof lines.at(-1)?.ms).toBe('number')
+
+    // Every role call is timed and attributed to its thread.
+    const deposit = lines.filter((l) => l.threadId === 'thr-deposit')
+    expect(deposit.map((l) => l.evt)).toEqual([
+      'thread_started',
+      'role',
+      'role',
+      'role',
+      'loop_created',
+    ])
+    expect(deposit.filter((l) => l.evt === 'role').map((l) => l.role)).toEqual([
+      'extract',
+      'investigate',
+      'judge',
+    ])
+    expect(deposit.every((l) => l.evt === 'thread_started' || typeof l.ms === 'number')).toBe(true)
+    expect(deposit.at(-1)).toMatchObject({ evt: 'loop_created', status: 'NEEDS_YOU', actions: 1 })
+
+    // No message content reaches the log: the thread id identifies it, the subject does not travel.
+    const serialized = JSON.stringify(lines)
+    expect(serialized).not.toContain('Action required: Fall registration deposit')
+    expect(serialized).not.toContain('Proof of renter')
+    expect(serialized).toContain('thr-deposit')
+
+    // A thread the Extractor rejects says why, so the log explains the gap in the ledger.
+    expect(
+      lines.find((l) => l.threadId === 'thr-newsletter' && l.evt === 'thread_skipped'),
+    ).toMatchObject({ reason: 'newsletter' })
   })
 })
