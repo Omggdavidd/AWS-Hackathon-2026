@@ -223,6 +223,12 @@ describe('runScan', () => {
     expect(deposit.every((l) => l.evt === 'thread_started' || typeof l.ms === 'number')).toBe(true)
     expect(deposit.at(-1)).toMatchObject({ evt: 'loop_created', status: 'NEEDS_YOU', actions: 1 })
 
+    // No message content reaches the log: the thread id identifies it, the subject does not travel.
+    const serialized = JSON.stringify(lines)
+    expect(serialized).not.toContain('Action required: Fall registration deposit')
+    expect(serialized).not.toContain('Proof of renter')
+    expect(serialized).toContain('thr-deposit')
+
     // A thread the Extractor rejects says why, so the log explains the gap in the ledger.
     expect(
       lines.find((l) => l.threadId === 'thr-newsletter' && l.evt === 'thread_skipped'),

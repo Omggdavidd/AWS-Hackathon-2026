@@ -73,7 +73,9 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     if (!root) continue
     const threadStartedAt = Date.now()
     emit({ type: 'thread', threadId, subject: root.subject })
-    log({ evt: 'thread_started', threadId, subject: root.subject, messages: thread.length })
+    // The thread id, not the subject: subject lines are often the sensitive part, and the id is
+    // enough to find the thread in the ledger (docs/architecture.md §4).
+    log({ evt: 'thread_started', threadId, messages: thread.length })
 
     const known = (
       await Promise.all(thread.map((m) => store.findLoopsBySource(userId, m.id)))

@@ -13,7 +13,7 @@ Emitted by `agent/app/OpenLoopAgent/src/log.ts`, wired in `main.ts` (the Runtime
 | `evt` | When | Key fields |
 |---|---|---|
 | `scan_started` | once per scan | `messages`, `threads` |
-| `thread_started` | per thread | `threadId`, `subject`, `messages` |
+| `thread_started` | per thread | `threadId`, `messages` |
 | `role` | per specialist call | `role` (extract, investigate, judge, update, plan), `threadId`, `ms` |
 | `loop_created` | a thread became a loop | `threadId`, `loopId`, `status`, `priority`, `riskLevel`, `actions`, `ms` |
 | `loop_updated` | delta path moved a loop | `threadId`, `loopId`, `from`, `to`, `ms` |
@@ -30,9 +30,11 @@ itself: a `draft_email` effect carries the recipient, subject and body, and a lo
 place for any of them. `test/actions.test.ts` pins this — it asserts the recipient, subject and body
 of a drafted reply appear nowhere in the emitted lines, and it fails if the payload is logged again.
 
-Message bodies are otherwise never logged, but `thread_started` does carry the subject line. That is
-acceptable for the demo fixtures; if live Gmail lands (#20), drop `subject` or hash it before real
-mail reaches CloudWatch.
+No message content reaches the log at all: `thread_started` carries the thread id and a count, not
+the subject line. Subjects are often the sensitive part of a message, and `docs/architecture.md` §4
+commits to ids and excerpts over full content — the `threadId` is enough to find the thread in the
+ledger, where access and retention are the ledger's rather than the log group's. The human-readable
+progress from `scan -- --reset` still prints subjects to stdout for whoever is watching a local run.
 
 ## Capturing it
 
