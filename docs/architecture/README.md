@@ -4,6 +4,8 @@
 
 It is a view of [`../architecture.md`](../architecture.md), which stays the authority. When a component, boundary, invariant or deployment target changes there, change the diagram in the same PR.
 
+[`observability/`](observability/) sits alongside it: the structured log lines the runtime emits for one scan, the CloudWatch queries that read them, and the captures we show judges. The diagram says what the system is; those say what it did.
+
 ## Editing
 
 Edit the SVG by hand: the coordinates are plain numbers and each block is commented (`<!-- runtime -->`, `<!-- ledger -->`). The canvas is 1640 x 1160.
