@@ -37,7 +37,7 @@ pnpm install
 pnpm --filter @openloop/web dev
 ```
 
-Open <http://localhost:3000>. The dashboard is already populated from `demo/seed-ledger.json` — the nine loops the agent produces from the seeded inbox of 13 messages and 3 calendar events.
+Open <http://localhost:3000>. The dashboard is already populated from `demo/seed-ledger.json`, the ledger the agent is expected to produce from the seeded inbox.
 
 Worth clicking, in order:
 
@@ -46,7 +46,7 @@ Worth clicking, in order:
 3. **A *Resolved* loop** — the housing fee. It was created from the request and closed by the "Payment received" reply, which is the resolution detection working.
 4. **An action with *Approve* / *Decline*** — a high-risk action the agent prepared but will not execute on its own.
 
-`demo/README.md` lists the expected outcome for every seeded thread, which is also what the tests assert.
+[`demo/README.md`](demo/README.md) lists the expected outcome for every seeded thread, which is also what the tests assert.
 
 If corepack complains about pnpm, install it directly: `npm install -g pnpm@12.3.4`.
 
