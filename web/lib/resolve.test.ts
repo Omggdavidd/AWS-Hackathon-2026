@@ -44,7 +44,11 @@ describe('resolveLoopByUser', () => {
     const cancelled = audit.filter((e) => e.kind === 'action_cancelled')
     expect(cancelled.map((e) => e.actionId).sort()).toEqual(['a1', 'a2'])
     expect(cancelled.every((e) => e.actor === 'user')).toBe(true)
-    expect(audit.some((e) => e.kind === 'state_changed')).toBe(true)
+
+    // Strictly after the state change: equal timestamps sort by random uuid in DynamoDB.
+    const resolved = audit.find((e) => e.kind === 'state_changed')
+    expect(resolved).toBeDefined()
+    expect(cancelled.every((e) => e.at > (resolved?.at ?? ''))).toBe(true)
   })
 
   it('leaves approved actions alone: the user asked for those and one may be running', async () => {

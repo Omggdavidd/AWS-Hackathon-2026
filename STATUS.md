@@ -32,7 +32,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 | AyomideAw (easiest) | #38 CI builds web, #22 demo script |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
 
-One owner per issue and no issue waits on another. Shared files: the loop page (#17 and #35, rebase before ready) and demo fixtures (#14 uses its own file, #40 edits the base inbox). Every issue states why it matters for the submission.
+One owner per issue and no issue waits on another. Every issue states why it matters for the submission.
 
 ## Recently completed
 

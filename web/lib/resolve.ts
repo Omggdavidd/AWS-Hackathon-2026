@@ -32,6 +32,9 @@ export async function resolveLoopByUser(
     reason: `You marked this as done; ${loop.status} -> RESOLVED`,
   })
 
+  // A millisecond later than the state change: the DynamoDB audit sort key is `AUDIT#<at>#<id>`,
+  // so events sharing a timestamp fall back to ordering by random uuid.
+  const cancelledAt = new Date(Date.parse(now) + 1).toISOString()
   for (const action of await store.listActions(userId, { loopId, status: 'PROPOSED' })) {
     await store.putAction({ ...action, status: 'CANCELLED' })
     await store.appendAudit({
@@ -39,7 +42,7 @@ export async function resolveLoopByUser(
       userId,
       loopId,
       actionId: action.id,
-      at: now,
+      at: cancelledAt,
       kind: 'action_cancelled',
       actor: 'user',
       reason: 'Cancelled: you marked this loop done',
