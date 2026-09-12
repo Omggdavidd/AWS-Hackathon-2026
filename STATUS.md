@@ -27,7 +27,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 |---|---|---|
 | Web | Omggdavidd | #17 loop page effects, #18 dashboard polish, #13 catch me up (web half) |
 | Agent | Ojulari123 | #14 failure paths, #15 calibration, #16 scan speed, #29 demo reset, #13 catch me up (agent half) |
-| Docs and demo | ab00bae | #22 README, diagram, demo script; #30 observability evidence (with Omggdavidd) |
+| Docs and demo | tdare514, ab00bae | tdare514: #33 README and architecture diagram, #30 observability evidence, #15 calibration (with Ojulari123). ab00bae: #22 demo script |
 | Infra | Omggdavidd | #19 Vercel deploy |
 | Stretch, unassigned | — | #20 live Gmail, #21 Google sinks, #31 command bar |
 
@@ -42,7 +42,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 
 ## Next up
 
-Must-ship in the order the demo needs them: #17, #29, #13, #14, #18, #19, #22, #30. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
+Must-ship in the order the demo needs them: #17, #29, #13, #14, #18, #19, #33, #22, #30. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
 
 ## Known issues
 
@@ -58,4 +58,4 @@ Must-ship in the order the demo needs them: #17, #29, #13, #14, #18, #19, #22, #
 
 ## Workstreams
 
-Collaborators: Omggdavidd (admin), Ojulari123, ab00bae, tdare514. Tracks and owners are in *In progress*; tdare514 has no track yet and can take a stretch issue or pair on web.
+Collaborators: Omggdavidd (admin), Ojulari123, ab00bae, tdare514. Tracks and owners are in *In progress*.
