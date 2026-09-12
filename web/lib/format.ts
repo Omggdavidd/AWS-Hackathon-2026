@@ -1,4 +1,4 @@
-import type { LoopStatus, Money, OpenLoop, Priority } from '@openloop/shared'
+import type { ActionType, LoopStatus, Money, OpenLoop, Priority } from '@openloop/shared'
 
 /**
  * The demo's clock. Every fixture date carries a -04:00 offset and the demo script says the club
@@ -79,17 +79,60 @@ export function formatPercent(confidence: number): string {
   return `${Math.round(confidence * 100)}%`
 }
 
-/** One-line summary for the top of the dashboard (SPEC §8A). */
-export function summarize(groups: Map<LoopStatus, OpenLoop[]>): string {
-  const needs = groups.get('NEEDS_YOU')?.length ?? 0
-  const waiting = groups.get('WAITING')?.length ?? 0
-  const critical = groups.get('NEEDS_YOU')?.filter((l) => l.priority === 'critical').length ?? 0
-  const parts = [
+/** How each action type reads as the verb on a dashboard row. `none` has no verb. */
+export const ACTION_LABEL: Record<ActionType, string | undefined> = {
+  pay: 'Pay',
+  reply: 'Reply',
+  submit: 'Submit',
+  sign: 'Sign',
+  choose: 'Choose',
+  review: 'Review',
+  confirm: 'Confirm',
+  attend: 'Attend',
+  book: 'Book',
+  return: 'Return',
+  none: undefined,
+}
+
+export type SummaryPart = { text: string; section?: string }
+
+/**
+ * The one sentence at the top of the dashboard (SPEC §8A), as fragments so each can link to its
+ * section. Only states with something in them get a fragment; an empty ledger gets an invitation.
+ */
+export function summaryParts(groups: Map<LoopStatus, OpenLoop[]>): SummaryPart[] {
+  const count = (status: LoopStatus) => groups.get(status)?.length ?? 0
+  const needs = count('NEEDS_YOU')
+  const waiting = count('WAITING')
+  const watching = count('WATCHING')
+  const uncertain = count('UNCERTAIN')
+  if (needs + waiting + watching + uncertain + count('RESOLVED') === 0)
+    return [{ text: 'Let’s find what needs your attention.' }]
+  const parts: SummaryPart[] = [
     needs === 0
-      ? 'Nothing needs you.'
-      : `${needs} thing${needs === 1 ? '' : 's'} need${needs === 1 ? 's' : ''} you.`,
-    waiting === 0 ? '' : `${waiting} ${waiting === 1 ? 'is' : 'are'} waiting on others.`,
-    critical === 0 ? 'Nothing critical.' : `${critical} critical.`,
+      ? { text: 'Nothing needs you.' }
+      : {
+          text: `${needs} thing${needs === 1 ? '' : 's'} need${needs === 1 ? 's' : ''} you.`,
+          section: 'needs-you',
+        },
   ]
-  return parts.filter(Boolean).join(' ')
+  if (waiting > 0)
+    parts.push({
+      text: `${waiting} ${waiting === 1 ? 'is' : 'are'} waiting on others.`,
+      section: 'waiting',
+    })
+  if (watching > 0) parts.push({ text: `${watching} on your radar.`, section: 'watching' })
+  if (uncertain > 0)
+    parts.push({
+      text: `${uncertain} need${uncertain === 1 ? 's' : ''} a quick check.`,
+      section: 'uncertain',
+    })
+  return parts
+}
+
+/** The sentence as plain text. */
+export function summarize(groups: Map<LoopStatus, OpenLoop[]>): string {
+  return summaryParts(groups)
+    .map((p) => p.text)
+    .join(' ')
 }

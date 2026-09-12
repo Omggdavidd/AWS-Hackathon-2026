@@ -1,20 +1,54 @@
-/** Two open paths, shared by the wordmark and the sculpture's static fallback. */
+/**
+ * The brand mark: one ring that stops short of closing, and a dot in the gap. The ring is the
+ * responsibility; the dot is the move that closes it. Shared by the wordmark and the hero ring.
+ */
 export function LoopMark() {
   return (
-    <svg viewBox="0 0 48 32" fill="none" aria-hidden="true" className="loop-mark">
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" className="loop-mark">
       <path
-        d="M27 8a11 11 0 1 0 0 16"
+        d="M27 12.64A11.5 11.5 0 1 1 19.36 5"
         stroke="currentColor"
-        strokeWidth="3.5"
+        strokeWidth="3.8"
         strokeLinecap="round"
       />
-      <path
-        d="M21 24a11 11 0 1 0 0-16"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
+      <circle cx="23.78" cy="8.22" r="2.45" className="loop-mark-dot" />
     </svg>
+  )
+}
+
+/** Compact progress shares the open-ring geometry without competing with the greeting. */
+export function LoopRing({ closed, total }: { closed: number; total: number }) {
+  const share = total === 0 ? 0 : Math.round((closed / total) * 100)
+  const caption = total === 0 ? 'No loops yet' : `${closed} of ${total} loops closed`
+  return (
+    <figure className="loop-ring" aria-label={caption}>
+      <svg viewBox="0 0 80 80" fill="none" aria-hidden="true">
+        <path
+          d="M68.69 31.23A30 30 0 1 1 48.77 11.31"
+          className="ring-track"
+          strokeWidth="6"
+          strokeLinecap="round"
+        />
+        {share > 0 && (
+          <path
+            d="M68.69 31.23A30 30 0 1 1 48.77 11.31"
+            className="ring-progress"
+            pathLength={100}
+            strokeWidth="6"
+            strokeLinecap="round"
+            style={{ '--ring': share } as React.CSSProperties}
+          />
+        )}
+        <circle cx="61.21" cy="18.79" r="3.8" className="ring-dot" />
+      </svg>
+      <figcaption>
+        <strong>
+          {closed}
+          <span> / {total}</span>
+        </strong>
+        <span>loops closed</span>
+      </figcaption>
+    </figure>
   )
 }
 
