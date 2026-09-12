@@ -12,7 +12,7 @@ export function LoopRow({ loop, now }: { loop: OpenLoop; now: Date }) {
       : needsUser
         ? formatDue(loop.dueAt, now)
         : loop.dueAt
-          ? formatDate(loop.dueAt)
+          ? formatDate(loop.dueAt, now)
           : undefined
   const soon =
     needsUser &&

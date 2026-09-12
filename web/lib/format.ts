@@ -55,13 +55,18 @@ export function formatDue(dueAt: string | undefined, now: Date): string | undefi
   if (days === 0) return 'Due today'
   if (days === 1) return 'Due tomorrow'
   if (days <= 14) return `Due in ${days} days`
-  return `Due ${formatDate(dueAt)}`
+  return `Due ${formatDate(dueAt, now)}`
 }
 
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
+/** "Sep 19" within the current year; "Jun 12, 2027" outside it, so a far-off date cannot read as near. */
+export function formatDate(iso: string, now: Date = new Date()): string {
+  const year = (d: Date) =>
+    new Intl.DateTimeFormat('en-US', { year: 'numeric', timeZone: DEMO_TIME_ZONE }).format(d)
+  const date = new Date(iso)
+  return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
+    ...(year(date) === year(now) ? {} : { year: 'numeric' }),
     timeZone: DEMO_TIME_ZONE,
   })
 }

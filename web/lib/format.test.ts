@@ -1,6 +1,6 @@
 import type { OpenLoop } from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
-import { formatDue, groupByStatus, sortLoops, summarize, summaryParts } from './format'
+import { formatDate, formatDue, groupByStatus, sortLoops, summarize, summaryParts } from './format'
 
 const base: OpenLoop = {
   id: 'x',
@@ -27,6 +27,14 @@ describe('formatDue', () => {
     expect(formatDue('2026-09-13T20:00:00Z', now)).toBe('Due in 3 days')
     expect(formatDue('2026-09-08T12:00:00Z', now)).toBe('Overdue by 2 days')
     expect(formatDue('2026-10-17T12:00:00Z', now)).toBe('Due Oct 17')
+    expect(formatDue('2027-06-12T12:00:00Z', now)).toBe('Due Jun 12, 2027')
+  })
+})
+
+describe('formatDate', () => {
+  it('adds the year only outside the current one', () => {
+    expect(formatDate('2026-09-19T12:00:00Z', now)).toBe('Sep 19')
+    expect(formatDate('2027-06-12T12:00:00Z', now)).toBe('Jun 12, 2027')
   })
 })
 
