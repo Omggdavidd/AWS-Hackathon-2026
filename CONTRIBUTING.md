@@ -50,6 +50,7 @@ Must-ship issues before stretch issues. The milestone is the deadline.
 - Rebase on `main` at least daily and before marking a PR ready: `git fetch origin && git rebase origin/main`.
 - After a rebase, push your own branch with `git push --force-with-lease`. Never force-push someone else's branch or `main`.
 - Rebase, do not merge, `main` into feature branches. History stays linear and conflicts stay local.
+- Line endings are LF on every platform (`.gitattributes`). On Windows, run `git rm --cached -r . && git reset --hard` once after pulling that file so your checkout matches and `pnpm lint` stops reporting `␍`.
 
 ## Pull requests
 
