@@ -120,8 +120,22 @@ describe('executeAction', () => {
 
     expect(lines.map((l) => l.evt)).toEqual(['action_started', 'role', 'sink', 'action_executed'])
     expect(lines[1]).toMatchObject({ role: 'plan', actionId: 'draft', threadId: 'thr-insurance' })
-    expect(lines[2]).toMatchObject({ evt: 'sink', effect: { kind: 'draft_email' } })
+    expect(lines[2]).toMatchObject({ evt: 'sink', effect: 'draft_email' })
     expect(lines.slice(1).every((l) => typeof l.ms === 'number')).toBe(true)
+  })
+
+  it('never writes the effect payload to the log: no recipient, subject or body', async () => {
+    const opts = await setup()
+    const lines: LogLine[] = []
+    await opts.store.putAction(action({ id: 'draft' }))
+    await executeAction({ ...opts, logger: (l) => lines.push(l) }, 'draft')
+
+    // The plan for this action drafts a reply; none of it may reach CloudWatch.
+    const serialized = JSON.stringify(lines)
+    expect(serialized).not.toContain('office@maplecourtpm.com')
+    expect(serialized).not.toContain('Re: insurance')
+    expect(serialized).not.toContain('Attached.')
+    expect(serialized).toContain('draft_email')
   })
 
   it('logs a blocked high-risk action with the reason and never reaches the sink', async () => {
