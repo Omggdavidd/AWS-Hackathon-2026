@@ -25,14 +25,14 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 
 | Owner | Issues (do in this order) |
 |---|---|
-| Omggdavidd | #17 loop page effects, #19 Vercel deploy, #18 dashboard polish |
-| Ojulari123 | #29 demo reset script, #13 catch me up, #14 failure paths, #16 scan speed |
+| Omggdavidd | #17 loop page effects, #35 show-source page, #19 Vercel deploy, #18 dashboard polish |
+| Ojulari123 | #29 demo reset script, #13 catch me up, #14 failure paths, #40 two more demo threads, #16 scan speed |
 | tdare514 | #15 calibration, #33 README and diagram, #30 observability evidence |
-| ab00bae | #38 CI builds web, #22 demo script, #39 notification banner |
-| AyomideAw | #35 show-source page, #36 remind/ignore buttons, #37 done cancels actions, #40 two more demo threads |
+| ab00bae | #22 demo script, #39 notification banner |
+| AyomideAw | #38 CI builds web, #36 remind/ignore buttons, #37 done cancels actions |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
 
-One owner per issue; the only overlaps are `web/app/loops/[id]/page.tsx` (#17 and #35, rebase before ready) and demo fixtures (#14 uses its own file, #40 edits the base inbox).
+One owner per issue and no issue waits on another. The loop page (#17, #35) is one person; demo fixtures are one person (#14 uses its own file, #40 edits the base inbox).
 
 ## Recently completed
 
