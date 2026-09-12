@@ -1,10 +1,18 @@
 import type { OpenLoop } from '@openloop/shared'
 import Link from 'next/link'
-import { formatDue, formatMoney } from '@/lib/format'
+import { formatDate, formatDue, formatMoney } from '@/lib/format'
 import { PriorityDot } from './status-chip'
 
 export function LoopCard({ loop, now }: { loop: OpenLoop; now: Date }) {
-  const due = loop.status === 'RESOLVED' ? undefined : formatDue(loop.dueAt, now)
+  // Overdue language only where the user owes the move; watched or waiting items just show their date.
+  const due =
+    loop.status === 'RESOLVED'
+      ? undefined
+      : loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
+        ? formatDue(loop.dueAt, now)
+        : loop.dueAt
+          ? formatDate(loop.dueAt)
+          : undefined
   const amount = formatMoney(loop.amount)
   const meta = [
     amount,
@@ -17,8 +25,10 @@ export function LoopCard({ loop, now }: { loop: OpenLoop; now: Date }) {
       className="block rounded-lg border border-border bg-card p-4 transition hover:border-stone-400 dark:hover:border-stone-500"
     >
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <PriorityDot priority={loop.priority} />
+        <div className="flex items-start gap-2">
+          <span className="mt-2 flex shrink-0">
+            <PriorityDot priority={loop.priority} />
+          </span>
           <span className="font-medium">{loop.title}</span>
         </div>
         {due && <span className="shrink-0 text-sm text-muted">{due}</span>}

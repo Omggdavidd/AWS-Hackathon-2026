@@ -21,21 +21,25 @@ export function ScanButton({
   configured,
   variant = 'base',
   label = 'Scan inbox',
+  subtle = false,
 }: {
   configured: boolean
   variant?: 'base' | 'delta'
   label?: string
+  subtle?: boolean
 }) {
   const router = useRouter()
   const [running, setRunning] = useState(false)
   const [lines, setLines] = useState<{ id: number; text: string }[]>([])
   const [nextId, setNextId] = useState(0)
+  const [progress, setProgress] = useState<{ threads: number; found: number; done?: string }>()
   const [error, setError] = useState<string>()
 
   async function run() {
     setRunning(true)
     setLines([])
     setError(undefined)
+    setProgress({ threads: 0, found: 0 })
     try {
       const res = await fetch(`/api/scan?variant=${variant}`, { method: 'POST' })
       if (!res.ok || !res.body) throw new Error(await res.text())
@@ -53,6 +57,17 @@ export function ScanButton({
           if (!line.startsWith('data: ')) continue
           const event = parseEvent(line.slice(6))
           if (!event) continue
+          if (event.type === 'thread')
+            setProgress((p) => ({ ...(p ?? { found: 0 }), threads: (p?.threads ?? 0) + 1 }))
+          if (event.type === 'loop' || event.type === 'updated')
+            setProgress((p) => ({ ...(p ?? { threads: 0 }), found: (p?.found ?? 0) + 1 }))
+          if (event.type === 'summary') {
+            const n = event.summary.created + event.summary.updated
+            setProgress((p) => ({
+              ...(p ?? { threads: 0, found: 0 }),
+              done: `${n} thing${n === 1 ? '' : 's'} worth checking in ${event.summary.threads} threads.`,
+            }))
+          }
           const text = describe(event)
           if (text) {
             setNextId((id) => id + 1)
@@ -86,10 +101,23 @@ export function ScanButton({
             ? 'Scan the connected inbox'
             : 'Set OPENLOOP_RUNTIME_ARN and OPENLOOP_LEDGER_TABLE to enable'
         }
-        className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+        className={`rounded-md px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${subtle ? 'border border-border bg-card hover:bg-background' : 'bg-foreground text-background hover:opacity-90'}`}
       >
         {running ? 'Scanning…' : label}
       </button>
+      {progress && (running || progress.done) && (
+        <div className="max-w-md rounded-lg border border-border bg-card p-3 text-sm">
+          <p className="font-medium">
+            {progress.done ??
+              `Checking your inbox… ${progress.threads} thread${progress.threads === 1 ? '' : 's'} read, ${progress.found} worth tracking`}
+          </p>
+          {running && (
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-border">
+              <div className="h-full w-1/3 animate-pulse rounded-full bg-foreground/60" />
+            </div>
+          )}
+        </div>
+      )}
       {(lines.length > 0 || error) && (
         <ol className="space-y-0.5 font-mono text-xs text-muted">
           {lines.map((l) => (
