@@ -22,6 +22,7 @@ pnpm --filter @openloop/agent scan -- --reset   # real model over the demo inbox
 pnpm --filter @openloop/agent scan -- --delta   # then the next-morning batch (demo/seed-inbox-delta.json): updates, not duplicates
 pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed action (drafts, calendar, reminders); high risk waits for approval
 pnpm --filter @openloop/agent scan -- --catch-up  # what changed since the last catch-up, written from the ledger only
+pnpm --filter @openloop/agent agreement         # 3 real scans, per-thread status against demo/seed-ledger.json (OPENLOOP_AGREEMENT_RUNS overrides)
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm --filter @openloop/agent dev               # runtime server on :8080 (same as agentcore dev, without the inspector)
 agentcore dev                                   # interactive local runtime with inspector (needs a real terminal)
@@ -82,6 +83,12 @@ The Extractor sets `area` on every loop (school, work, money, health, home, trav
 
 ## Known calibration
 
-Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and states, except the rescheduled club meeting, which the Investigator sometimes marks Needs You rather than Watching (once in four observed runs on the 12-thread inbox, and previously about half the time on the 10-thread one). Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
+Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and states, except the rescheduled club meeting, which the Investigator sometimes marks Needs You rather than Watching (once in four observed runs on the 12-thread inbox, and previously about half the time on the 10-thread one). Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities. `pnpm --filter @openloop/agent agreement` measures that drift: it runs the base scan three times and prints each thread's status next to the expected one, with an agreement count. The comparison itself is `src/agreement.ts`, covered by `test/agreement.test.ts`; the runs need AWS credentials.
+
+The Investigator prompt now states the rule outright (a meeting already on the calendar whose time changed is Watching unless another event overlaps the new slot or the organizer asks for a reply).
+
+> **Not yet measured.** The three-run table for that prompt change is missing: the machine the change was written on has no AWS credentials, so no scan could be executed. Treat the club meeting as still unreliable until someone with credentials runs `pnpm --filter @openloop/agent agreement` and pastes the table here, replacing this note.
+
+Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
 
 `AGENTS.md` here is the CLI's own guide to `agentcore/` config and applies alongside the root `AGENTS.md`.
