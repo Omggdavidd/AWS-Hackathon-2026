@@ -97,16 +97,14 @@ export function ScanButton({
         onClick={run}
         disabled={!configured || running}
         title={
-          configured
-            ? 'Scan the connected inbox'
-            : 'Set OPENLOOP_RUNTIME_ARN and OPENLOOP_LEDGER_TABLE to enable'
+          configured ? 'Scan the connected inbox' : 'Available when the workspace is connected'
         }
         className={`rounded-md px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-40 ${subtle ? 'border border-border bg-card hover:bg-background' : 'bg-foreground text-background hover:opacity-90'}`}
       >
         {running ? 'Scanning…' : label}
       </button>
       {progress && (running || progress.done) && (
-        <div className="max-w-md rounded-lg border border-border bg-card p-3 text-sm">
+        <div role="status" className="max-w-md rounded-lg border border-border bg-card p-3 text-sm">
           <p className="font-medium">
             {progress.done ??
               `Checking your inbox… ${progress.threads} thread${progress.threads === 1 ? '' : 's'} read, ${progress.found} worth tracking`}

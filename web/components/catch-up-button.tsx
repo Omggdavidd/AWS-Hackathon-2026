@@ -53,7 +53,7 @@ export function CatchUpButton({ configured }: { configured: boolean }) {
         title={
           configured
             ? 'What changed since you last looked'
-            : 'Set OPENLOOP_RUNTIME_ARN and OPENLOOP_LEDGER_TABLE to enable'
+            : 'Available when the workspace is connected'
         }
         className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium transition hover:bg-background disabled:cursor-not-allowed disabled:opacity-40"
       >
