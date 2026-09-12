@@ -124,6 +124,9 @@ importers:
 
   agent/app/OpenLoopAgent:
     dependencies:
+      '@aws-sdk/client-bedrock-agentcore':
+        specifier: ^3.1131.0
+        version: 3.1131.0
       '@openloop/ledger-dynamo':
         specifier: workspace:*
         version: link:../../../packages/ledger-dynamo

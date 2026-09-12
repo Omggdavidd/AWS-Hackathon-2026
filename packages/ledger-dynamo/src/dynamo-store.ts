@@ -1,5 +1,12 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import {
+  BatchWriteCommand,
+  type BatchWriteCommandOutput,
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+} from '@aws-sdk/lib-dynamodb'
 import type {
   AuditEvent,
   Evidence,
@@ -9,6 +16,22 @@ import type {
   ProposedAction,
   ProposedActionStatus,
 } from '@openloop/shared'
+
+/** Rows deleted (or, for a dry run, found) by {@link DynamoLedgerStore.purgeUser}. */
+export interface PurgeUserResult {
+  loops: number
+  actions: number
+  audit: number
+  evidence: number
+}
+
+/** BatchWriteItem accepts at most 25 requests per call. */
+const BATCH_SIZE = 25
+/** Retries of the items BatchWriteItem returns unprocessed, before giving up. */
+const MAX_BATCH_ATTEMPTS = 8
+
+type TableKey = { PK: string; SK: string }
+type WriteRequests = NonNullable<BatchWriteCommandOutput['UnprocessedItems']>[string]
 
 export interface DynamoLedgerStoreOptions {
   tableName: string
@@ -166,6 +189,77 @@ export class DynamoLedgerStore implements LedgerStore {
     })
     const filtered = events.filter((e) => opts.loopId === undefined || e.loopId === opts.loopId)
     return opts.limit === undefined ? filtered : filtered.slice(0, opts.limit)
+  }
+
+  /**
+   * Delete every row this store can reach for one user: the USER#<userId> partition (loops, actions,
+   * audit) plus the EVIDENCE rows of each loop found there. Destructive; only the demo reset script
+   * (`pnpm reset-demo`) calls it, never the request path.
+   * Loop ids are collected before anything is deleted, because evidence lives under LOOP#<loopId> and
+   * that partition can no longer be found by query once its loop row is gone.
+   * Limitation: this never scans the table, so rows a query from USER#<userId> cannot reach are left
+   * alone: anything written under a different `partitionPrefix`, and evidence whose loop row is
+   * already missing (orphans from earlier runs).
+   */
+  async purgeUser(userId: string, opts: { dryRun?: boolean } = {}): Promise<PurgeUserResult> {
+    const userPk = this.userPk(userId)
+    const loops = await this.queryKeys(userPk, 'LOOP#')
+    const actions = await this.queryKeys(userPk, 'ACTION#')
+    const audit = await this.queryKeys(userPk, 'AUDIT#')
+    const evidence: TableKey[] = []
+    for (const key of loops) {
+      const loopId = key.SK.slice('LOOP#'.length)
+      evidence.push(...(await this.queryKeys(this.loopPk(loopId), 'EVIDENCE#')))
+    }
+    const found: PurgeUserResult = {
+      loops: loops.length,
+      actions: actions.length,
+      audit: audit.length,
+      evidence: evidence.length,
+    }
+    if (opts.dryRun) return found
+    await this.deleteKeys([...evidence, ...loops, ...actions, ...audit])
+    return found
+  }
+
+  /** Keys only (the public list* methods drop PK and SK, so their output cannot feed a delete). */
+  private async queryKeys(PK: string, skPrefix: string): Promise<TableKey[]> {
+    const keys: TableKey[] = []
+    let ExclusiveStartKey: Record<string, unknown> | undefined
+    do {
+      const res = await this.doc.send(
+        new QueryCommand({
+          TableName: this.table,
+          KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+          ExpressionAttributeValues: { ':pk': PK, ':sk': skPrefix },
+          ProjectionExpression: 'PK,SK',
+          ConsistentRead: true,
+          ...(ExclusiveStartKey ? { ExclusiveStartKey } : {}),
+        }),
+      )
+      for (const item of res.Items ?? []) keys.push({ PK: String(item.PK), SK: String(item.SK) })
+      ExclusiveStartKey = res.LastEvaluatedKey
+    } while (ExclusiveStartKey)
+    return keys
+  }
+
+  private async deleteKeys(keys: TableKey[]): Promise<void> {
+    for (let i = 0; i < keys.length; i += BATCH_SIZE) {
+      let pending: WriteRequests = keys
+        .slice(i, i + BATCH_SIZE)
+        .map((Key) => ({ DeleteRequest: { Key } }))
+      for (let attempt = 0; pending.length > 0; attempt++) {
+        if (attempt >= MAX_BATCH_ATTEMPTS)
+          throw new Error(
+            `${pending.length} rows still unprocessed after ${MAX_BATCH_ATTEMPTS} batch writes`,
+          )
+        if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 50 * 2 ** attempt))
+        const res = await this.doc.send(
+          new BatchWriteCommand({ RequestItems: { [this.table]: pending } }),
+        )
+        pending = res.UnprocessedItems?.[this.table] ?? []
+      }
+    }
   }
 }
 
