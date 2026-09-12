@@ -166,8 +166,8 @@
       "to": ["alex.rivera@student.northgate.edu"],
       "subject": "Your passport expires June 12, 2027",
       "date": "2026-09-02T09:15:00-04:00",
-      "snippet": "Your passport expires on June 12, 2027. Renewals are accepted up to one year before expiry.",
-      "body": "This is a courtesy reminder.\n\nThe passport issued to RIVERA, ALEX expires on June 12, 2027.\n\nRenewals are accepted up to one year before the expiry date. Processing currently takes 4 to 6 weeks by mail. Many destinations require at least six months of validity remaining on the date you enter.\n\nNo action is required at this time.\n\nPassport Services",
+      "snippet": "The passport issued to RIVERA, ALEX expires on June 12, 2027. We will write again closer to the date.",
+      "body": "This is a courtesy reminder.\n\nThe passport issued to RIVERA, ALEX expires on June 12, 2027.\n\nWe will write to you again closer to that date with renewal instructions. Nothing needs to be done now, and no appointment or payment is due.\n\nPassport Services",
       "labels": ["INBOX"]
     }
   ],
