@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { AgentToolbar } from '@/components/agent-toolbar'
 import { LoopRing, StateIcon } from '@/components/loop-mark'
 import { LoopRow } from '@/components/loop-row'
+import { KindBadge } from '@/components/status-chip'
 import { scanConfigured } from '@/lib/agent'
 import {
   DEMO_TIME_ZONE,
@@ -34,7 +35,17 @@ export default async function Home() {
     store.listAudit(USER_ID, { limit: 40 }),
   ])
   const groups = groupByStatus(loops)
-  const changes = audit.filter((event) => !QUIET_KINDS.has(event.kind)).slice(0, 4)
+  const titles = new Map(loops.map((loop) => [loop.id, loop.title]))
+  const seenLoops = new Set<string>()
+  const changes = audit
+    .filter((event) => {
+      if (QUIET_KINDS.has(event.kind)) return false
+      const key = event.loopId ?? event.id
+      if (seenLoops.has(key)) return false
+      seenLoops.add(key)
+      return true
+    })
+    .slice(0, 4)
   const lastScan = audit.find((event) => event.kind === 'scan_completed')
   const now = new Date()
   const hour = Number(
@@ -60,8 +71,7 @@ export default async function Home() {
             })}
           </p>
           <h1 id="greeting">
-            {greeting}, {USER_NAME}
-            <span className="brand-dot">.</span>
+            {greeting}, {USER_NAME}.
           </h1>
           <p className="hero-summary">
             {summaryParts(groups).map((part) =>
@@ -103,7 +113,7 @@ export default async function Home() {
         </div>
         <aside className="dashboard-context" aria-labelledby="changes-heading">
           <div className="context-heading">
-            <h2 id="changes-heading">What changed</h2>
+            <h2 id="changes-heading">Recent activity</h2>
             <Link href="/activity">All activity</Link>
           </div>
           {changes.length === 0 ? (
@@ -112,12 +122,16 @@ export default async function Home() {
             <ol className="change-list">
               {changes.map((event) => (
                 <li key={event.id}>
-                  <time dateTime={event.at}>{formatDate(event.at)}</time>
-                  {event.loopId ? (
-                    <Link href={`/loops/${event.loopId}`}>{event.reason}</Link>
-                  ) : (
-                    <span>{event.reason}</span>
+                  <div className="change-meta">
+                    <KindBadge kind={event.kind} />
+                    <time dateTime={event.at}>{formatDate(event.at)}</time>
+                  </div>
+                  {event.loopId && titles.has(event.loopId) && (
+                    <Link className="change-title" href={`/loops/${event.loopId}`}>
+                      {titles.get(event.loopId)}
+                    </Link>
                   )}
+                  <p className="change-reason">{event.reason}</p>
                 </li>
               ))}
             </ol>

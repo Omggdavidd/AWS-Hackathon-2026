@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import { Geist_Mono, Instrument_Sans } from 'next/font/google'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { BottomTabs, WorkspaceNav } from '@/components/bottom-tabs'
 import { LoopMark } from '@/components/loop-mark'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
 import './globals.css'
 
@@ -17,6 +19,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
+  const theme = (await cookies()).get('openloops-theme')?.value === 'dark' ? 'dark' : 'light'
   const store = await getStore()
   const loops = await store.listLoops(USER_ID)
   const counts = {
@@ -29,23 +32,19 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const wordmark = (
     <Link href="/" className="wordmark">
       <LoopMark />
-      <span>
-        Open Loops<span className="brand-dot">.</span>
-      </span>
+      <span>Open Loops</span>
     </Link>
   )
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      data-theme={theme}
+      className={`${sans.variable} ${mono.variable} h-full antialiased`}
+    >
       <body className="min-h-full">
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>
-        <header className="mobile-header">
-          {wordmark}
-          <span className="avatar" role="img" aria-label={USER_NAME}>
-            {USER_NAME[0]}
-          </span>
-        </header>
         <div className="app-shell">
           <aside className="sidebar">
             {wordmark}
@@ -58,9 +57,16 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
               </div>
             </div>
           </aside>
-          <main id="main-content" className="main-content">
-            {children}
-          </main>
+          <div className="workspace-content">
+            <header className="workspace-header">
+              <div className="mobile-wordmark">{wordmark}</div>
+              <span className="workspace-label">Personal workspace</span>
+              <ThemeToggle initialTheme={theme} />
+            </header>
+            <main id="main-content" className="main-content">
+              {children}
+            </main>
+          </div>
         </div>
         <BottomTabs counts={counts} />
       </body>

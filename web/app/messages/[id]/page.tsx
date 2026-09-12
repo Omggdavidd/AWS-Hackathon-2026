@@ -18,7 +18,7 @@ export default async function MessagePage({ params, searchParams }: PageProps<'/
   const back = backHref(loop)
 
   return (
-    <article className="space-y-6">
+    <article className="source-page space-y-6">
       <div>
         <Link href={back.href} className="text-sm text-muted hover:text-foreground">
           {back.label}

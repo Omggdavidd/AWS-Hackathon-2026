@@ -6,47 +6,48 @@ export function LoopMark() {
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" className="loop-mark">
       <path
-        d="M26.83 14.09A11 11 0 1 1 17.91 5.17"
+        d="M27 12.64A11.5 11.5 0 1 1 19.36 5"
         stroke="currentColor"
-        strokeWidth="3.5"
+        strokeWidth="3.8"
         strokeLinecap="round"
       />
-      <circle cx="23.78" cy="8.22" r="2.1" className="loop-mark-dot" />
+      <circle cx="23.78" cy="8.22" r="2.45" className="loop-mark-dot" />
     </svg>
   )
 }
 
-/**
- * The hero: the same open ring, drawn to the share of loops that have closed. When every loop is
- * resolved the ring meets the dot. Pure SVG, animated once on load with CSS, still under
- * prefers-reduced-motion.
- */
+/** Compact progress shares the open-ring geometry without competing with the greeting. */
 export function LoopRing({ closed, total }: { closed: number; total: number }) {
   const share = total === 0 ? 0 : Math.round((closed / total) * 100)
-  const caption =
-    total === 0 ? 'No loops yet' : closed === total ? 'All closed' : `${closed} of ${total} closed`
+  const caption = total === 0 ? 'No loops yet' : `${closed} of ${total} loops closed`
   return (
     <figure className="loop-ring" aria-label={caption}>
-      <svg viewBox="0 0 200 200" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 80 80" fill="none" aria-hidden="true">
         <path
-          d="M182.72 85.42A84 84 0 1 1 114.59 17.28"
+          d="M68.69 31.23A30 30 0 1 1 48.77 11.31"
           className="ring-track"
-          strokeWidth="11"
+          strokeWidth="6"
           strokeLinecap="round"
         />
         {share > 0 && (
           <path
-            d="M182.72 85.42A84 84 0 1 1 114.59 17.28"
+            d="M68.69 31.23A30 30 0 1 1 48.77 11.31"
             className="ring-progress"
             pathLength={100}
-            strokeWidth="11"
+            strokeWidth="6"
             strokeLinecap="round"
             style={{ '--ring': share } as React.CSSProperties}
           />
         )}
-        <circle cx="159.4" cy="40.6" r="7.5" className="ring-dot" />
+        <circle cx="61.21" cy="18.79" r="3.8" className="ring-dot" />
       </svg>
-      <figcaption>{caption}</figcaption>
+      <figcaption>
+        <strong>
+          {closed}
+          <span> / {total}</span>
+        </strong>
+        <span>loops closed</span>
+      </figcaption>
     </figure>
   )
 }

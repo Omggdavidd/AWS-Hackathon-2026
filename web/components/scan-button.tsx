@@ -95,6 +95,7 @@ export function ScanButton({
       <button
         type="button"
         onClick={run}
+        data-primary={!subtle}
         disabled={!configured || running}
         title={
           configured ? 'Scan the connected inbox' : 'Available when the workspace is connected'

@@ -35,8 +35,8 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
   )
 
   return (
-    <article className="space-y-8">
-      <div>
+    <article className="detail-page space-y-6">
+      <div className="detail-header">
         <Link href="/" className="text-sm text-muted hover:text-foreground">
           ← Home
         </Link>
@@ -63,7 +63,7 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
           <ul className="space-y-3">
             {evidence.map((e) => (
               <li key={e.id} className="text-sm">
-                <div className="flex items-center gap-2 text-muted">
+                <div className="evidence-meta flex items-center gap-2 text-muted">
                   <span>{formatDate(e.observedAt)}</span>
                   <span>·</span>
                   <span>
@@ -108,7 +108,7 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
               const reason = terminalReason(a, audit)
               return (
                 <li key={a.id} className="rounded-lg border border-border bg-card p-3 text-sm">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="action-heading flex items-start justify-between gap-4">
                     <div>
                       <p>{a.summary}</p>
                       <p className="text-muted">
@@ -189,7 +189,7 @@ function Source({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section>
+    <section className="detail-section">
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">{title}</h2>
       {children}
     </section>
