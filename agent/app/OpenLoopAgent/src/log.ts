@@ -27,6 +27,11 @@ export function jsonLogger(write: (chunk: string) => void = (c) => void process.
   return log
 }
 
+/** Milliseconds since `start`, for steps that are not a single awaited call. */
+export function elapsed(start: number): number {
+  return Date.now() - start
+}
+
 /** Run `fn`, then log `line` with the elapsed milliseconds. Failures are logged and rethrown. */
 export async function timed<T>(log: Logger, line: LogLine, fn: () => Promise<T>): Promise<T> {
   const started = Date.now()

@@ -10,7 +10,7 @@ import {
   type ProposedAction,
 } from '@openloop/shared'
 import type { Specialists } from './agents'
-import { type Logger, noopLogger, timed } from './log'
+import { elapsed, type Logger, noopLogger, timed } from './log'
 
 export interface ExecuteOptions {
   store: LedgerStore
@@ -63,7 +63,7 @@ export async function executeAction(
       actionId,
       loopId: action.loopId,
       reason: gate.reason,
-      ms: Date.now() - startedAt,
+      ms: elapsed(startedAt),
     })
     return { actionId, status: action.status, summary: gate.reason }
   }
@@ -84,7 +84,8 @@ export async function executeAction(
     )
     const result = await timed(
       log,
-      { evt: 'sink', actionId, effect: plan.effect, ...(threadId ? { threadId } : {}) },
+      // The effect kind only: a draft_email effect carries the recipient, subject and body.
+      { evt: 'sink', actionId, effect: plan.effect.kind, ...(threadId ? { threadId } : {}) },
       () => sink.execute(action, plan),
     )
     if (!result.success) throw new Error(result.error ?? 'sink reported failure')
@@ -124,7 +125,7 @@ export async function executeAction(
         details: { from: loop.status, to: moved.status },
       })
     }
-    log({ evt: 'action_executed', actionId, loopId: loop.id, ms: Date.now() - startedAt })
+    log({ evt: 'action_executed', actionId, loopId: loop.id, ms: elapsed(startedAt) })
     return { actionId, status: 'EXECUTED', summary: result.summary }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -135,7 +136,7 @@ export async function executeAction(
       actionId,
       loopId: loop.id,
       error: message.slice(0, 500),
-      ms: Date.now() - startedAt,
+      ms: elapsed(startedAt),
     })
     return { actionId, status: 'FAILED', summary: message }
   }

@@ -10,7 +10,7 @@ import {
   type ProposedAction,
 } from '@openloop/shared'
 import type { Specialists } from './agents'
-import { type Logger, noopLogger, timed } from './log'
+import { elapsed, type Logger, noopLogger, timed } from './log'
 
 export interface ScanOptions {
   source: IngestionSource
@@ -274,10 +274,6 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
   emit({ type: 'done', summary })
   log({ evt: 'scan_completed', ...summary, ms: elapsed(startedAt) })
   return summary
-}
-
-function elapsed(since: number): number {
-  return Date.now() - since
 }
 
 /** Delta path: record evidence for unseen messages and transition the loop if the Investigator says so. */
