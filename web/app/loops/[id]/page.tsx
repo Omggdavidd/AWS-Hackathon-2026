@@ -1,4 +1,4 @@
-import type { SourceType } from '@openloop/shared'
+import type { AuditEvent, Evidence, SourceType } from '@openloop/shared'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { approveAction, cancelAction, markDone } from '@/app/actions'
@@ -19,6 +19,14 @@ const SUPPORTS_LABEL = {
   CONTRADICTS: 'Contradicts this',
 } as const
 
+/** Reasons longer than this fold behind their first sentence; the agent's full rationale stays one click away. */
+const FOLD_AFTER = 200
+
+/**
+ * One responsibility, in the order a person checks it: what to do, what the agent found, what it
+ * did, what happened. Every claim keeps its link back to the message or event it came from
+ * (SPEC §8B, §12).
+ */
 export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
   const { id } = await params
   const store = await getStore()
@@ -30,100 +38,135 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
     store.listAudit(USER_ID, { loopId: id }),
   ])
   const now = new Date()
-  const facts = [formatMoney(loop.amount), formatDue(loop.dueAt, now), loop.requestedBy].filter(
-    Boolean,
-  )
+  const resolved = loop.status === 'RESOLVED'
+  const owesMove = loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
+  // Overdue language only where the user owes the move, as on the overview rows.
+  const due = resolved
+    ? undefined
+    : owesMove
+      ? formatDue(loop.dueAt, now)
+      : loop.dueAt
+        ? formatDate(loop.dueAt, now)
+        : undefined
+  const soon =
+    owesMove &&
+    due !== undefined &&
+    (due === 'Due today' || due === 'Due tomorrow' || due.startsWith('Overdue'))
+  const facts: { label: string; value: string; soon?: boolean }[] = [
+    ...(due ? [{ label: 'When', value: due, soon }] : []),
+    ...(loop.amount ? [{ label: 'Amount', value: formatMoney(loop.amount) ?? '' }] : []),
+    ...(loop.status === 'WAITING' && loop.waitingOn
+      ? [{ label: 'Waiting on', value: loop.waitingOn }]
+      : loop.requestedBy
+        ? [{ label: 'From', value: loop.requestedBy }]
+        : []),
+    {
+      label: 'Confidence',
+      value: `${formatPercent(loop.confidence)} ${resolved ? 'done' : 'still open'}`,
+    },
+  ]
+  const proposed = actions.filter((a) => a.status === 'PROPOSED')
 
   return (
-    <article className="detail-page space-y-6">
-      <div className="detail-header">
-        <Link href="/" className="text-sm text-muted hover:text-foreground">
-          ← Home
-        </Link>
-        <div className="mt-3 flex items-start justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight">{loop.title}</h1>
-          <StatusChip status={loop.status} />
-        </div>
-        {facts.length > 0 && <p className="mt-1 text-muted">{facts.join(' · ')}</p>}
-      </div>
-
-      <Section title="Why this exists">
-        {loop.sourceRefs.map((ref) => (
-          <p key={ref.sourceId} className="text-sm">
-            {SOURCE_LABEL[ref.sourceType]}{' '}
-            <Source loopId={loop.id} sourceType={ref.sourceType} sourceId={ref.sourceId} />
-          </p>
-        ))}
-      </Section>
-
-      <Section title="What I found">
-        {evidence.length === 0 ? (
-          <p className="text-sm text-muted">No evidence recorded.</p>
-        ) : (
-          <ul className="space-y-3">
-            {evidence.map((e) => (
-              <li key={e.id} className="text-sm">
-                <div className="evidence-meta flex items-center gap-2 text-muted">
-                  <span>{formatDate(e.observedAt)}</span>
-                  <span>·</span>
-                  <span>
-                    {e.sourceType === 'agent' ? 'Agent action' : SUPPORTS_LABEL[e.supports]}
-                  </span>
-                  <span>·</span>
-                  <span>{formatPercent(e.confidence)}</span>
-                  <span>·</span>
-                  <Source loopId={loop.id} sourceType={e.sourceType} sourceId={e.sourceId} />
-                </div>
-                <blockquote className="mt-1 border-l-2 border-border pl-3">{e.excerpt}</blockquote>
-              </li>
-            ))}
-          </ul>
-        )}
-        <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-          <dt className="text-muted">Confidence</dt>
-          <dd>
-            {formatPercent(loop.confidence)}{' '}
-            {loop.status === 'RESOLVED' ? 'this is done' : 'this is still outstanding'}
-          </dd>
-          {loop.consequence && (
-            <>
-              <dt className="text-muted">If ignored</dt>
-              <dd>{loop.consequence}</dd>
-            </>
-          )}
-          {loop.nextAction && (
-            <>
-              <dt className="text-muted">Next</dt>
-              <dd>{loop.nextAction}</dd>
-            </>
-          )}
+    <article className="loop-page">
+      <p className="loop-back">
+        <Link href="/">← Overview</Link>
+      </p>
+      <header className="loop-header">
+        <StatusChip status={loop.status} />
+        <h1>{loop.title}</h1>
+        <dl className="loop-facts">
+          {facts.map((fact) => (
+            <div key={fact.label} data-soon={fact.soon || undefined}>
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))}
         </dl>
-      </Section>
+      </header>
+
+      <section className="loop-section loop-next" aria-labelledby="next-heading">
+        <h2 id="next-heading">{resolved ? 'Closed' : 'What to do'}</h2>
+        {resolved ? (
+          <p className="next-action">
+            {loop.resolvedAt
+              ? `Closed ${formatDate(loop.resolvedAt, now)}. Nothing left to do.`
+              : 'Nothing left to do.'}
+          </p>
+        ) : (
+          <>
+            <p className="next-action">{loop.nextAction ?? 'No next step recorded yet.'}</p>
+            {loop.consequence && (
+              <p className="consequence">
+                <span className="consequence-label">If ignored</span>
+                {loop.consequence}
+              </p>
+            )}
+            {proposed.length > 0 && (
+              <p className="pending-note">
+                {proposed.length === 1
+                  ? 'The agent has one action waiting for you below.'
+                  : `The agent has ${proposed.length} actions waiting for you below.`}
+              </p>
+            )}
+            <div className="loop-buttons">
+              <form action={markDone.bind(null, loop.id)}>
+                <SubmitButton pendingLabel="Saving…">I already did this</SubmitButton>
+              </form>
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="loop-section" aria-labelledby="found-heading">
+        <h2 id="found-heading">What I found</h2>
+        {evidence.length === 0 ? (
+          <p className="loop-empty">No evidence recorded.</p>
+        ) : (
+          <ol className="evidence-list">
+            {evidence.map((item) => (
+              <EvidenceItem key={item.id} item={item} loopId={loop.id} now={now} />
+            ))}
+          </ol>
+        )}
+        <p className="source-list">
+          <span>Source{loop.sourceRefs.length === 1 ? '' : 's'}</span>
+          {loop.sourceRefs.map((ref) => (
+            <Source
+              key={ref.sourceId}
+              loopId={loop.id}
+              sourceType={ref.sourceType}
+              sourceId={ref.sourceId}
+            />
+          ))}
+        </p>
+      </section>
 
       {actions.length > 0 && (
-        <Section title="Actions">
-          <ul className="space-y-3">
-            {actions.map((a) => {
-              const effect = parseEffect(a)
-              const reason = terminalReason(a, audit)
+        <section className="loop-section" aria-labelledby="actions-heading">
+          <h2 id="actions-heading">What the agent did</h2>
+          <ul className="action-list">
+            {actions.map((action) => {
+              const effect = parseEffect(action)
+              const reason = terminalReason(action, audit)
+              const pending = action.status === 'PROPOSED'
               return (
-                <li key={a.id} className="rounded-lg border border-border bg-card p-3 text-sm">
-                  <div className="action-heading flex items-start justify-between gap-4">
+                <li key={action.id} className="action-item" data-status={action.status}>
+                  <div className="action-head">
                     <div>
-                      <p>{a.summary}</p>
-                      <p className="text-muted">
-                        {STATUS_TEXT[a.status]} · {a.riskTier} risk
-                        {a.requiresApproval && a.status === 'PROPOSED'
-                          ? ' · needs your approval'
-                          : ''}
+                      <p className="action-summary">{action.summary}</p>
+                      <p className="action-state">
+                        <span data-status={action.status}>{STATUS_TEXT[action.status]}</span>
+                        <span>{action.riskTier} risk</span>
+                        {pending && action.requiresApproval && <span>needs your approval</span>}
                       </p>
                     </div>
-                    {a.status === 'PROPOSED' && (
-                      <div className="flex shrink-0 gap-2">
-                        <form action={approveAction.bind(null, a.id)}>
+                    {pending && (
+                      <div className="action-buttons">
+                        <form action={approveAction.bind(null, action.id)}>
                           <SubmitButton pendingLabel="Approving…">Approve</SubmitButton>
                         </form>
-                        <form action={cancelAction.bind(null, a.id)}>
+                        <form action={cancelAction.bind(null, action.id)}>
                           <SubmitButton pendingLabel="Declining…" subtle>
                             Decline
                           </SubmitButton>
@@ -132,40 +175,85 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
                     )}
                   </div>
                   {effect && <ActionEffect effect={effect} />}
-                  {reason && <p className="mt-1 text-muted">{reason}</p>}
+                  {reason && <p className="action-reason">{reason}</p>}
                 </li>
               )
             })}
           </ul>
-        </Section>
+        </section>
       )}
 
-      {loop.status !== 'RESOLVED' && (
-        <form action={markDone.bind(null, loop.id)}>
-          <SubmitButton pendingLabel="Saving…">I already did this</SubmitButton>
-        </form>
-      )}
-
-      <Section title="Timeline">
-        <ol className="space-y-2 text-sm">
-          {[...audit].reverse().map((e) => (
-            <li key={e.id} className="grid grid-cols-[4rem_1fr] gap-3">
-              <span className="text-muted">{formatDate(e.at)}</span>
-              <span>
-                {e.reason}
-                <span className="text-muted"> · {e.actor}</span>
-              </span>
-            </li>
+      <section className="loop-section" aria-labelledby="history-heading">
+        <h2 id="history-heading">History</h2>
+        <ol className="history-list">
+          {[...audit].reverse().map((event) => (
+            <HistoryItem key={event.id} event={event} now={now} />
           ))}
         </ol>
-      </Section>
+      </section>
     </article>
   )
 }
 
+function EvidenceItem({ item, loopId, now }: { item: Evidence; loopId: string; now: Date }) {
+  const kind = item.sourceType === 'agent' ? 'Agent action' : SUPPORTS_LABEL[item.supports]
+  return (
+    <li
+      className="evidence-item"
+      data-supports={item.sourceType === 'agent' ? 'AGENT' : item.supports}
+    >
+      <blockquote>{item.excerpt}</blockquote>
+      <p className="evidence-meta">
+        <span className="evidence-kind">{kind}</span>
+        <time dateTime={item.observedAt}>{formatDate(item.observedAt, now)}</time>
+        <Source loopId={loopId} sourceType={item.sourceType} sourceId={item.sourceId} />
+        <span>{formatPercent(item.confidence)} sure</span>
+      </p>
+    </li>
+  )
+}
+
+function HistoryItem({ event, now }: { event: AuditEvent; now: Date }) {
+  const long = event.reason.length > FOLD_AFTER
+  const lead = long ? firstSentence(event.reason) : event.reason
+  return (
+    <li className="history-item">
+      <time dateTime={event.at}>{formatDate(event.at, now)}</time>
+      <div>
+        {long ? (
+          <details className="history-fold">
+            <summary>
+              {lead} <span className="fold-more">more</span>
+            </summary>
+            <p>{event.reason}</p>
+          </details>
+        ) : (
+          <p>{lead}</p>
+        )}
+        <span className="history-actor">{ACTOR_LABEL[event.actor]}</span>
+      </div>
+    </li>
+  )
+}
+
+const ACTOR_LABEL: Record<AuditEvent['actor'], string> = {
+  agent: 'agent',
+  user: 'you',
+  system: 'system',
+}
+
+/** The first sentence, or the first 200 characters at a word boundary when the sentence runs long. */
+function firstSentence(text: string): string {
+  const match = text.match(/^.{20,}?[.!?](?=\s|$)/)
+  const lead = match?.[0] ?? text
+  if (lead.length <= FOLD_AFTER) return lead
+  const cut = lead.slice(0, FOLD_AFTER)
+  return `${cut.slice(0, cut.lastIndexOf(' ') > 0 ? cut.lastIndexOf(' ') : FOLD_AFTER)}…`
+}
+
 /**
- * Every claim points at the message or event it came from (SPEC §12). Evidence the agent wrote
- * during execution has no page behind it, so its id stays plain text rather than a dead link.
+ * A link to the message or event a claim came from. Evidence the agent wrote during execution has
+ * no page behind it and no useful id to show, so it names the source type and stops there.
  */
 function Source({
   loopId,
@@ -176,22 +264,10 @@ function Source({
   sourceType: SourceType
   sourceId: string
 }) {
-  if (!hasSourcePage(sourceType)) return <span className="font-mono">{sourceId}</span>
+  if (!hasSourcePage(sourceType)) return null
   return (
-    <Link
-      href={messageHref(sourceId, loopId)}
-      className="font-mono underline decoration-border underline-offset-2 hover:text-foreground"
-    >
-      {sourceId}
+    <Link href={messageHref(sourceId, loopId)} className="source-link">
+      {SOURCE_LABEL[sourceType]} <code>{sourceId}</code>
     </Link>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="detail-section">
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">{title}</h2>
-      {children}
-    </section>
   )
 }
