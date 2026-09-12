@@ -75,6 +75,15 @@ export function formatDateTime(iso: string): string {
   })
 }
 
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 export function formatPercent(confidence: number): string {
   return `${Math.round(confidence * 100)}%`
 }

@@ -2,7 +2,10 @@ import type { SourceType } from '@openloop/shared'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { approveAction, cancelAction, markDone } from '@/app/actions'
+import { ActionEffect } from '@/components/action-effect'
 import { StatusChip } from '@/components/status-chip'
+import { SubmitButton } from '@/components/submit-button'
+import { parseEffect, STATUS_TEXT, terminalReason } from '@/lib/effects'
 import { formatDate, formatDue, formatMoney, formatPercent } from '@/lib/format'
 import { getStore, USER_ID } from '@/lib/ledger'
 import { hasSourcePage, messageHref, SOURCE_LABEL } from '@/lib/source'
@@ -63,7 +66,9 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
                 <div className="flex items-center gap-2 text-muted">
                   <span>{formatDate(e.observedAt)}</span>
                   <span>·</span>
-                  <span>{SUPPORTS_LABEL[e.supports]}</span>
+                  <span>
+                    {e.sourceType === 'agent' ? 'Agent action' : SUPPORTS_LABEL[e.supports]}
+                  </span>
                   <span>·</span>
                   <span>{formatPercent(e.confidence)}</span>
                   <span>·</span>
@@ -96,39 +101,48 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
       </Section>
 
       {actions.length > 0 && (
-        <Section title="Proposed actions">
+        <Section title="Actions">
           <ul className="space-y-3">
-            {actions.map((a) => (
-              <li
-                key={a.id}
-                className="flex items-start justify-between gap-4 rounded-lg border border-border bg-card p-3 text-sm"
-              >
-                <div>
-                  <p>{a.summary}</p>
-                  <p className="text-muted">
-                    {a.riskTier} risk · {a.status.toLowerCase()}
-                    {a.requiresApproval && a.status === 'PROPOSED' ? ' · needs your approval' : ''}
-                  </p>
-                </div>
-                {a.status === 'PROPOSED' && (
-                  <div className="flex shrink-0 gap-2">
-                    <form action={approveAction.bind(null, a.id)}>
-                      <Button>Approve</Button>
-                    </form>
-                    <form action={cancelAction.bind(null, a.id)}>
-                      <Button subtle>Decline</Button>
-                    </form>
+            {actions.map((a) => {
+              const effect = parseEffect(a)
+              const reason = terminalReason(a, audit)
+              return (
+                <li key={a.id} className="rounded-lg border border-border bg-card p-3 text-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p>{a.summary}</p>
+                      <p className="text-muted">
+                        {STATUS_TEXT[a.status]} · {a.riskTier} risk
+                        {a.requiresApproval && a.status === 'PROPOSED'
+                          ? ' · needs your approval'
+                          : ''}
+                      </p>
+                    </div>
+                    {a.status === 'PROPOSED' && (
+                      <div className="flex shrink-0 gap-2">
+                        <form action={approveAction.bind(null, a.id)}>
+                          <SubmitButton pendingLabel="Approving…">Approve</SubmitButton>
+                        </form>
+                        <form action={cancelAction.bind(null, a.id)}>
+                          <SubmitButton pendingLabel="Declining…" subtle>
+                            Decline
+                          </SubmitButton>
+                        </form>
+                      </div>
+                    )}
                   </div>
-                )}
-              </li>
-            ))}
+                  {effect && <ActionEffect effect={effect} />}
+                  {reason && <p className="mt-1 text-muted">{reason}</p>}
+                </li>
+              )
+            })}
           </ul>
         </Section>
       )}
 
       {loop.status !== 'RESOLVED' && (
         <form action={markDone.bind(null, loop.id)}>
-          <Button>I already did this</Button>
+          <SubmitButton pendingLabel="Saving…">I already did this</SubmitButton>
         </form>
       )}
 
@@ -179,19 +193,5 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">{title}</h2>
       {children}
     </section>
-  )
-}
-
-function Button({ children, subtle = false }: { children: React.ReactNode; subtle?: boolean }) {
-  const style = subtle
-    ? 'border border-border bg-card hover:bg-background'
-    : 'bg-foreground text-background hover:opacity-90'
-  return (
-    <button
-      type="submit"
-      className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${style}`}
-    >
-      {children}
-    </button>
   )
 }
