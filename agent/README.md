@@ -48,6 +48,19 @@ Commands: `scan` (default), `handle` (execute every proposed action the policy a
 
 Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted. `OPENLOOP_MODEL_ID` overrides the model.
 
+## Structured logs
+
+`runScan` and `executeAction` take an optional `logger`. It defaults to silence, so the orchestrator
+stays side-effect free under test; `main.ts` wires `jsonLogger()` so the deployed runtime writes one
+JSON line per pipeline step to stdout for CloudWatch. Locally:
+
+```
+pnpm --filter @openloop/agent scan -- --reset --log-json 2>pipeline.jsonl
+```
+
+Lines go to stderr so they never interleave with the human-readable progress. Line shapes, the
+Logs Insights queries and what to screenshot are in `docs/architecture/observability/`.
+
 ## Known calibration
 
 Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and states, except the rescheduled club meeting, which the Investigator sometimes marks Needs You rather than Watching (once in four observed runs on the 12-thread inbox, and previously about half the time on the 10-thread one). Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.

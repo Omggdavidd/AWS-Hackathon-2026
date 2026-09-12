@@ -9,6 +9,7 @@ import { loop } from '@openloop/shared/testing'
 import { describe, expect, it } from 'vitest'
 import { executeAction, handleWhatYouCan } from '../src/actions'
 import type { Specialists } from '../src/agents'
+import type { LogLine } from '../src/log'
 
 const seed = fileURLToPath(new URL('../../../../demo/seed-inbox.json', import.meta.url))
 const now = '2026-09-10T13:00:00.000Z'
@@ -109,6 +110,31 @@ describe('executeAction', () => {
     )
     expect((await executeAction(opts, 'pay')).status).toBe('EXECUTED')
     expect((await executeAction(opts, 'pay')).summary).toBe('already executed')
+  })
+
+  it('logs the action as a pipeline: the plan role, the sink and the outcome', async () => {
+    const opts = await setup()
+    const lines: LogLine[] = []
+    await opts.store.putAction(action({ id: 'draft' }))
+    await executeAction({ ...opts, logger: (l) => lines.push(l) }, 'draft')
+
+    expect(lines.map((l) => l.evt)).toEqual(['action_started', 'role', 'sink', 'action_executed'])
+    expect(lines[1]).toMatchObject({ role: 'plan', actionId: 'draft', threadId: 'thr-insurance' })
+    expect(lines[2]).toMatchObject({ evt: 'sink', effect: { kind: 'draft_email' } })
+    expect(lines.slice(1).every((l) => typeof l.ms === 'number')).toBe(true)
+  })
+
+  it('logs a blocked high-risk action with the reason and never reaches the sink', async () => {
+    const opts = await setup()
+    const lines: LogLine[] = []
+    await opts.store.putAction(
+      action({ id: 'pay', type: 'pay', riskTier: 'high', requiresApproval: true }),
+    )
+    await executeAction({ ...opts, logger: (l) => lines.push(l) }, 'pay')
+
+    expect(lines.map((l) => l.evt)).toEqual(['action_started', 'action_blocked'])
+    expect(lines[1]).toMatchObject({ actionId: 'pay', reason: 'requires your approval' })
+    expect(opts.sink.log).toHaveLength(0)
   })
 
   it('moves the loop when the plan says who owes the next move', async () => {

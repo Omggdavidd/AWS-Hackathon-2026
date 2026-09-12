@@ -14,6 +14,7 @@ import seedInboxDelta from '../../../demo/seed-inbox-delta.json' with { type: 'j
 import { executeAction, handleWhatYouCan } from './src/actions'
 import { createSpecialists } from './src/agents'
 import { catchUp } from './src/catch-up'
+import { jsonLogger } from './src/log'
 import { loadModel } from './src/model'
 import { runScan } from './src/scan'
 
@@ -66,6 +67,8 @@ const app = new BedrockAgentCoreApp({
           : await LocalLedgerStore.fromFile(payload.ledger.path)
       const model = loadModel()
       const specialists = createSpecialists({ model, source, store, userId: payload.userId })
+      // Structured pipeline lines go to stdout, which the Runtime ships to CloudWatch (#30).
+      const logger = jsonLogger()
       if (payload.command === 'catch_up') {
         const summary = await catchUp({
           store,
@@ -84,6 +87,7 @@ const app = new BedrockAgentCoreApp({
           sink: new FixtureActionSink(),
           userId: payload.userId,
           specialists,
+          logger,
           ...(payload.now ? { now: payload.now } : {}),
         }
         if (payload.command === 'execute') {
@@ -105,6 +109,7 @@ const app = new BedrockAgentCoreApp({
         store,
         userId: payload.userId,
         specialists,
+        logger,
         ...(payload.now ? { now: payload.now } : {}),
         onEvent: (e) => events.push(JSON.stringify(e)),
       })

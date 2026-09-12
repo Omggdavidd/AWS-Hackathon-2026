@@ -10,6 +10,7 @@ import {
   type ProposedAction,
 } from '@openloop/shared'
 import type { Specialists } from './agents'
+import { type Logger, noopLogger, timed } from './log'
 
 export interface ExecuteOptions {
   store: LedgerStore
@@ -18,6 +19,8 @@ export interface ExecuteOptions {
   userId: string
   specialists: Specialists
   now?: string
+  /** Structured pipeline logging (#30). Defaults to silence. */
+  logger?: Logger
 }
 
 export interface ExecuteOutcome {
@@ -36,24 +39,54 @@ export async function executeAction(
 ): Promise<ExecuteOutcome> {
   const { store, source, sink, userId, specialists } = opts
   const now = opts.now ?? new Date().toISOString()
+  const log = opts.logger ?? noopLogger
+  const startedAt = Date.now()
   const action = await store.getAction(userId, actionId)
-  if (!action) return { actionId, status: 'FAILED', summary: 'unknown action' }
+  if (!action) {
+    log({ evt: 'action_failed', actionId, reason: 'unknown action' })
+    return { actionId, status: 'FAILED', summary: 'unknown action' }
+  }
+  log({
+    evt: 'action_started',
+    actionId,
+    loopId: action.loopId,
+    type: action.type,
+    riskTier: action.riskTier,
+  })
   const gate = mayExecute(action)
   if (!gate.ok) {
     await store.appendAudit(
       audit(userId, action, 'action_failed', `Not executed: ${gate.reason}`, now),
     )
+    log({
+      evt: 'action_blocked',
+      actionId,
+      loopId: action.loopId,
+      reason: gate.reason,
+      ms: Date.now() - startedAt,
+    })
     return { actionId, status: action.status, summary: gate.reason }
   }
   const loop = await store.getLoop(userId, action.loopId)
-  if (!loop) return { actionId, status: 'FAILED', summary: 'loop not found' }
+  if (!loop) {
+    log({ evt: 'action_failed', actionId, loopId: action.loopId, reason: 'loop not found' })
+    return { actionId, status: 'FAILED', summary: 'loop not found' }
+  }
   const evidence = await store.listEvidence(loop.id)
   const threadId = loop.sourceRefs.find((r) => r.threadId)?.threadId
   const thread = threadId ? await source.getThread(threadId) : []
 
   try {
-    const plan = await specialists.plan({ loop, evidence, action, thread, now })
-    const result = await sink.execute(action, plan)
+    const plan = await timed(
+      log,
+      { evt: 'role', role: 'plan', actionId, ...(threadId ? { threadId } : {}) },
+      () => specialists.plan({ loop, evidence, action, thread, now }),
+    )
+    const result = await timed(
+      log,
+      { evt: 'sink', actionId, effect: plan.effect, ...(threadId ? { threadId } : {}) },
+      () => sink.execute(action, plan),
+    )
     if (!result.success) throw new Error(result.error ?? 'sink reported failure')
     const evidenceId = randomUUID()
     if (result.resultSourceRef) {
@@ -91,11 +124,19 @@ export async function executeAction(
         details: { from: loop.status, to: moved.status },
       })
     }
+    log({ evt: 'action_executed', actionId, loopId: loop.id, ms: Date.now() - startedAt })
     return { actionId, status: 'EXECUTED', summary: result.summary }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     await store.putAction({ ...action, status: 'FAILED', error: message.slice(0, 500) })
     await store.appendAudit(audit(userId, action, 'action_failed', message.slice(0, 500), now))
+    log({
+      evt: 'action_failed',
+      actionId,
+      loopId: loop.id,
+      error: message.slice(0, 500),
+      ms: Date.now() - startedAt,
+    })
     return { actionId, status: 'FAILED', summary: message }
   }
 }
