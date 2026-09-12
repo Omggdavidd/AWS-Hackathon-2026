@@ -25,6 +25,7 @@ pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm --filter @openloop/agent dev               # runtime server on :8080 (same as agentcore dev, without the inspector)
 agentcore dev                                   # interactive local runtime with inspector (needs a real terminal)
 pnpm --filter @openloop/agent deploy-runtime            # prepare-deploy + agentcore deploy -y --json (~1-2 min)
+# needs the CLI once: npm install -g @aws/agentcore@0.28.1  (the version agent/agentcore was generated with)
 agentcore deploy --dry-run -y --json            # synth only; check agentcore/cdk/cdk.out/asset.*.zip has _deps/
 agentcore status --json                         # runtime ARN and state
 agentcore logs                                  # CloudWatch logs

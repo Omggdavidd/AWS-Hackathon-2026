@@ -27,7 +27,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 |---|---|
 | Omggdavidd (hard + front end) | #19 Vercel deploy |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration |
-| tdare514 (medium) | #30 observability evidence |
+| tdare514 (medium) | nothing open; #30 shipped |
 | ab00bae (medium-easy) | #36 remind/ignore buttons, #39 notification banner |
 | AyomideAw (easiest) | #38 CI builds web, #22 demo script |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
@@ -38,7 +38,7 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 
 - 2026-09-10 Phase 0 foundation (f1156d9); Phase 1 merged (#1); workspace scaffold and shared package merged (#2); `main` ruleset enabled; MIT license added.
 - 2026-09-11 Web dashboard shell (#4), agent pipeline (#8), AgentCore deploy (#9), DynamoDB and Scan button (#10), delta path (#11), actions and approval (#12).
-- 2026-09-12 Loop page shows executed effects (#17); message page behind evidence links (#35, tdare514); Catch me up command and button (#13); dashboard design and responsive navigation (#18); dashboard at a glance: readable rows, one summary line, refined open-ring identity, compact progress, white default with persistent themes and consistent detail/source panels (#52); reading themes: highlighter headings, Inter, navy dark mode with reveal toggle (#61); loop page in reading order and a live clock (#67); submission README, architecture diagram and the missing `web/.env.example` (#33, ab00bae).
+- 2026-09-12 Loop page shows executed effects (#17); message page behind evidence links (#35, tdare514); Catch me up command and button (#13); dashboard design and responsive navigation (#18); dashboard at a glance: readable rows, one summary line, refined open-ring identity, compact progress, white default with persistent themes and consistent detail/source panels (#52); reading themes: highlighter headings, Inter, navy dark mode with reveal toggle (#61); loop page in reading order and a live clock (#67); observability evidence: structured pipeline logs in the runtime and CloudWatch captures of one scan (#30, tdare514 with Omggdavidd); submission README, architecture diagram and the missing `web/.env.example` (#33, ab00bae).
 
 ## Blocked
 
@@ -46,11 +46,10 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 
 ## Next up
 
-Must-ship in the order the demo needs them: #29, #14, #19, #22, #30. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
+Must-ship in the order the demo needs them: #29, #14, #19, #22. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
 
 ## Known issues
 
-- #30 observability: the agent emits the structured pipeline lines, but the CloudWatch captures still need a scan against the deployed runtime, so the runtime must be redeployed before they can be taken.
 - AgentCore CLI 0.28.1: `agentcore package` is broken upstream (aws/agentcore-cli#2125) and a bare `agentcore deploy` ships a runtime that crashes on start under pnpm; use `pnpm --filter @openloop/agent deploy-runtime` (`agent/README.md`).
 - Investigator sometimes marks the rescheduled club meeting Needs You instead of Watching (one of two runs). Prompt calibration, not blocking.
 - A full scan takes four to five and a half minutes for 12 threads (237s to 323s across four runs). Acceptable for the backfill animation, but the demo should pre-scan or use a warm ledger.

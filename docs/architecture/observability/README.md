@@ -61,13 +61,35 @@ Locally, the same lines without AWS:
 pnpm --filter @openloop/agent scan -- --reset --log-json 2>pipeline.jsonl
 ```
 
-## Screenshots
+## Captures
 
-Drop them here and reference them from `docs/architecture.md` §6 and the demo script:
+Taken 2026-09-12 from one scan of the 12-thread demo inbox against the deployed runtime
+(session `obs-evidence-20260912181241…`, ephemeral ledger, so the shared table was untouched).
 
-- `logs-insights-pipeline.png` — the per-thread/per-role lines of one scan
-- `runtime-metrics.png` — the AgentCore runtime metrics dashboard
-- `role-durations.png` — the per-role duration table (optional, from the second query)
+- [`logs-insights-pipeline.png`](logs-insights-pipeline.png): the first query, one line per thread,
+  role and outcome, in order.
+- [`role-durations.png`](role-durations.png): the second query, calls and average and maximum
+  milliseconds per specialist role.
+- [`runtime-metrics.png`](runtime-metrics.png): the runtime's CloudWatch metrics for the last 24
+  hours (invocations, sessions, latency, errors, throttles) from the `AWS/Bedrock-AgentCore`
+  namespace.
+- [`pipeline-2026-09-12.jsonl`](pipeline-2026-09-12.jsonl): the raw structured lines of that scan
+  as CloudWatch stored them, so the tables above can be checked against the source.
 
-If `agentcore traces` yields anything for the TypeScript runtime, add `trace.png` too; if it does
-not, say so in the PR rather than leaving a gap.
+The tables are rendered from `aws logs get-query-results` and `aws cloudwatch
+get-metric-statistics` output rather than photographed from the console, so anyone with the
+`openloop-*` IAM user can reproduce them without a console login:
+
+```
+LG=/aws/bedrock-agentcore/runtimes/OpenLoop_OpenLoopAgent-CA60RSCE0z-DEFAULT
+aws logs start-query --region us-east-1 --log-group-name $LG --start-time <epoch> --end-time <epoch> \
+  --query-string "fields @timestamp, evt, threadId, role, ms, status | filter ispresent(evt) | sort @timestamp asc | limit 200"
+aws logs get-query-results --region us-east-1 --query-id <id>
+aws cloudwatch get-metric-statistics --region us-east-1 --namespace AWS/Bedrock-AgentCore --metric-name Invocations \
+  --dimensions Name=Resource,Value=<runtime arn> Name=Operation,Value=InvokeAgentRuntime Name=Name,Value=OpenLoop_OpenLoopAgent::DEFAULT \
+  --start-time <iso> --end-time <iso> --period 86400 --statistics Sum Average Maximum
+```
+
+**No trace.** `agentcore traces list` answers `Traces are only supported for Python agents.
+TypeScript agents do not support observability traces.` (CLI 0.28.1), which is the ADR-0008
+limitation stated plainly by the tool. The structured log is the trace.

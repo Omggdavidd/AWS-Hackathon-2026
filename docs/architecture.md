@@ -49,7 +49,7 @@ Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `Ledger
 ## 6. Cross-cutting
 
 - Auth: single-user or a handful of test users in the hackathon; the web app's session is the user identity, passed to the runtime as `userId`.
-- Observability: CloudWatch logs and metrics from AgentCore; the application's audit feed is the user-facing trace; Strands OpenTelemetry locally. `runScan` and `executeAction` emit one structured JSON line per pipeline step (thread, role, duration, outcome) to stdout, which is what CloudWatch ingests; the line shapes and how to capture them are in `docs/architecture/observability/`.
+- Observability: CloudWatch logs and metrics from AgentCore; the application's audit feed is the user-facing trace; Strands OpenTelemetry locally. `runScan` and `executeAction` emit one structured JSON line per pipeline step (thread, role, duration, outcome) to stdout, which is what CloudWatch ingests; the line shapes, the captures of one scan (pipeline, per-role durations, runtime metrics) and how to reproduce them are in `docs/architecture/observability/`. AgentCore traces are Python-only; the structured log is the trace.
 - Errors: tool failures become audit events, never silent; ambiguous extractions land in `UNCERTAIN` rather than in a wrong state.
 - Cost: classify with the cheapest capable model first; bounded backfill window; deltas only after onboarding.
 
