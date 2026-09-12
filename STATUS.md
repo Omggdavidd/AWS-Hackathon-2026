@@ -17,7 +17,7 @@ Runnable locally: `pnpm --filter @openloop/web dev` renders the seeded ledger, a
 - `demo/seed-inbox.json` (15 messages, 3 events, 12 threads) and `demo/seed-ledger.json` (the 11 loops the agent should produce), both validated by tests.
 - `web/`: dashboard with a linked summary, readable title/source rows and aligned deadlines, compact closed-share ring, agent toolbar with first-scan progress, recent activity per responsibility and phone bottom tabs. White by default with a navy dark theme behind a persistent reveal toggle, highlighter strokes on the state headings, Inter for reading, and Resolved open on first load. Loop page in reading order: facts strip, what to do (next action, consequence, done button), evidence as quotes with source links, actions with the effects the agent produced, history with long reasoning folded; a live clock sits in the overview hero; approve/decline with pending state, "I already did this", activity feed, and a message page behind every source id let each claim be checked against the original mail or event. Runs on the local ledger seeded from the demo.
 - `packages/ledger-dynamo`: DynamoDB ledger passing the shared contract suite against a real table; tables `openloop-ledger` and `openloop-ledger-test` exist in `us-east-1`.
-- `agent/`: AgentCore project with the Strands pipeline (Extractor, Investigator with inbox and ledger tools, Risk Judge, update path for new mail in tracked threads, Action Agent; all structured output on Claude Sonnet 4.6). `handle` executes allowed actions through a simulated sink; `execute` runs one approved action; high risk never executes without approval (enforced in code, tested); `catch_up` summarizes state changes since the last check from the ledger alone. A real scan of the 12-thread demo inbox produces 11 loops with the expected states in four to five and a half minutes, writing evidence, proposed actions (high-risk ones gated) and audit events through the shared ledger. Deployed to AgentCore Runtime (`AgentCore-OpenLoop-default`, `us-east-1`) writing to DynamoDB; invoked end to end from the AWS CLI and from the web app's Scan button.
+- `agent/`: AgentCore project with the Strands pipeline (Extractor, Investigator with inbox and ledger tools, Risk Judge, update path for new mail in tracked threads, Action Agent; all structured output on Claude Sonnet 4.6). `handle` executes allowed actions through a simulated sink; `execute` runs one approved action; high risk never executes without approval (enforced in code, tested); `catch_up` summarizes state changes since the last check from the ledger alone. A real scan of the 12-thread demo inbox produces 11 loops with the expected states in four to five and a half minutes, writing evidence, proposed actions (high-risk ones gated) and audit events through the shared ledger. `runScan` and `executeAction` emit a structured JSON line per pipeline step (thread, role, duration, outcome) to stdout for CloudWatch; shapes and capture queries in `docs/architecture/observability/`. Deployed to AgentCore Runtime (`AgentCore-OpenLoop-default`, `us-east-1`) writing to DynamoDB; invoked end to end from the AWS CLI and from the web app's Scan button.
 
 ## In progress
 
@@ -27,7 +27,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 |---|---|
 | Omggdavidd (hard + front end) | #19 Vercel deploy |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration |
-| tdare514 (medium) | #30 observability evidence, #37 done cancels actions (from AyomideAw, agreed with Omggdavidd) |
+| tdare514 (medium) | #30 observability evidence |
 | ab00bae (medium-easy) | #36 remind/ignore buttons, #39 notification banner |
 | AyomideAw (easiest) | #38 CI builds web, #22 demo script |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
@@ -50,6 +50,7 @@ Must-ship in the order the demo needs them: #29, #14, #19, #22, #30. Then qualit
 
 ## Known issues
 
+- #30 observability: the agent emits the structured pipeline lines, but the CloudWatch captures still need a scan against the deployed runtime, so the runtime must be redeployed before they can be taken.
 - AgentCore CLI 0.28.1: `agentcore package` is broken upstream (aws/agentcore-cli#2125) and a bare `agentcore deploy` ships a runtime that crashes on start under pnpm; use `pnpm --filter @openloop/agent deploy-runtime` (`agent/README.md`).
 - Investigator sometimes marks the rescheduled club meeting Needs You instead of Watching (one of two runs). Prompt calibration, not blocking.
 - A full scan takes four to five and a half minutes for 12 threads (237s to 323s across four runs). Acceptable for the backfill animation, but the demo should pre-scan or use a warm ledger.
