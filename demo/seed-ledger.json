@@ -465,7 +465,7 @@
       "sourceId": "msg-019",
       "threadId": "thr-passport",
       "observedAt": "2026-09-02T13:15:00.000Z",
-      "excerpt": "It must be renewed before June 12, 2027. Renewal applications open on March 12, 2027; applications submitted before that date cannot be accepted.",
+      "excerpt": "Renewal applications for this passport open on March 12, 2027, three months before expiry. Applications submitted before that date cannot be accepted.",
       "supports": "OPEN",
       "confidence": 0.92
     }
@@ -559,11 +559,15 @@
       "requiresApproval": false,
       "summary": "Remind you on the evening of Sep 15, the night before the form is due",
       "payload": {
-        "remindAt": "2026-09-15T22:00:00.000Z",
-        "channel": "dashboard"
+        "effect": {
+          "kind": "reminder",
+          "at": "2026-09-15T22:00:00.000Z",
+          "note": "Sign page 2 of the participation form and email it back to Prof. Whitfield tomorrow."
+        }
       },
-      "status": "PROPOSED",
-      "createdAt": "2026-09-10T13:00:06.000Z"
+      "status": "EXECUTED",
+      "createdAt": "2026-09-10T13:00:06.000Z",
+      "executedAt": "2026-09-10T13:00:07.000Z"
     }
   ],
   "audit": [
@@ -716,10 +720,10 @@
     {
       "id": "au-16",
       "userId": "user-alex",
-      "at": "2026-09-10T13:00:06.000Z",
-      "kind": "action_proposed",
+      "at": "2026-09-10T13:00:07.000Z",
+      "kind": "action_executed",
       "actor": "agent",
-      "reason": "A reminder is low risk; scheduled without asking",
+      "reason": "Reminder set for the evening of Sep 15; a reminder is low risk, so it ran without asking",
       "loopId": "loop-form",
       "actionId": "act-form-remind"
     },
@@ -729,7 +733,7 @@
       "at": "2026-09-10T13:00:01.000Z",
       "kind": "loop_created",
       "actor": "agent",
-      "reason": "Passport expiry is nine months out and clears the October London trip by six months; tracked, not raised",
+      "reason": "Passport expiry is nine months out and renewals do not open until March 2027, so there is nothing to do yet; tracked, not raised",
       "loopId": "loop-passport"
     }
   ]

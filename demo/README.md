@@ -17,7 +17,7 @@ Deterministic seed data for the five-minute demo (`docs/hackathon/SPEC.md` §14,
 | `thr-dentist` | Due for a visit: **Needs You**, low, propose a slot |
 | `thr-return` | Return window closes Sep 19, $84: **Needs You**, medium |
 | `thr-streaming` | Card declined, $15.99: **Needs You**, low |
-| `thr-form` | Signed participation form by Sep 16: **Needs You**, high, reminder scheduled |
+| `thr-form` | Signed participation form by Sep 16: **Needs You**, high, reminder set for the evening before |
 | `thr-passport` | Passport expires June 2027, renewals do not open until March 2027: **Watching**, real and dated but nothing to do yet |
 | `thr-newsletter` | Not a responsibility, no loop |
 
