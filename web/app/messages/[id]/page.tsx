@@ -62,7 +62,7 @@ export default async function MessagePage({ params, searchParams }: PageProps<'/
 
 function Body({ children }: { children: string }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4 text-sm leading-relaxed whitespace-pre-wrap">
+    <div className="source-body rounded-lg border border-border bg-card p-4 text-sm leading-relaxed whitespace-pre-wrap">
       {children}
     </div>
   )

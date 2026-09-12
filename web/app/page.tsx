@@ -147,7 +147,7 @@ function LoopSection({ status, items, now }: { status: LoopStatus; items: OpenLo
   const header = (
     <h2 className="section-heading" data-state={section.id}>
       <StateIcon name={section.id} />
-      {STATUS_LABEL[status]}
+      <span className="section-label">{STATUS_LABEL[status]}</span>
       <span className="section-count">{items.length}</span>
       {status === 'RESOLVED' && (
         <span className="disclosure-arrow" aria-hidden="true">
@@ -167,7 +167,7 @@ function LoopSection({ status, items, now }: { status: LoopStatus; items: OpenLo
       </div>
     )
   return status === 'RESOLVED' ? (
-    <details id={section.id} className="loop-section resolved-section">
+    <details id={section.id} className="loop-section resolved-section" open>
       <summary>{header}</summary>
       {content}
     </details>

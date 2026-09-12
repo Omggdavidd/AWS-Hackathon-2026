@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Geist_Mono, Instrument_Sans } from 'next/font/google'
+import { Geist_Mono, Inter } from 'next/font/google'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { BottomTabs, WorkspaceNav } from '@/components/bottom-tabs'
@@ -8,7 +8,12 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
 import './globals.css'
 
-const sans = Instrument_Sans({ variable: '--font-instrument', subsets: ['latin'] })
+const sans = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+  axes: ['opsz'],
+  display: 'swap',
+})
 const mono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
 
 export const metadata: Metadata = {
