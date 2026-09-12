@@ -1,5 +1,12 @@
 import type { LoopStatus, Money, OpenLoop, Priority } from '@openloop/shared'
 
+/**
+ * The demo's clock. Every fixture date carries a -04:00 offset and the demo script says the club
+ * meeting is 5:00-6:00 PM, so times are rendered in Eastern rather than in whatever zone the
+ * server happens to run. Vercel runs UTC, which would otherwise print 9:00 PM for that meeting.
+ */
+export const DEMO_TIME_ZONE = 'America/New_York'
+
 export const STATUS_ORDER: LoopStatus[] = [
   'NEEDS_YOU',
   'WAITING',
@@ -48,11 +55,24 @@ export function formatDue(dueAt: string | undefined, now: Date): string | undefi
   if (days === 0) return 'Due today'
   if (days === 1) return 'Due tomorrow'
   if (days <= 14) return `Due in ${days} days`
-  return `Due ${new Date(dueAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+  return `Due ${formatDate(dueAt)}`
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: DEMO_TIME_ZONE,
+  })
+}
+
+/** Date and time of day, for a page that has to agree with what the source actually says. */
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: DEMO_TIME_ZONE,
+  })
 }
 
 export function formatPercent(confidence: number): string {
