@@ -56,7 +56,9 @@ Commands: `scan` (default), `handle` (execute every proposed action the policy a
 
 Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted.
 
-Models and pacing (ADR-0007): the Extractor runs on Claude Haiku 4.5 and the other five roles share one Claude Sonnet 4.6 instance. `OPENLOOP_MODEL_ID` overrides the shared model, `OPENLOOP_EXTRACTOR_MODEL_ID` the Extractor's. `runScan` works on three threads at a time; `ScanOptions.concurrency` changes that (1 is the old sequential behaviour). Writes stay ordered within a thread, a loop is never created twice, and `onEvent` still emits one thread's events as a block.
+Models and pacing (ADR-0007): all six roles share one Claude Sonnet 4.6 instance. `OPENLOOP_MODEL_ID` overrides the shared model, `OPENLOOP_EXTRACTOR_MODEL_ID` gives the Extractor its own. `runScan` works on three threads at a time; `ScanOptions.concurrency` changes that (1 is the old sequential behaviour). Writes stay ordered within a thread, a loop is never created twice, and `onEvent` still emits one thread's events as a block.
+
+Measured over the 10-thread `demo/seed-inbox.json` that preceded #54: 219s sequential, 89s with concurrency at the default model, both producing the expected 9 loops of that inbox. A Claude Haiku 4.5 Extractor ran in 76s but read `thr-issue1` as not a responsibility and produced only 8, so it is opt-in through `OPENLOOP_EXTRACTOR_MODEL_ID` rather than the default. The 12-thread inbox has not been re-timed with concurrency.
 
 ## Structured logs
 
