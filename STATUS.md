@@ -15,7 +15,7 @@ Runnable locally: `pnpm --filter @openloop/web dev` renders the seeded ledger, a
 - Repository context system, CI (context check, secret scan, workspace checks), accepted architecture in ADRs 0003 to 0012.
 - `packages/shared`: schemas for OpenLoop, Evidence, ProposedAction, AuditEvent and the four agent outputs; state transitions; `LedgerStore` with `LocalLedgerStore` (memory or JSON file) and a shared contract suite; `IngestionSource` with `FixtureSource`.
 - `demo/seed-inbox.json` (13 messages, 3 events) and `demo/seed-ledger.json` (the 9 loops the agent should produce), both validated by tests.
-- `web/`: dashboard with the four states, loop detail (why it exists, evidence, confidence, consequence, actions with the effects the agent produced, timeline), approve/decline with pending state, "I already did this", activity feed, and a message page behind every source id so each claim can be checked against the original mail or event. Runs on the local ledger seeded from the demo.
+- `web/`: dashboard with the four states (desktop rail, phone bottom tabs, agent toolbar, first-scan progress, collapsed resolved), loop detail (why it exists, evidence, confidence, consequence, actions with the effects the agent produced, timeline), approve/decline with pending state, "I already did this", activity feed, and a message page behind every source id so each claim can be checked against the original mail or event. Runs on the local ledger seeded from the demo.
 - `packages/ledger-dynamo`: DynamoDB ledger passing the shared contract suite against a real table; tables `openloop-ledger` and `openloop-ledger-test` exist in `us-east-1`.
 - `agent/`: AgentCore project with the Strands pipeline (Extractor, Investigator with inbox and ledger tools, Risk Judge, update path for new mail in tracked threads, Action Agent; all structured output on Claude Sonnet 4.6). `handle` executes allowed actions through a simulated sink; `execute` runs one approved action; high risk never executes without approval (enforced in code, tested); `catch_up` summarizes state changes since the last check from the ledger alone. A real scan of the demo inbox produces 9 loops with the expected states in about 4 minutes, writing evidence, proposed actions (high-risk ones gated) and audit events through the shared ledger. Deployed to AgentCore Runtime (`AgentCore-OpenLoop-default`, `us-east-1`) writing to DynamoDB; invoked end to end from the AWS CLI and from the web app's Scan button.
 
@@ -25,7 +25,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 
 | Owner | Issues, hardest first within each row |
 |---|---|
-| Omggdavidd (hard + front end) | #18 dashboard polish, #19 Vercel deploy |
+| Omggdavidd (hard + front end) | #19 Vercel deploy |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration |
 | tdare514 (medium) | #30 observability evidence, #35 show-source page, #40 two more demo threads |
 | ab00bae (medium-easy) | #33 README and diagram, #36 remind/ignore buttons, #39 notification banner |
@@ -38,7 +38,7 @@ One owner per issue and no issue waits on another. Shared files: the loop page (
 
 - 2026-09-10 Phase 0 foundation (f1156d9); Phase 1 merged (#1); workspace scaffold and shared package merged (#2); `main` ruleset enabled; MIT license added.
 - 2026-09-11 Web dashboard shell (#4), agent pipeline (#8), AgentCore deploy (#9), DynamoDB and Scan button (#10), delta path (#11), actions and approval (#12).
-- 2026-09-12 Loop page shows executed effects (#17); message page behind evidence links (#35, tdare514); Catch me up command and button (#13).
+- 2026-09-12 Loop page shows executed effects (#17); message page behind evidence links (#35, tdare514); Catch me up command and button (#13); dashboard polish: rail, bottom tabs, toolbar, empty and scan states, activity badges (#18).
 
 ## Blocked
 
