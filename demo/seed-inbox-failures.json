@@ -1,0 +1,76 @@
+{
+  "persona": {
+    "name": "Alex Rivera",
+    "email": "alex.rivera@student.northgate.edu",
+    "now": "2026-09-11T09:00:00-04:00"
+  },
+  "messages": [
+    {
+      "id": "msg-101",
+      "threadId": "thr-lab-fee",
+      "from": "Chemistry Department <chem-admin@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "CHEM 210 lab fee, $45 due September 20",
+      "date": "2026-09-08T11:20:00-04:00",
+      "snippet": "The $45 lab fee for CHEM 210 is due September 20. Pay through the Student Accounts portal.",
+      "body": "Hi Alex,\n\nThe $45 materials fee for CHEM 210 is due on September 20, 2026. Pay it through the Student Accounts portal. Unpaid fees block the lab section from being graded.\n\nChemistry Department\nNorthgate University",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-102",
+      "threadId": "thr-permit",
+      "from": "Campus Parking <parking@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Parking permit renewal, $60 due September 12",
+      "date": "2026-08-28T08:45:00-04:00",
+      "snippet": "Your student parking permit expires September 12. Renew for $60 to keep your lot assignment.",
+      "body": "Hi Alex,\n\nYour student parking permit expires on September 12, 2026. Renew online for $60 to keep your assignment in Lot C. Unrenewed permits are released to the waitlist.\n\nCampus Parking\nNorthgate University",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-103",
+      "threadId": "thr-permit",
+      "from": "Campus Parking <parking@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Re: Parking permit renewal, $60 due September 12",
+      "date": "2026-09-02T15:10:00-04:00",
+      "snippet": "Payment received. Your $60 permit renewal was posted and Lot C is held for the year.",
+      "body": "Hi Alex,\n\nPayment received. Your $60 permit renewal was posted on September 2 and your Lot C assignment is held for the academic year. Nothing further is needed.\n\nCampus Parking\nNorthgate University",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-104",
+      "threadId": "thr-permit-notice",
+      "from": "Parking Billing <billing@parkstream.example>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Second notice: parking permit renewal for Lot C",
+      "date": "2026-09-09T06:30:00-04:00",
+      "snippet": "Our billing system shows a permit renewal for Lot C. If you have already renewed, no action is needed.",
+      "body": "This is an automated second notice about the Lot C parking permit renewal for Alex Rivera. Our billing system is still showing the renewal in its queue. If you have already renewed, no action is needed and this notice can be ignored.\n\nParkstream Billing on behalf of Northgate University",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-105",
+      "threadId": "thr-advisor",
+      "from": "Dana Whitfield <d.whitfield@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Draft statement of purpose",
+      "date": "2026-09-09T17:05:00-04:00",
+      "snippet": "Send me a draft of your statement of purpose sometime next month and we will go through it together.",
+      "body": "Alex,\n\nSend me a draft of your statement of purpose sometime next month and we will go through it together in office hours. No rush, whenever it is ready.\n\nDana",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-106",
+      "threadId": "thr-scholarship",
+      "from": "Financial Aid <aid@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Renew your Dean's Scholarship by September 30",
+      "date": "2026-09-10T10:00:00-04:00",
+      "snippet": "Submit the one-page renewal form by September 30 to keep the Dean's Scholarship for the spring term.",
+      "body": "Hi Alex,\n\nSubmit the one-page Dean's Scholarship renewal form by September 30, 2026 to keep the award for the spring term. Reply to this message if you need the form resent.\n\nFinancial Aid\nNorthgate University",
+      "labels": ["INBOX"]
+    }
+  ],
+  "events": []
+}

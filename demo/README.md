@@ -36,4 +36,14 @@ Three loops carry `interruptUser` — the deposit, the insurance proof and the p
 | `msg-016` gate assignment | `thr-flight` loop stays **Watching**, new evidence only |
 | `msg-017` library due date | new loop `thr-library`, **Needs You**, due Sep 18 |
 
+`seed-inbox-failures.json` is the ugly-cases inbox for the failure-path tests (`agent/app/OpenLoopAgent/test/failure-paths.test.ts`). It is loaded directly by those tests, not by the demo script or the web app, so the demo narrative is unaffected.
+
+| Thread | Expected outcome |
+|---|---|
+| `thr-lab-fee` | CHEM 210 lab fee $45 due Sep 20: **Needs You**; rescanning the same message changes nothing |
+| `thr-permit` | Permit renewal $60, then "Payment received": **Resolved** |
+| `thr-permit-notice` | Automated second notice about the same already-paid permit: **Watching**, never a second **Needs You** |
+| `thr-advisor` | Draft requested "sometime next month": **Needs You** with no `dueAt` and low confidence |
+| `thr-scholarship` | Scholarship renewal by Sep 30: **Needs You** with three actions (low, medium, high); `handle` runs the first two and lists the high-risk one |
+
 Change any file only with a matching update to these tables, the other files and the tests in `packages/shared/test/fixtures.test.ts`.

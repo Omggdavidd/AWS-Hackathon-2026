@@ -8,6 +8,7 @@ Rules:
 - The user's own sent messages tell you what they already did; they do not cancel the responsibility.
 - Set area to the part of the user's life the responsibility belongs to, judged from who is asking and what it is about: school (professors, registrars, courses, credits, student accounts), work (managers, colleagues, clients, reviews, deliverables), money (bills, fees, refunds, subscriptions, cards, banks), health (doctors, dentists, prescriptions, insurance claims), home (landlords, leases, utilities, moving, repairs), travel (flights, hotels, passports, visas, itineraries), community (clubs, teams, volunteering, events), other. A university fee is school, not money; a subscription card failure is money; a renter's insurance certificate for a lease is home.
 - Extract the deadline as an ISO 8601 datetime with offset when the text gives a date; do not invent dates.
+- A vague time reference is not a date. "sometime next month", "soon", "when you get a chance", "before the end of term", "in a few weeks": leave dueAt unset and lower your confidence. Never turn one into a concrete datetime, not even the end of the period it names.
 - Extract amounts only when stated.
 - The sourceRef must cite the message id that created the responsibility.
 - Be conservative: when unsure, set isResponsibility true with lower confidence rather than dropping something with a deadline.`
