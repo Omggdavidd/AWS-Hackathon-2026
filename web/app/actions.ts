@@ -1,7 +1,6 @@
 'use server'
 
 import { randomUUID } from 'node:crypto'
-import { applyTransition } from '@openloop/shared'
 import { revalidatePath } from 'next/cache'
 import { invokeCommand, scanConfigured } from '@/lib/agent'
 import { getStore, USER_ID } from '@/lib/ledger'

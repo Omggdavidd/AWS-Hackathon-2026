@@ -1,6 +1,7 @@
 import type { LoopStatus, OpenLoop } from '@openloop/shared'
 import Link from 'next/link'
 import { AgentToolbar } from '@/components/agent-toolbar'
+import { LiveClock } from '@/components/live-clock'
 import { LoopRing, StateIcon } from '@/components/loop-mark'
 import { LoopRow } from '@/components/loop-row'
 import { KindBadge } from '@/components/status-chip'
@@ -63,12 +64,15 @@ export default async function Home() {
       <section className="hero" aria-labelledby="greeting">
         <div className="hero-copy">
           <p className="hero-date">
-            {now.toLocaleDateString('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-              timeZone: DEMO_TIME_ZONE,
-            })}
+            <span>
+              {now.toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                timeZone: DEMO_TIME_ZONE,
+              })}
+            </span>
+            <LiveClock timeZone={DEMO_TIME_ZONE} />
           </p>
           <h1 id="greeting">
             {greeting}, {USER_NAME}.
