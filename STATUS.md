@@ -12,7 +12,7 @@ Runnable locally: `pnpm --filter @openloop/web dev` renders the seeded ledger, a
 
 ## What works
 
-- Repository context system, CI (context check, secret scan, workspace checks), accepted architecture in ADRs 0003 to 0012.
+- Repository context system, CI (context check, secret scan, workspace checks), accepted architecture in ADRs 0003 to 0012, judge-facing `README.md` and the submission architecture diagram (`docs/architecture/`).
 - `packages/shared`: schemas for OpenLoop, Evidence, ProposedAction, AuditEvent and the four agent outputs; state transitions; `LedgerStore` with `LocalLedgerStore` (memory or JSON file) and a shared contract suite; `IngestionSource` with `FixtureSource`.
 - `demo/seed-inbox.json` (13 messages, 3 events) and `demo/seed-ledger.json` (the 9 loops the agent should produce), both validated by tests.
 - `web/`: dashboard with a linked summary, readable title/source rows and aligned deadlines, compact closed-share ring, agent toolbar with first-scan progress, collapsed resolved, recent activity per responsibility and phone bottom tabs. White by default with a persistent light/dark toggle across pages. Loop detail shows why it exists, evidence, confidence, consequence, actions with the effects the agent produced, and timeline; approve/decline with pending state, "I already did this", activity feed, and a message page behind every source id let each claim be checked against the original mail or event. Runs on the local ledger seeded from the demo.
@@ -28,7 +28,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 | Omggdavidd (hard + front end) | #19 Vercel deploy |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration |
 | tdare514 (medium) | #30 observability evidence, #35 show-source page, #40 two more demo threads |
-| ab00bae (medium-easy) | #33 README and diagram, #36 remind/ignore buttons, #39 notification banner |
+| ab00bae (medium-easy) | #36 remind/ignore buttons, #39 notification banner |
 | AyomideAw (easiest) | #37 done cancels actions, #38 CI builds web, #22 demo script |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
 
@@ -38,7 +38,7 @@ One owner per issue and no issue waits on another. Shared files: the loop page (
 
 - 2026-09-10 Phase 0 foundation (f1156d9); Phase 1 merged (#1); workspace scaffold and shared package merged (#2); `main` ruleset enabled; MIT license added.
 - 2026-09-11 Web dashboard shell (#4), agent pipeline (#8), AgentCore deploy (#9), DynamoDB and Scan button (#10), delta path (#11), actions and approval (#12).
-- 2026-09-12 Loop page shows executed effects (#17); message page behind evidence links (#35, tdare514); Catch me up command and button (#13); dashboard design and responsive navigation (#18); dashboard at a glance: readable rows, one summary line, refined open-ring identity, compact progress, white default with persistent themes and consistent detail/source panels (#52).
+- 2026-09-12 Loop page shows executed effects (#17); message page behind evidence links (#35, tdare514); Catch me up command and button (#13); dashboard design and responsive navigation (#18); dashboard at a glance: readable rows, one summary line, refined open-ring identity, compact progress, white default with persistent themes and consistent detail/source panels (#52); submission README, architecture diagram and the missing `web/.env.example` (#33, ab00bae).
 
 ## Blocked
 
@@ -46,7 +46,7 @@ One owner per issue and no issue waits on another. Shared files: the loop page (
 
 ## Next up
 
-Must-ship in the order the demo needs them: #29, #14, #19, #33, #22, #30. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
+Must-ship in the order the demo needs them: #29, #14, #19, #22, #30. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
 
 ## Known issues
 

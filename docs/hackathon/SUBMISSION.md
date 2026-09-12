@@ -22,16 +22,16 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 
 - [x] Public GitHub repository
 - [x] MIT or Apache license file visible on the repo page
-- [ ] README with setup instructions sufficient to run the project from a clean machine
+- [x] README with setup instructions sufficient to run the project from a clean machine
 - [ ] All source code, assets and demo data needed to run
-- [ ] Architecture diagram
+- [x] Architecture diagram (`docs/architecture/openloop-architecture.png`, source SVG beside it)
 - [ ] Text description of features and functionality
 - [ ] Demo video, 5 minutes maximum, showing the working project, hosted public on YouTube or Vimeo, visibility verified
 - [ ] Pitch in the video covers the problem, who it is for and why it matters
 - [ ] Testing access or instructions; credentials if any site is private
 - [ ] Project uses Strands Agents meaningfully and runs on AWS
 - [ ] No secrets or credentials anywhere in the repo history
-- [ ] Disclosure of any pre-existing code incorporated
+- [x] Disclosure of any pre-existing code incorporated (`README.md` *Originality*)
 
 ## Optional boosters
 
@@ -41,6 +41,7 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 
 ## Submission day
 
+- [ ] Fill the live demo and video links in the table at the top of `README.md`
 - [ ] Clean-machine install and test from README
 - [ ] Final video recorded early and uploaded
 - [ ] Devpost form complete
