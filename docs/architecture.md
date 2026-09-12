@@ -2,6 +2,8 @@
 
 Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `packages/ledger-dynamo/`, `demo/`, `web/` (local or DynamoDB ledger, Scan button invoking the deployed runtime), `agent/` deployed to AgentCore Runtime writing to DynamoDB. Not yet: live Gmail and Calendar sinks (effects are simulated by `FixtureActionSink`). Update this file as the rest lands; rationale lives in the ADRs, not here.
 
+![Open Loops architecture: the browser talks only to the Next.js app on Vercel, which invokes the AgentCore Runtime; inside the runtime the Extractor, Investigator and Risk Judge scan each thread and the mayExecute gate stands between a proposed action and the Action Agent; Bedrock, the ingestion source, the action sink and the DynamoDB ledger sit outside it.](architecture/openloop-architecture.png)
+
 ## 1. Problem and shape
 
 Open Loops turns email and calendar into a persistent, evidence-backed ledger of responsibilities and follows through on them (`docs/hackathon/SPEC.md` §4). Runtime pieces: a Next.js web app (UI, Google OAuth, invocation of the agent), a Strands agent graph on Amazon Bedrock AgentCore Runtime, one DynamoDB table holding the ledger, and Google Gmail and Calendar as the first sensors. Seeded fixtures replace Google for the deterministic demo.
@@ -17,7 +19,7 @@ Open Loops turns email and calendar into a persistent, evidence-backed ledger of
 | `demo/` | Seeded Gmail-like messages and calendar events for the §14 scenario, plus expected loops | Contain real personal data |
 | DynamoDB table (AWS) | Durable ledger, one table, single-table keys | Be the only place the schema is defined |
 
-Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `LedgerStore`, `LocalLedgerStore`, `DynamoLedgerStore`, `IngestionSource` (fixture and Gmail implementations), the tools `search_gmail`, `get_gmail_thread`, `draft_email`, `send_email`, `list_calendar_events`, `create_calendar_event`, `upsert_open_loop`, `find_open_loops`, `append_evidence`, `transition_loop`, `propose_action`, `execute_approved_action`.
+Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `LedgerStore`, `LocalLedgerStore`, `DynamoLedgerStore`, `IngestionSource` (fixture and Gmail implementations), `ActionSink` (`FixtureActionSink` today), `mayExecute`. The agent's Strands tools are `search_inbox`, `get_thread`, `list_calendar_events` and `find_open_loops`; the ledger is written by the orchestrator through `LedgerStore`, not by a tool. Effects are `ProposedActionType` values (`draft_email`, `send_email`, `create_calendar_event`, `follow_up`, `remind`, …), not tools.
 
 ## 3. Data flow
 
@@ -51,4 +53,4 @@ Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `Ledger
 - Errors: tool failures become audit events, never silent; ambiguous extractions land in `UNCERTAIN` rather than in a wrong state.
 - Cost: classify with the cheapest capable model first; bounded backfill window; deltas only after onboarding.
 
-Diagrams: `docs/hackathon/architecture-proposal.png` (playbook proposal) and `docs/hackathon/state-lifecycle.png`. The submission diagram is produced in Phase 5 into `docs/architecture/`.
+Diagrams: the submission diagram is [`architecture/openloop-architecture.png`](architecture/openloop-architecture.png), drawn from this file and kept beside its source, [`openloop-architecture.svg`](architecture/openloop-architecture.svg) (hand-written SVG; edit the SVG and re-export, see [`architecture/README.md`](architecture/README.md)). Update it when a component, boundary or deployment target here changes. `docs/hackathon/architecture-proposal.png` is the original playbook sketch and is kept only as a record of the proposal: it predates DynamoDB, the fixture sink and the delta path, and shows an AgentCore Memory and a browser-action path that were never built. `docs/hackathon/state-lifecycle.png` still describes the loop states.
