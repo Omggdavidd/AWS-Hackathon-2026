@@ -262,6 +262,56 @@
       },
       "consequence": "Streaming pauses",
       "nextAction": "Update the card on file"
+    },
+    {
+      "id": "loop-form",
+      "userId": "user-alex",
+      "title": "Return signed participation form",
+      "category": "form",
+      "status": "NEEDS_YOU",
+      "owner": "user",
+      "actionType": "sign",
+      "riskLevel": "medium",
+      "priority": "high",
+      "confidence": 0.88,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-018",
+          "threadId": "thr-form"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "Prof. Dana Whitfield, Department of Computer Science",
+      "dueAt": "2026-09-16T23:59:00.000Z",
+      "consequence": "Research credit not recorded; the registrar closes entry that Friday",
+      "nextAction": "Sign page 2 of the PDF and email it back, or sign in person at Tue/Thu office hours"
+    },
+    {
+      "id": "loop-passport",
+      "userId": "user-alex",
+      "title": "Passport expires June 2027",
+      "category": "travel",
+      "status": "WATCHING",
+      "owner": "nobody",
+      "actionType": "none",
+      "riskLevel": "low",
+      "priority": "low",
+      "confidence": 0.92,
+      "sourceRefs": [
+        {
+          "sourceType": "email",
+          "sourceId": "msg-019",
+          "threadId": "thr-passport"
+        }
+      ],
+      "createdAt": "2026-09-10T13:00:01.000Z",
+      "updatedAt": "2026-09-10T13:00:00.000Z",
+      "requestedBy": "Passport Services",
+      "dueAt": "2027-06-12T23:59:00.000Z",
+      "consequence": "None yet; renewal takes 4 to 6 weeks once it matters",
+      "nextAction": "None; the October trip is covered, revisit in early 2027"
     }
   ],
   "evidence": [
@@ -396,6 +446,28 @@
       "excerpt": "We could not charge your card for this month's plan ($15.99). Update your payment method by September 11 or your account will pause.",
       "supports": "OPEN",
       "confidence": 0.9
+    },
+    {
+      "id": "ev-form-1",
+      "loopId": "loop-form",
+      "sourceType": "email",
+      "sourceId": "msg-018",
+      "threadId": "thr-form",
+      "observedAt": "2026-09-06T17:40:00.000Z",
+      "excerpt": "Please print the attached PDF, sign page 2, and email it back to me by Wednesday September 16.",
+      "supports": "OPEN",
+      "confidence": 0.9
+    },
+    {
+      "id": "ev-pass-1",
+      "loopId": "loop-passport",
+      "sourceType": "email",
+      "sourceId": "msg-019",
+      "threadId": "thr-passport",
+      "observedAt": "2026-09-02T13:15:00.000Z",
+      "excerpt": "The passport expires on June 12, 2027. No action is required at this time.",
+      "supports": "OPEN",
+      "confidence": 0.92
     }
   ],
   "actions": [
@@ -477,6 +549,21 @@
       },
       "status": "PROPOSED",
       "createdAt": "2026-09-10T13:00:05.000Z"
+    },
+    {
+      "id": "act-form-remind",
+      "loopId": "loop-form",
+      "userId": "user-alex",
+      "type": "remind",
+      "riskTier": "low",
+      "requiresApproval": false,
+      "summary": "Remind you on the evening of Sep 15, the night before the form is due",
+      "payload": {
+        "remindAt": "2026-09-15T22:00:00.000Z",
+        "channel": "dashboard"
+      },
+      "status": "PROPOSED",
+      "createdAt": "2026-09-10T13:00:06.000Z"
     }
   ],
   "audit": [
@@ -616,6 +703,34 @@
         "events": 3,
         "loops": 9
       }
+    },
+    {
+      "id": "au-15",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:01.000Z",
+      "kind": "loop_created",
+      "actor": "agent",
+      "reason": "Professor requested a signed form by Sep 16 in the Sep 6 email; no reply from you found in the thread",
+      "loopId": "loop-form"
+    },
+    {
+      "id": "au-16",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:06.000Z",
+      "kind": "action_proposed",
+      "actor": "agent",
+      "reason": "A reminder is low risk; scheduled without asking",
+      "loopId": "loop-form",
+      "actionId": "act-form-remind"
+    },
+    {
+      "id": "au-17",
+      "userId": "user-alex",
+      "at": "2026-09-10T13:00:01.000Z",
+      "kind": "loop_created",
+      "actor": "agent",
+      "reason": "Passport expiry is nine months out and clears the October London trip by six months; tracked, not raised",
+      "loopId": "loop-passport"
     }
   ]
 }

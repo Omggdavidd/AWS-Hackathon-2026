@@ -50,6 +50,6 @@ Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1
 
 ## Known calibration
 
-Against `demo/seed-ledger.json` the pipeline produces the same 9 loops and states, except the rescheduled club meeting, which the Investigator marks Needs You rather than Watching in about half the runs. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
+Against `demo/seed-ledger.json` the pipeline produced the same 9 loops and states, except the rescheduled club meeting, which the Investigator marks Needs You rather than Watching in about half the runs. That run predates the `thr-form` and `thr-passport` threads (#40); the expected ledger now has 11 loops and a real scan has not been re-run against it. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
 
 `AGENTS.md` here is the CLI's own guide to `agentcore/` config and applies alongside the root `AGENTS.md`.

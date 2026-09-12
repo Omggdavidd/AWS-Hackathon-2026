@@ -147,6 +147,28 @@
       "snippet": "This week on campus: farmers market, extended library hours, and the fall concert series.",
       "body": "This week on campus: Saturday farmers market on the quad, extended library hours during midterms, and the fall concert series kicks off October 2. No action needed.",
       "labels": ["INBOX", "CATEGORY_PROMOTIONS"]
+    },
+    {
+      "id": "msg-018",
+      "threadId": "thr-form",
+      "from": "Dana Whitfield <d.whitfield@northgate.edu>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Signed participation form needed by September 16",
+      "date": "2026-09-06T13:40:00-04:00",
+      "snippet": "Please print, sign and return the participation form by September 16 so I can record your research credit.",
+      "body": "Alex,\n\nThank you for joining the study group this term. Before I can record your research credit I need the participation form signed.\n\nPlease print the attached PDF, sign page 2, and email it back to me by Wednesday September 16. The registrar closes credit entry that Friday and I cannot enter it late.\n\nIf you would rather sign in person, my office hours are Tue and Thu, 2-4 PM, Kohler 318.\n\nBest,\nProf. Dana Whitfield\nDepartment of Computer Science",
+      "labels": ["INBOX"]
+    },
+    {
+      "id": "msg-019",
+      "threadId": "thr-passport",
+      "from": "Passport Services <noreply@passportservices.example>",
+      "to": ["alex.rivera@student.northgate.edu"],
+      "subject": "Your passport expires June 12, 2027",
+      "date": "2026-09-02T09:15:00-04:00",
+      "snippet": "Your passport expires on June 12, 2027. Renewals are accepted up to one year before expiry.",
+      "body": "This is a courtesy reminder.\n\nThe passport issued to RIVERA, ALEX expires on June 12, 2027.\n\nRenewals are accepted up to one year before the expiry date. Processing currently takes 4 to 6 weeks by mail. Many destinations require at least six months of validity remaining on the date you enter.\n\nNo action is required at this time.\n\nPassport Services",
+      "labels": ["INBOX"]
     }
   ],
   "events": [
