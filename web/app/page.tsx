@@ -1,3 +1,4 @@
+import { CatchUpButton } from '@/components/catch-up-button'
 import { HandleButton } from '@/components/handle-button'
 import { LoopCard } from '@/components/loop-card'
 import { ScanButton } from '@/components/scan-button'
@@ -36,6 +37,7 @@ export default async function Home() {
           <ScanButton configured={scanConfigured} />
           <ScanButton configured={scanConfigured} variant="delta" label="Check for new mail" />
           <HandleButton configured={scanConfigured} />
+          <CatchUpButton configured={scanConfigured} />
         </div>
       </div>
       {STATUS_ORDER.map((status) => {

@@ -104,3 +104,20 @@ export const ActionResult = z.object({
   error: z.string().max(500).optional(),
 })
 export type ActionResult = z.infer<typeof ActionResult>
+
+/** Catch me up (SPEC §8D): a state-change summary written from the ledger, never from the inbox. */
+export const CatchUpSummary = z.object({
+  headline: z.string().max(200),
+  items: z
+    .array(
+      z.object({
+        loopId: z.string(),
+        title: z.string().max(120),
+        kind: z.enum(['resolved', 'needs_you', 'deadline', 'waiting', 'fyi']),
+        text: z.string().max(200),
+      }),
+    )
+    .max(8),
+  nothingElse: z.boolean(),
+})
+export type CatchUpSummary = z.infer<typeof CatchUpSummary>

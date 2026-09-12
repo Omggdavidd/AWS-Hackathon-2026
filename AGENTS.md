@@ -65,6 +65,7 @@ pnpm --filter @openloop/web build  # production build; run before a web PR
 pnpm --filter @openloop/agent scan -- --reset   # real model over demo inbox (~4 min, needs AWS creds)
 pnpm --filter @openloop/agent scan -- --delta   # next-morning batch on top; exercises the update path
 pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed action on the local ledger
+pnpm --filter @openloop/agent scan -- --catch-up  # state-change summary since the last catch-up
 pnpm --filter @openloop/agent dev  # runtime server on :8080
 pnpm --filter @openloop/agent deploy-runtime  # deploy to AgentCore Runtime (never bare `agentcore deploy`, see agent/README.md)
 pnpm --filter @openloop/ledger-dynamo create-table   # idempotent; OPENLOOP_LEDGER_TABLE overrides the name

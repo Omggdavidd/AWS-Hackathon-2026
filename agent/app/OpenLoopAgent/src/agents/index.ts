@@ -1,5 +1,6 @@
 import {
   ActionPlan,
+  CatchUpSummary,
   type EmailMessage,
   type Evidence,
   ExtractorOutput,
@@ -11,11 +12,13 @@ import {
   RiskJudgment,
 } from '@openloop/shared'
 import { Agent, type Model } from '@strands-agents/sdk'
+import type { CatchUpDigest } from '../catch-up'
 import { renderThread } from '../render'
 import { inboxTools } from '../tools/inbox'
 import { ledgerTools } from '../tools/ledger'
 import {
   ACTION_PROMPT,
+  CATCH_UP_PROMPT,
   EXTRACTOR_PROMPT,
   INVESTIGATOR_PROMPT,
   RISK_JUDGE_PROMPT,
@@ -61,6 +64,8 @@ export interface Specialists {
     thread: EmailMessage[]
     now: string
   }): Promise<ActionPlan>
+  /** Catch me up (plan step 12): the digest is computed in code; the model only writes the words. */
+  summarize(input: { digest: CatchUpDigest; now: string }): Promise<CatchUpSummary>
 }
 
 export interface SpecialistDeps {
@@ -125,6 +130,19 @@ export function createSpecialists({ model, source, store, userId }: SpecialistDe
         `Today is ${now}. The user is Alex Rivera <alex.rivera@student.northgate.edu>.\n\nResponsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence:\n${JSON.stringify(evidence, null, 2)}\n\nProposed action:\n${JSON.stringify(action, null, 2)}\n\nThread:\n${renderThread(thread)}`,
       )
       return ActionPlan.parse(result.structuredOutput)
+    },
+
+    async summarize({ digest, now }) {
+      const agent = new Agent({
+        model,
+        systemPrompt: CATCH_UP_PROMPT,
+        structuredOutputSchema: CatchUpSummary,
+        printer: false,
+      })
+      const result = await agent.invoke(
+        `Now is ${now}. Digest since ${digest.since}:\n${JSON.stringify(digest, null, 2)}`,
+      )
+      return CatchUpSummary.parse(result.structuredOutput)
     },
 
     async judge({ loop, evidence, now }) {

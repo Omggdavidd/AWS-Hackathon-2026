@@ -12,6 +12,7 @@ export const AuditKind = z.enum([
   'action_cancelled',
   'notification',
   'scan_completed',
+  'catch_up',
 ])
 export type AuditKind = z.infer<typeof AuditKind>
 

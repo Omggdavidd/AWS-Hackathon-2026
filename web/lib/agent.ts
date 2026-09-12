@@ -47,7 +47,7 @@ export async function invokeScan(
 /** Invoke a non-streaming command (execute, handle) and return the final JSON event. */
 export async function invokeCommand(
   userId: string,
-  body: { command: 'execute'; actionId: string } | { command: 'handle' },
+  body: { command: 'execute'; actionId: string } | { command: 'handle' } | { command: 'catch_up' },
 ): Promise<Record<string, unknown>> {
   if (!RUNTIME_ARN || !LEDGER_TABLE)
     throw new Error('OPENLOOP_RUNTIME_ARN and OPENLOOP_LEDGER_TABLE must be set')

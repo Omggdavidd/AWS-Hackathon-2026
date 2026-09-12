@@ -13,6 +13,7 @@ import seedInbox from '../../../demo/seed-inbox.json' with { type: 'json' }
 import seedInboxDelta from '../../../demo/seed-inbox-delta.json' with { type: 'json' }
 import { executeAction, handleWhatYouCan } from './src/actions'
 import { createSpecialists } from './src/agents'
+import { catchUp } from './src/catch-up'
 import { loadModel } from './src/model'
 import { runScan } from './src/scan'
 
@@ -23,7 +24,9 @@ import { runScan } from './src/scan'
  */
 const requestSchema = z.object({
   /** scan: ingest into the ledger. handle: execute every allowed proposed action. execute: one action by id (after approval). */
-  command: z.enum(['scan', 'handle', 'execute']).default('scan'),
+  command: z.enum(['scan', 'handle', 'execute', 'catch_up']).default('scan'),
+  /** catch_up: summarize changes since this time; defaults to the previous catch_up or 24 hours ago. */
+  since: z.string().optional(),
   actionId: z.string().optional(),
   userId: z.string().min(1),
   /** Without a path, the demo inbox bundled into the runtime is used (the deployed bundle has no demo/ directory). */
@@ -63,6 +66,17 @@ const app = new BedrockAgentCoreApp({
           : await LocalLedgerStore.fromFile(payload.ledger.path)
       const model = loadModel()
       const specialists = createSpecialists({ model, source, store, userId: payload.userId })
+      if (payload.command === 'catch_up') {
+        const summary = await catchUp({
+          store,
+          userId: payload.userId,
+          specialists,
+          ...(payload.now ? { now: payload.now } : {}),
+          ...(payload.since ? { since: payload.since } : {}),
+        })
+        yield { data: JSON.stringify({ type: 'catch_up', ...summary }) }
+        return
+      }
       if (payload.command !== 'scan') {
         const opts = {
           store,
