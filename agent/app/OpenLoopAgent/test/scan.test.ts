@@ -65,6 +65,9 @@ const stubs: Specialists = {
   async plan({ action }) {
     return { effect: { kind: 'note', text: `stub effect for ${action.type}` }, summary: 'stub' }
   },
+  async summarize() {
+    return { headline: 'stub', items: [], nothingElse: true }
+  },
   async judge({ loop }) {
     const high = loop.actionType === 'pay'
     return {

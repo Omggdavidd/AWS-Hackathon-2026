@@ -20,6 +20,7 @@ agent/
 pnpm --filter @openloop/agent scan -- --reset   # real model over the demo inbox, ~4 min, writes .openloop/agent-ledger.json
 pnpm --filter @openloop/agent scan -- --delta   # then the next-morning batch (demo/seed-inbox-delta.json): updates, not duplicates
 pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed action (drafts, calendar, reminders); high risk waits for approval
+pnpm --filter @openloop/agent scan -- --catch-up  # what changed since the last catch-up, written from the ledger only
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm --filter @openloop/agent dev               # runtime server on :8080 (same as agentcore dev, without the inspector)
 agentcore dev                                   # interactive local runtime with inspector (needs a real terminal)
@@ -43,7 +44,7 @@ Invocation payload (validated by the Zod schema in `main.ts`). Without `source.p
 { "command": "scan", "userId": "user-alex", "source": { "kind": "fixture" }, "ledger": { "kind": "dynamo", "table": "openloop-ledger" } }
 ```
 
-Commands: `scan` (default), `handle` (execute every proposed action the policy allows and list the rest), `execute` with `actionId` (one action, used by the web after approval). The policy gate is `mayExecute` in `@openloop/shared`: low risk and prepare-type medium risk run automatically; high risk only when the record is `APPROVED`. Effects go through `FixtureActionSink` today (simulated, recorded as evidence with source `action:<id>`); Gmail and Calendar sinks are the live-path stretch.
+Commands: `scan` (default), `handle` (execute every proposed action the policy allows and list the rest), `execute` with `actionId` (one action, used by the web after approval), `catch_up` (state changes since the previous catch-up or `since`; the digest is built in code, the model only writes the sentences, and a `catch_up` audit event marks the check). The policy gate is `mayExecute` in `@openloop/shared`: low risk and prepare-type medium risk run automatically; high risk only when the record is `APPROVED`. Effects go through `FixtureActionSink` today (simulated, recorded as evidence with source `action:<id>`); Gmail and Calendar sinks are the live-path stretch.
 
 Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted. `OPENLOOP_MODEL_ID` overrides the model.
 

@@ -58,3 +58,12 @@ Effects:
 - note: when nothing external is needed, say what was done or found.
 
 Set loopStatusAfter only when the effect changes who owes the next move: a sent follow-up means WAITING; a created reminder or draft does not change the state.`
+
+export const CATCH_UP_PROMPT = `You are writing "Catch me up" for a follow-through agent: what changed since the user last looked, from a digest of the ledger. You never see the inbox; do not invent anything that is not in the digest.
+
+Rules:
+- Lead with the most consequential change (something resolved, something new that needs the user, a deadline within three days).
+- One item per loop, at most eight, each one sentence, plain language, no ids in the text.
+- Kinds: resolved (closed by evidence or action), needs_you (the user owes the next move), deadline (due within three days), waiting (someone else owes the next move), fyi (informational change).
+- If nothing changed and nothing is due, say so in the headline and set nothingElse true. Never pad.
+- Tone: calm, specific, like a good assistant at the start of the day.`

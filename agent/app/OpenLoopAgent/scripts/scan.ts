@@ -9,6 +9,7 @@ import {
 } from '@openloop/shared'
 import { handleWhatYouCan } from '../src/actions'
 import { createSpecialists } from '../src/agents'
+import { catchUp } from '../src/catch-up'
 import { loadModel } from '../src/model'
 import { runScan } from '../src/scan'
 
@@ -19,11 +20,13 @@ import { runScan } from '../src/scan'
  *   pnpm --filter @openloop/agent scan -- --dynamo openloop-ledger   # write to the DynamoDB table instead
  *   pnpm --filter @openloop/agent scan -- --delta                     # next-morning batch on top of the base inbox
  *   pnpm --filter @openloop/agent scan -- --handle                    # execute every allowed proposed action instead of scanning
+ *   pnpm --filter @openloop/agent scan -- --catch-up                  # summarize what changed since the last catch-up
  */
 const repoRoot = path.resolve(import.meta.dirname, '../../../..')
 const reset = process.argv.includes('--reset')
 const delta = process.argv.includes('--delta')
 const handle = process.argv.includes('--handle')
+const catchUpFlag = process.argv.includes('--catch-up')
 const dynamoIdx = process.argv.indexOf('--dynamo')
 const dynamoTable = dynamoIdx >= 0 ? process.argv[dynamoIdx + 1] : undefined
 const ledgerPath = path.join(repoRoot, '.openloop', 'agent-ledger.json')
@@ -44,6 +47,15 @@ const store: LedgerStore = dynamoTable
 const specialists = createSpecialists({ model: loadModel(), source, store, userId })
 
 const started = Date.now()
+if (catchUpFlag) {
+  const s = await catchUp({ store, userId, specialists, now: source.fixture.persona.now })
+  console.log(`\n${s.headline}\n`)
+  for (const i of s.items) console.log(`  [${i.kind}] ${i.title}: ${i.text}`)
+  console.log(
+    `\nsince ${s.since}, nothing else: ${s.nothingElse}, in ${Math.round((Date.now() - started) / 1000)}s`,
+  )
+  process.exit(0)
+}
 if (handle) {
   const result = await handleWhatYouCan({
     store,
