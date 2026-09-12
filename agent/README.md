@@ -87,7 +87,7 @@ Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and 
 
 The Investigator prompt now states the rule outright (a meeting already on the calendar whose time changed is Watching unless another event overlaps the new slot or the organizer asks for a reply).
 
-> **Not yet measured.** The three-run table for that prompt change is missing: the machine the change was written on has no AWS credentials, so no scan could be executed. Treat the club meeting as still unreliable until someone with credentials runs `pnpm --filter @openloop/agent agreement` and pastes the table here, replacing this note.
+> **Needs re-measuring.** The last three-run table here was measured on 2026-09-12, before the professor-form and passport threads grew the demo inbox, so it no longer describes this fixture and has been removed rather than left to mislead. Run `pnpm --filter @openloop/agent agreement` against the current `demo/seed-inbox.json` and paste the table here in its place.
 
 Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
 
