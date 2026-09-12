@@ -25,8 +25,8 @@ pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed
 pnpm --filter @openloop/agent scan -- --catch-up  # what changed since the last catch-up, written from the ledger only
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm reset-demo --dry-run                       # count the rows a reset would delete; deletes nothing
-pnpm reset-demo --yes                           # delete them, then rescan the base inbox on the deployed runtime (~4 min)
-pnpm reset-demo --yes --no-scan                 # delete only, no runtime call
+pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~4 min)
+pnpm reset-demo --table openloop-ledger --yes --no-scan   # delete only, no runtime call
 pnpm reset-demo --local --yes                   # reseed .openloop/ledger.json from demo/seed-ledger.json instead
 pnpm --filter @openloop/agent dev               # runtime server on :8080 (same as agentcore dev, without the inspector)
 agentcore dev                                   # interactive local runtime with inspector (needs a real terminal)
@@ -89,8 +89,8 @@ The Extractor sets `area` on every loop (school, work, money, health, home, trav
 
 `pnpm reset-demo` (root script; `scripts/reset-demo.ts` here) puts the demo back in a known state before a rehearsal or the recording: it deletes the demo user's rows from the DynamoDB ledger table, then rescans the base inbox into the table through the deployed runtime, and prints the loops it ends with.
 
-- It prints table, region, user and the row counts it found, and **deletes nothing without `--yes`**. `--dry-run` counts and stops.
-- `--no-scan` deletes without calling the runtime. `--local` resets the local JSON ledger (`.openloop/ledger.json`, or `OPENLOOP_LEDGER_FILE`) from `demo/seed-ledger.json` instead and never touches DynamoDB or AWS.
+- It prints table, region, user and the row counts it found, and **deletes nothing without both `--table <name>` and `--yes`**. `--table` must repeat the resolved target table exactly (`OPENLOOP_LEDGER_TABLE`, default `openloop-ledger`); a destructive run with the wrong name or no `--table` at all prints what it expected, deletes nothing and exits 1. `--dry-run` counts and stops, and needs no `--table`.
+- `--no-scan` deletes without calling the runtime. `--local` resets the local JSON ledger (`.openloop/ledger.json`, or `OPENLOOP_LEDGER_FILE`) from `demo/seed-ledger.json` instead and never touches DynamoDB or AWS; it takes `--yes` alone, because it overwrites one local file any scan can rebuild and there is no table to name.
 - `OPENLOOP_LEDGER_TABLE` (default `openloop-ledger`), `AWS_REGION`, `DYNAMODB_ENDPOINT`, `OPENLOOP_RUNTIME_ARN` (required unless `--no-scan`) and `--user` / `OPENLOOP_USER_ID` (default `user-alex`) configure it.
 - Deletion is a per-user query, never a table scan: loop ids are collected first, then each loop's `LOOP#<id>` evidence partition, then everything is removed with batched `BatchWriteItem`. **Limitation:** rows the user's partition cannot reach survive, namely anything written under another partition prefix (the contract tests use a UUID prefix) and evidence whose loop row is already missing from earlier runs. Delete those by hand in the console if they ever matter; a scan-based sweep is too dangerous to run against the wrong table.
 

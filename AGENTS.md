@@ -70,7 +70,7 @@ pnpm --filter @openloop/agent dev  # runtime server on :8080
 pnpm --filter @openloop/agent deploy-runtime  # deploy to AgentCore Runtime (never bare `agentcore deploy`, see agent/README.md)
 pnpm --filter @openloop/ledger-dynamo create-table   # idempotent; OPENLOOP_LEDGER_TABLE overrides the name
 pnpm reset-demo --dry-run          # rows a demo reset would delete for user-alex in the ledger table; deletes nothing
-pnpm reset-demo --yes              # delete them, then rescan the base inbox on the deployed runtime (~4 min)
+pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~4 min); refuses unless --table repeats the target table
 pnpm reset-demo --local --yes      # reseed the local JSON ledger from demo/seed-ledger.json instead; flags and limits in agent/README.md
 OPENLOOP_DYNAMO_TEST_TABLE=openloop-ledger-test pnpm --filter @openloop/ledger-dynamo test   # contract suite on real DynamoDB
 python3 scripts/check_context.py   # deterministic context check (also run by CI)

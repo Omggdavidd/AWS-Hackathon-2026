@@ -10,12 +10,13 @@ import { LocalLedgerStore } from '@openloop/shared'
 
 /**
  * Put the demo back in a known state: delete the demo user's rows from the ledger table, then rescan
- * the base inbox into it through the deployed runtime (about 4 minutes). Deletes nothing without --yes.
- *   pnpm reset-demo --dry-run                # count what would go, delete nothing
- *   pnpm reset-demo --yes                    # delete, then scan through the deployed runtime
- *   pnpm reset-demo --yes --no-scan          # delete only (no AWS Bedrock call)
- *   pnpm reset-demo --local --yes            # reseed the local JSON ledger from demo/seed-ledger.json instead
- *   pnpm reset-demo --yes --user user-bo     # another user id (default user-alex, or OPENLOOP_USER_ID)
+ * the base inbox into it through the deployed runtime (about 4 minutes). Deletes nothing unless --table
+ * names the target table exactly and --yes confirms.
+ *   pnpm reset-demo --dry-run                                     # count what would go, delete nothing
+ *   pnpm reset-demo --table openloop-ledger --yes                 # delete, then scan through the deployed runtime
+ *   pnpm reset-demo --table openloop-ledger --yes --no-scan       # delete only (no AWS Bedrock call)
+ *   pnpm reset-demo --table openloop-ledger --yes --user user-bo  # another user id (default user-alex, or OPENLOOP_USER_ID)
+ *   pnpm reset-demo --local --yes                                 # reseed the local JSON ledger from demo/seed-ledger.json instead
  *   OPENLOOP_LEDGER_TABLE, AWS_REGION, DYNAMODB_ENDPOINT, OPENLOOP_RUNTIME_ARN, OPENLOOP_LEDGER_FILE override the rest
  */
 const local = process.argv.includes('--local')
@@ -27,6 +28,8 @@ const userId =
   (userIdx >= 0 ? process.argv[userIdx + 1] : undefined) ??
   process.env.OPENLOOP_USER_ID ??
   'user-alex'
+const tableIdx = process.argv.indexOf('--table')
+const namedTable = tableIdx >= 0 ? process.argv[tableIdx + 1] : undefined
 const table = process.env.OPENLOOP_LEDGER_TABLE ?? 'openloop-ledger'
 const region = process.env.AWS_REGION ?? 'us-east-1'
 const endpoint = process.env.DYNAMODB_ENDPOINT
@@ -103,6 +106,12 @@ if (dryRun) {
 }
 if (!confirmed) {
   console.log(`refusing to delete ${total} rows without --yes`)
+  process.exit(1)
+}
+if (namedTable !== table) {
+  console.log(
+    `refusing to delete ${total} rows: --table must name the target table, expected ${table}, got ${namedTable ?? 'no --table'}`,
+  )
   process.exit(1)
 }
 const deleted = await store.purgeUser(userId)
