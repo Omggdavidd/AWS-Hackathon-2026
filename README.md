@@ -16,7 +16,7 @@ pnpm --filter @openloop/web dev     # http://localhost:3000 on the seeded local 
 
 That is enough for frontend work: the dashboard runs on `demo/seed-ledger.json`, the ledger the agent is expected to produce.
 
-To run the agent or the full path you need AWS credentials for the team account (ask David for an IAM user, then `aws configure` with region `us-east-1`):
+To run the agent, the DynamoDB contract suite or a deploy you need AWS credentials: David creates an access key for your `openloop-<login>` IAM user and shares it privately; run `aws configure` (region `us-east-1`, output `json`). Claude Code and the scripts pick the credentials up from `~/.aws`; never paste keys into `.env` files or chat. Frontend work on the local ledger needs none of this:
 
 ```
 pnpm --filter @openloop/agent scan -- --reset          # real model over the demo inbox, ~4 min

@@ -23,14 +23,16 @@ Not runnable. No application code exists yet. Submission deadline Mon Sep 14, 20
 
 Work is tracked as GitHub issues on the submission milestone (`must-ship` first, then `stretch`); each has an owner. Claim anything unassigned by assigning yourself; see `CONTRIBUTING.md` *Claiming work*.
 
-| Track | Owner | Issues |
-|---|---|---|
-| Web | Omggdavidd | #17 loop page effects, #18 dashboard polish, #13 catch me up (web half) |
-| Agent | Ojulari123 | #14 failure paths, #15 calibration, #16 scan speed, #29 demo reset, #40 two more demo threads, #13 catch me up (agent half) |
-| Docs and demo | tdare514, ab00bae | tdare514: #33 README and architecture diagram, #30 observability evidence, #15 calibration (with Ojulari123). ab00bae: #22 demo script |
-| Infra | Omggdavidd | #19 Vercel deploy |
-| Small, self-contained | AyomideAw | #35 show-source page, #36 remind/ignore buttons, #37 done cancels actions, #38 CI builds web |
-| Unassigned | — | #39 quiet notification banner; stretch #20 live Gmail, #21 Google sinks, #31 command bar |
+| Owner | Issues (do in this order) |
+|---|---|
+| Omggdavidd | #17 loop page effects, #19 Vercel deploy, #18 dashboard polish |
+| Ojulari123 | #29 demo reset script, #13 catch me up, #14 failure paths, #16 scan speed |
+| tdare514 | #15 calibration, #33 README and diagram, #30 observability evidence |
+| ab00bae | #38 CI builds web, #22 demo script, #39 notification banner |
+| AyomideAw | #35 show-source page, #36 remind/ignore buttons, #37 done cancels actions, #40 two more demo threads |
+| Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
+
+One owner per issue; the only overlaps are `web/app/loops/[id]/page.tsx` (#17 and #35, rebase before ready) and demo fixtures (#14 uses its own file, #40 edits the base inbox).
 
 ## Recently completed
 
@@ -59,4 +61,4 @@ Must-ship in the order the demo needs them: #17, #29, #35, #13, #14, #18, #19, #
 
 ## Workstreams
 
-Collaborators: Omggdavidd (admin), Ojulari123, ab00bae, tdare514, AyomideAw (invited). Tracks and owners are in *In progress*.
+Collaborators: Omggdavidd (admin), Ojulari123, ab00bae, tdare514, AyomideAw. Each has an IAM user `openloop-<login>` in the AWS account; keys are shared by David through a password manager, never in chat or the repo. Tracks and owners are in *In progress*.
