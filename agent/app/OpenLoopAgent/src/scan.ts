@@ -10,6 +10,7 @@ import {
   type ProposedAction,
 } from '@openloop/shared'
 import type { Specialists } from './agents'
+import { type Logger, noopLogger, timed } from './log'
 
 export interface ScanOptions {
   source: IngestionSource
@@ -20,6 +21,8 @@ export interface ScanOptions {
   /** Bounded backfill window start (SPEC §11). Messages before it are ignored. */
   after?: string
   onEvent?: (event: ScanEvent) => void
+  /** Structured pipeline logging (#30). Defaults to silence. */
+  logger?: Logger
 }
 
 export type ScanEvent =
@@ -52,8 +55,11 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
   const { source, store, userId, specialists } = opts
   const now = opts.now ?? new Date().toISOString()
   const emit = opts.onEvent ?? (() => {})
+  const log = opts.logger ?? noopLogger
+  const startedAt = Date.now()
   const messages = await source.listMessages(opts.after ? { after: opts.after } : {})
   const threads = groupByThread(messages)
+  log({ evt: 'scan_started', messages: messages.length, threads: threads.size })
   const summary: ScanSummary = {
     threads: threads.size,
     skipped: 0,
@@ -65,7 +71,9 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
   for (const [threadId, thread] of threads) {
     const root = thread[0]
     if (!root) continue
+    const threadStartedAt = Date.now()
     emit({ type: 'thread', threadId, subject: root.subject })
+    log({ evt: 'thread_started', threadId, subject: root.subject, messages: thread.length })
 
     const known = (
       await Promise.all(thread.map((m) => store.findLoopsBySource(userId, m.id)))
@@ -80,6 +88,12 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       if (newMessages.length === 0) {
         summary.skipped++
         emit({ type: 'skipped', threadId, reason: 'already tracked' })
+        log({
+          evt: 'thread_skipped',
+          threadId,
+          reason: 'already tracked',
+          ms: elapsed(threadStartedAt),
+        })
         continue
       }
       const changed = await updateLoop({
@@ -90,40 +104,67 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
         newMessages,
         thread,
         now,
+        log,
       })
       if (changed) {
         summary.updated++
         emit({ type: 'updated', ...changed })
+        log({
+          evt: 'loop_updated',
+          threadId,
+          loopId: changed.loop.id,
+          from: changed.from,
+          to: changed.to,
+          ms: elapsed(threadStartedAt),
+        })
       } else {
         summary.skipped++
         emit({ type: 'skipped', threadId, reason: 'new messages recorded; state unchanged' })
+        log({
+          evt: 'thread_skipped',
+          threadId,
+          reason: 'new messages recorded; state unchanged',
+          ms: elapsed(threadStartedAt),
+        })
       }
       continue
     }
 
-    const extracted = await specialists.extract({ thread, now })
+    const extracted = await timed(log, { evt: 'role', role: 'extract', threadId }, () =>
+      specialists.extract({ thread, now }),
+    )
     if (!extracted.isResponsibility || !extracted.candidate) {
       summary.skipped++
       emit({ type: 'skipped', threadId, reason: extracted.rationale })
+      log({
+        evt: 'thread_skipped',
+        threadId,
+        reason: extracted.rationale,
+        ms: elapsed(threadStartedAt),
+      })
       continue
     }
     const candidate = extracted.candidate
 
-    const investigation = await specialists.investigate({ candidate, thread, now })
-    const judgment = await specialists.judge({
-      loop: {
-        title: candidate.title,
-        category: candidate.category,
-        actionType: candidate.actionType,
-        status: investigation.proposedStatus,
-        ...(candidate.dueAt ? { dueAt: candidate.dueAt } : {}),
-        ...(candidate.amount ? { amount: candidate.amount } : {}),
-        ...(candidate.requestedBy ? { requestedBy: candidate.requestedBy } : {}),
-        ...(investigation.waitingOn ? { waitingOn: investigation.waitingOn } : {}),
-      },
-      evidence: investigation.evidence,
-      now,
-    })
+    const investigation = await timed(log, { evt: 'role', role: 'investigate', threadId }, () =>
+      specialists.investigate({ candidate, thread, now }),
+    )
+    const judgment = await timed(log, { evt: 'role', role: 'judge', threadId }, () =>
+      specialists.judge({
+        loop: {
+          title: candidate.title,
+          category: candidate.category,
+          actionType: candidate.actionType,
+          status: investigation.proposedStatus,
+          ...(candidate.dueAt ? { dueAt: candidate.dueAt } : {}),
+          ...(candidate.amount ? { amount: candidate.amount } : {}),
+          ...(candidate.requestedBy ? { requestedBy: candidate.requestedBy } : {}),
+          ...(investigation.waitingOn ? { waitingOn: investigation.waitingOn } : {}),
+        },
+        evidence: investigation.evidence,
+        now,
+      }),
+    )
 
     const loopId = randomUUID()
     const sourceIds = new Set<string>([candidate.sourceRef.sourceId])
@@ -208,6 +249,16 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     summary.created++
     summary.byStatus[status] = (summary.byStatus[status] ?? 0) + 1
     emit({ type: 'loop', loop, actions: actionCount })
+    log({
+      evt: 'loop_created',
+      threadId,
+      loopId,
+      status,
+      priority: loop.priority,
+      riskLevel: loop.riskLevel,
+      actions: actionCount,
+      ms: elapsed(threadStartedAt),
+    })
   }
 
   await store.appendAudit({
@@ -221,7 +272,12 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     details: { messages: messages.length, threads: threads.size, created: summary.created },
   })
   emit({ type: 'done', summary })
+  log({ evt: 'scan_completed', ...summary, ms: elapsed(startedAt) })
   return summary
+}
+
+function elapsed(since: number): number {
+  return Date.now() - since
 }
 
 /** Delta path: record evidence for unseen messages and transition the loop if the Investigator says so. */
@@ -233,12 +289,18 @@ async function updateLoop(input: {
   newMessages: EmailMessage[]
   thread: EmailMessage[]
   now: string
+  log: Logger
 }): Promise<
   { loop: OpenLoop; from: OpenLoop['status']; to: OpenLoop['status']; reason: string } | undefined
 > {
-  const { store, userId, specialists, loop, newMessages, thread, now } = input
+  const { store, userId, specialists, loop, newMessages, thread, now, log } = input
   const existingEvidence = await store.listEvidence(loop.id)
-  const result = await specialists.update({ loop, existingEvidence, newMessages, thread, now })
+  const threadId = loop.sourceRefs.find((r) => r.threadId)?.threadId
+  const result = await timed(
+    log,
+    { evt: 'role', role: 'update', ...(threadId ? { threadId } : {}) },
+    () => specialists.update({ loop, existingEvidence, newMessages, thread, now }),
+  )
 
   for (const e of result.evidence) {
     await store.appendEvidence({

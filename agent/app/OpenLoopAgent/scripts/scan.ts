@@ -9,6 +9,7 @@ import {
 } from '@openloop/shared'
 import { handleWhatYouCan } from '../src/actions'
 import { createSpecialists } from '../src/agents'
+import { jsonLogger, noopLogger } from '../src/log'
 import { loadModel } from '../src/model'
 import { runScan } from '../src/scan'
 
@@ -19,11 +20,16 @@ import { runScan } from '../src/scan'
  *   pnpm --filter @openloop/agent scan -- --dynamo openloop-ledger   # write to the DynamoDB table instead
  *   pnpm --filter @openloop/agent scan -- --delta                     # next-morning batch on top of the base inbox
  *   pnpm --filter @openloop/agent scan -- --handle                    # execute every allowed proposed action instead of scanning
+ *   pnpm --filter @openloop/agent scan -- --log-json                  # the runtime's structured pipeline lines on stderr (#30)
  */
 const repoRoot = path.resolve(import.meta.dirname, '../../../..')
 const reset = process.argv.includes('--reset')
 const delta = process.argv.includes('--delta')
 const handle = process.argv.includes('--handle')
+// stderr, so the pipeline lines never interleave with the human-readable progress on stdout.
+const logger = process.argv.includes('--log-json')
+  ? jsonLogger((chunk) => void process.stderr.write(chunk))
+  : noopLogger
 const dynamoIdx = process.argv.indexOf('--dynamo')
 const dynamoTable = dynamoIdx >= 0 ? process.argv[dynamoIdx + 1] : undefined
 const ledgerPath = path.join(repoRoot, '.openloop', 'agent-ledger.json')
@@ -51,6 +57,7 @@ if (handle) {
     sink: new FixtureActionSink(),
     userId,
     specialists,
+    logger,
     now: source.fixture.persona.now,
   })
   for (const h of result.handled) console.log(`✓ ${h.status.padEnd(9)} ${h.summary}`)
@@ -65,6 +72,7 @@ const summary = await runScan({
   store,
   userId,
   specialists,
+  logger,
   now: source.fixture.persona.now,
   onEvent: (e) => {
     if (e.type === 'thread') process.stdout.write(`\n▸ ${e.threadId}  ${e.subject}\n`)
