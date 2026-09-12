@@ -1,24 +1,17 @@
 import type { AuditKind, LoopStatus, Priority } from '@openloop/shared'
 import { STATUS_LABEL } from '@/lib/format'
 
-const STATUS_STYLE: Record<LoopStatus, string> = {
-  NEEDS_YOU:
-    'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950 dark:text-red-300 dark:ring-red-900',
-  WAITING:
-    'bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-900',
-  WATCHING:
-    'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-900',
-  RESOLVED:
-    'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-900',
-  UNCERTAIN:
-    'bg-stone-100 text-stone-700 ring-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:ring-stone-700',
+const STATUS_TONE: Record<LoopStatus, string> = {
+  NEEDS_YOU: 'needs-you',
+  WAITING: 'waiting',
+  WATCHING: 'watching',
+  RESOLVED: 'resolved',
+  UNCERTAIN: 'uncertain',
 }
 
 export function StatusChip({ status }: { status: LoopStatus }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_STYLE[status]}`}
-    >
+    <span className="status-chip" data-state={STATUS_TONE[status]}>
       {STATUS_LABEL[status]}
     </span>
   )

@@ -4,39 +4,46 @@ import { formatDate, formatDue, formatMoney } from '@/lib/format'
 import { PriorityDot } from './status-chip'
 
 export function LoopCard({ loop, now }: { loop: OpenLoop; now: Date }) {
-  // Overdue language only where the user owes the move; watched or waiting items just show their date.
+  // Overdue language only where the user owes the move.
+  const needsUser = loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
   const due =
     loop.status === 'RESOLVED'
       ? undefined
-      : loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
+      : needsUser
         ? formatDue(loop.dueAt, now)
         : loop.dueAt
           ? formatDate(loop.dueAt)
           : undefined
-  const amount = formatMoney(loop.amount)
-  const meta = [
-    amount,
-    loop.requestedBy,
-    loop.waitingOn ? `Waiting on ${loop.waitingOn}` : undefined,
-  ].filter(Boolean)
+  const meta = [formatMoney(loop.amount), loop.requestedBy].filter(Boolean)
   return (
     <Link
       href={`/loops/${loop.id}`}
-      className="block rounded-lg border border-border bg-card p-4 transition hover:border-stone-400 dark:hover:border-stone-500"
+      className="loop-card"
+      data-priority={needsUser ? loop.priority : undefined}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-2">
-          <span className="mt-2 flex shrink-0">
-            <PriorityDot priority={loop.priority} />
-          </span>
-          <span className="font-medium">{loop.title}</span>
-        </div>
-        {due && <span className="shrink-0 text-sm text-muted">{due}</span>}
+      <div className="card-heading">
+        <span className="card-title">
+          <PriorityDot priority={loop.priority} />
+          {loop.title}
+        </span>
+        {due && <span className="due-label">{due}</span>}
       </div>
-      {meta.length > 0 && <p className="mt-1 pl-4 text-sm text-muted">{meta.join(' · ')}</p>}
+      {meta.length > 0 && <p className="card-meta">{meta.join(' · ')}</p>}
+      {loop.waitingOn && <p className="card-meta">Waiting on {loop.waitingOn}</p>}
       {loop.nextAction && loop.status !== 'RESOLVED' && (
-        <p className="mt-2 pl-4 text-sm">{loop.nextAction}</p>
+        <p className="card-next">
+          <span aria-hidden="true">↳</span>
+          {loop.nextAction}
+        </p>
       )}
+      <div className="card-footer">
+        <span>
+          {`${loop.sourceRefs.length} ${loop.sourceRefs.length === 1 ? 'source' : 'sources'} linked`}
+        </span>
+        <span className="card-review">
+          {needsUser ? 'Review loop' : 'View details'} <span aria-hidden="true">↗</span>
+        </span>
+      </div>
     </Link>
   )
 }
