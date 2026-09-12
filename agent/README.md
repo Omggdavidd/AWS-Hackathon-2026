@@ -54,7 +54,9 @@ Invocation payload (validated by the Zod schema in `main.ts`). Without `source.p
 
 Commands: `scan` (default), `handle` (execute every proposed action the policy allows and list the rest), `execute` with `actionId` (one action, used by the web after approval), `catch_up` (state changes since the previous catch-up or `since`; the digest is built in code, the model only writes the sentences, and a `catch_up` audit event marks the check). The policy gate is `mayExecute` in `@openloop/shared`: low risk and prepare-type medium risk run automatically; high risk only when the record is `APPROVED`. Effects go through `FixtureActionSink` today (simulated, recorded as evidence with source `action:<id>`); Gmail and Calendar sinks are the live-path stretch.
 
-Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted. `OPENLOOP_MODEL_ID` overrides the model.
+Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted.
+
+Models and pacing (ADR-0007): the Extractor runs on Claude Haiku 4.5 and the other five roles share one Claude Sonnet 4.6 instance. `OPENLOOP_MODEL_ID` overrides the shared model, `OPENLOOP_EXTRACTOR_MODEL_ID` the Extractor's. `runScan` works on three threads at a time; `ScanOptions.concurrency` changes that (1 is the old sequential behaviour). Writes stay ordered within a thread, a loop is never created twice, and `onEvent` still emits one thread's events as a block.
 
 ## Structured logs
 
