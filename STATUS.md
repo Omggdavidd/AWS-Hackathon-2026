@@ -2,7 +2,7 @@
 
 Snapshot of **now**. Not a changelog. Update it in the same PR as the change that made it stale, and bump the date only when content changes. Keep it under ~100 lines; move items completed more than a week ago out of *Recently completed* (git history keeps them).
 
-Last updated: 2026-09-11
+Last updated: 2026-09-12
 
 Current phase: Phase 2, Foundation (definitions in `docs/process/phases.md`). Entered 2026-09-10 when ADRs 0003 to 0012 were accepted and merged.
 
@@ -17,7 +17,7 @@ Runnable locally: `pnpm --filter @openloop/web dev` renders the seeded ledger, a
 - `demo/seed-inbox.json` (13 messages, 3 events) and `demo/seed-ledger.json` (the 9 loops the agent should produce), both validated by tests.
 - `web/`: dashboard with the four states (desktop rail, phone bottom tabs, agent toolbar, first-scan progress, collapsed resolved), loop detail (why it exists, evidence, confidence, consequence, actions with the effects the agent produced, timeline), approve/decline with pending state, "I already did this", activity feed, and a message page behind every source id so each claim can be checked against the original mail or event. Runs on the local ledger seeded from the demo.
 - `packages/ledger-dynamo`: DynamoDB ledger passing the shared contract suite against a real table; tables `openloop-ledger` and `openloop-ledger-test` exist in `us-east-1`.
-- `agent/`: AgentCore project with the Strands pipeline (Extractor, Investigator with inbox and ledger tools, Risk Judge, update path for new mail in tracked threads, Action Agent; all structured output on Claude Sonnet 4.6). `handle` executes allowed actions through a simulated sink; `execute` runs one approved action; high risk never executes without approval (enforced in code, tested); `catch_up` summarizes state changes since the last check from the ledger alone. A real scan of the demo inbox produces 9 loops with the expected states in about 4 minutes, writing evidence, proposed actions (high-risk ones gated) and audit events through the shared ledger. Deployed to AgentCore Runtime (`AgentCore-OpenLoop-default`, `us-east-1`) writing to DynamoDB; invoked end to end from the AWS CLI and from the web app's Scan button.
+- `agent/`: AgentCore project with the Strands pipeline (Extractor, Investigator with inbox and ledger tools, Risk Judge, update path for new mail in tracked threads, Action Agent; all structured output on Claude Sonnet 4.6). `handle` executes allowed actions through a simulated sink; `execute` runs one approved action; high risk never executes without approval (enforced in code, tested); `catch_up` summarizes state changes since the last check from the ledger alone. A real scan of the demo inbox produces 9 loops with the expected states in about 4 minutes, writing evidence, proposed actions (high-risk ones gated) and audit events through the shared ledger. `runScan` and `executeAction` emit a structured JSON line per pipeline step (thread, role, duration, outcome) to stdout for CloudWatch; shapes and capture queries in `docs/architecture/observability/`. Deployed to AgentCore Runtime (`AgentCore-OpenLoop-default`, `us-east-1`) writing to DynamoDB; invoked end to end from the AWS CLI and from the web app's Scan button.
 
 ## In progress
 
@@ -27,18 +27,18 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 |---|---|
 | Omggdavidd (hard + front end) | #19 Vercel deploy |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration |
-| tdare514 (medium) | #30 observability evidence, #35 show-source page, #40 two more demo threads |
+| tdare514 (medium) | #30 observability evidence, #40 two more demo threads |
 | ab00bae (medium-easy) | #33 README and diagram, #36 remind/ignore buttons, #39 notification banner |
 | AyomideAw (easiest) | #37 done cancels actions, #38 CI builds web, #22 demo script |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
 
-One owner per issue and no issue waits on another. Shared files: the loop page (#17 and #35, rebase before ready) and demo fixtures (#14 uses its own file, #40 edits the base inbox). Every issue states why it matters for the submission.
+#30 has its code half merged (structured logs); the CloudWatch screenshots still need a scan against the deployed runtime. One owner per issue and no issue waits on another. Shared files: the loop page (#17 and #35, rebase before ready) and demo fixtures (#14 uses its own file, #40 edits the base inbox). Every issue states why it matters for the submission.
 
 ## Recently completed
 
 - 2026-09-10 Phase 0 foundation (f1156d9); Phase 1 merged (#1); workspace scaffold and shared package merged (#2); `main` ruleset enabled; MIT license added.
 - 2026-09-11 Web dashboard shell (#4), agent pipeline (#8), AgentCore deploy (#9), DynamoDB and Scan button (#10), delta path (#11), actions and approval (#12).
-- 2026-09-12 Loop page shows executed effects (#17); message page behind evidence links (#35, tdare514); Catch me up command and button (#13); dashboard polish: rail, bottom tabs, toolbar, empty and scan states, activity badges (#18).
+- 2026-09-12 Loop page shows executed effects (#17); message page behind evidence links (#35, tdare514); Catch me up command and button (#13); dashboard polish: rail, bottom tabs, toolbar, empty and scan states, activity badges (#18); structured pipeline logging for the agent runtime (#30, code half).
 
 ## Blocked
 
@@ -46,7 +46,7 @@ One owner per issue and no issue waits on another. Shared files: the loop page (
 
 ## Next up
 
-Must-ship in the order the demo needs them: #17, #29, #35, #13, #14, #18, #19, #33, #22, #30. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
+Must-ship in the order the demo needs them: #17, #29, #13, #14, #18, #19, #33, #22, #30. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
 
 ## Known issues
 
