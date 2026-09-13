@@ -5,6 +5,7 @@ import { StateIcon } from '@/components/loop-mark'
 import { SubmitButton } from '@/components/submit-button'
 import {
   ACTION_LABEL,
+  AREA_LABEL,
   formatDate,
   formatDue,
   formatMoney,
@@ -105,6 +106,11 @@ function Row({ loop, now }: { loop: OpenLoop; now: Date }) {
           {loop.title}
         </Link>
         <span className="tl-meta">
+          {loop.area !== 'other' && (
+            <span className="area-pill" data-area={loop.area}>
+              {AREA_LABEL[loop.area]}
+            </span>
+          )}
           {verb && <em>{verb}</em>}
           {amount && <span>{amount}</span>}
           {who && <span>{who}</span>}

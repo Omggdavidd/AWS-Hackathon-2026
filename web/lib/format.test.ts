@@ -16,6 +16,7 @@ const base: OpenLoop = {
   userId: 'u',
   title: 't',
   category: 'other',
+  area: 'other',
   status: 'NEEDS_YOU',
   owner: 'user',
   actionType: 'none',

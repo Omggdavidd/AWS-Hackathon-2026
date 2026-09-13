@@ -23,6 +23,8 @@ Deterministic seed data for the five-minute demo (`docs/hackathon/SPEC.md` §14,
 
 Base-inbox ids run `msg-001` to `msg-013` plus `msg-018` and `msg-019`; the gap is the delta batch below, which was numbered first. Renumbering it would churn the tests for no gain.
 
+Each expected loop also carries an `area`, the part of life it belongs to (school, work, money, health, home, travel, community, other), which the Extractor sets from who is asking and what it is about; the board's By area view groups on it.
+
 `seed-inbox-delta.json` is the "next morning" batch for the delta path (plan step 7): merged on top of the base inbox by `mergeFixtures`, it must update existing loops rather than create duplicates.
 
 | Delta message | Expected outcome |
