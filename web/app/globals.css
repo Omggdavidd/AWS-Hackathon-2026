@@ -1320,6 +1320,45 @@ summary {
   margin-top: 6px;
   color: var(--muted);
 }
+.change-banner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 22px;
+}
+.change-banner p {
+  line-height: 1.6;
+}
+.change-banner a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.change-banner a:hover {
+  color: var(--foreground);
+}
+.change-banner button {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+.change-banner button:hover {
+  color: var(--foreground);
+}
+@media (max-width: 640px) {
+  .change-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
 .bottom-tabs {
   display: none;
 }

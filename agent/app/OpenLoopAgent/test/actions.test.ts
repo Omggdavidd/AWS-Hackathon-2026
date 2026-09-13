@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import {
+  applyTransition,
   FixtureActionSink,
   FixtureSource,
   LocalLedgerStore,
@@ -156,6 +157,40 @@ describe('executeAction', () => {
     await opts.store.putAction(action({ id: 'fu', type: 'follow_up', riskTier: 'low' }))
     await executeAction(opts, 'fu')
     expect((await opts.store.getLoop('user-1', 'loop-1'))?.status).toBe('WAITING')
+  })
+
+  it('does not reopen a loop the user resolved while the action was running', async () => {
+    const opts = await setup()
+    const resolvedAt = '2026-09-10T13:00:30.000Z'
+    await opts.store.putAction(action({ id: 'fu', type: 'follow_up', riskTier: 'low' }))
+
+    // "I already did this", pressed while the model is planning. RESOLVED -> WAITING is an allowed
+    // transition, so before #66 the stale snapshot wrote the loop back open.
+    const racing: Specialists = {
+      ...specialists,
+      async plan(args) {
+        const current = await opts.store.getLoop('user-1', 'loop-1')
+        if (current) await opts.store.putLoop(applyTransition(current, 'RESOLVED', resolvedAt))
+        return specialists.plan(args)
+      },
+    }
+
+    const out = await executeAction({ ...opts, specialists: racing }, 'fu')
+
+    // The effect happened, so it stays recorded and visible on the loop.
+    expect(out.status).toBe('EXECUTED')
+    expect((await opts.store.getAction('user-1', 'fu'))?.status).toBe('EXECUTED')
+    expect(await opts.store.listEvidence('loop-1')).toHaveLength(1)
+
+    // The user's close wins, with resolvedAt intact.
+    const after = await opts.store.getLoop('user-1', 'loop-1')
+    expect(after?.status).toBe('RESOLVED')
+    expect(after?.resolvedAt).toBe(resolvedAt)
+
+    // And the skip is explained rather than silent.
+    const trail = await opts.store.listAudit('user-1')
+    expect(trail.some((e) => e.kind === 'state_changed')).toBe(false)
+    expect(trail.find((e) => e.kind === 'notification')?.reason).toContain('stays closed')
   })
 })
 

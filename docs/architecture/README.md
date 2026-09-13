@@ -4,6 +4,8 @@
 
 It is a view of [`../architecture.md`](../architecture.md), which stays the authority. When a component, boundary, invariant or deployment target changes there, change the diagram in the same PR.
 
+**The diagram deliberately states no fixture counts.** It said "13 messages" until #54 took the seeded inbox to 15, and nothing caught it: a PNG cannot link to the file that owns a fact, and no check reads it. [`../../demo/README.md`](../../demo/README.md) owns those numbers. Please do not add them back — a picture that restates a count goes stale every time the fixtures move, and this one is a submission asset (SPEC §18).
+
 [`observability/`](observability/) sits alongside it: the structured log lines the runtime emits for one scan, the CloudWatch queries that read them, and the captures we show judges. The diagram says what the system is; those say what it did.
 
 ## Editing

@@ -35,6 +35,7 @@ Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `Ledger
 - Every hop between agents is a validated Zod schema. Free text never crosses a boundary as data.
 - The frontend never talks to Bedrock, Strands or Google directly. Only the Next.js server holds AWS and Google credentials.
 - High-risk execution is refused in code unless the `ProposedAction` is `APPROVED`. Prompts cannot override this.
+- A user's decision outranks an agent action already in flight. An execution reads the loop again immediately before writing a status, and never moves one the user resolved while it was running; the effect it already produced stays recorded as evidence.
 - Fixture mode and live mode implement the same `IngestionSource` interface; switching is configuration.
 - No raw chain-of-thought is stored or shown. Evidence, confidence and short rationale are.
 - Full email bodies are not stored when ids plus excerpts suffice. Scopes are least-privilege.
