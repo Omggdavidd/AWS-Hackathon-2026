@@ -89,7 +89,7 @@ Point at the **What I found** quote, then the **History** line reading *"searche
 >
 > And then there is this one. Paying two hundred dollars is high risk, so it stops and waits for me. That gate is not a sentence in a prompt asking the model to be careful. It is application code the model cannot talk its way past, and there is a test that proves it.
 
-Show the drafted email inside the insurance loop, then the deposit's **Approve / Decline** with *"needs your approval"*.
+Show the drafted email inside the insurance loop, then click **Review** on the deposit's action: the decision sheet shows the payment it would make, the email it rests on, and **Approve** and **Decline**, each of which asks for a second click.
 
 ### 6 · The next morning — 3:20 to 4:00 — 62 words
 
@@ -141,6 +141,6 @@ From SPEC §17's list of traps, the ones this script is built to avoid:
 
 ## Rehearsal status
 
-Walked against the deployed app at <https://openloop-neon.vercel.app> and against the app running locally on the seeded ledger, most recently on 2026-09-13 at commit `c8c221c`, confirming that every click in this file exists and every quoted on-screen string matches: the headline, the bucket names and counts, the facts strip on the deposit, the evidence quote, the History line, the three loop-page buttons, the Approve and Decline pair, and all four agent-panel labels.
+Walked against the deployed app at <https://openloop-neon.vercel.app> and against the app running locally on the seeded ledger, most recently on 2026-09-13 at commit `c8c221c`, confirming that every click in this file exists and every quoted on-screen string matches: the headline, the bucket names and counts, the facts strip on the deposit, the evidence quote, the History line, the three loop-page buttons, the Review link and the Approve and Decline pair on the decision sheet, and all four agent-panel labels.
 
 **Not yet done: a spoken read-through against a stopwatch.** The 550 words are counted from this file, but turning words into seconds is arithmetic at an assumed pace, not a measurement of anyone actually reading it. Whoever records should read it aloud once end to end, note the real time at the top of this file, and cut from scenes 2 and 4 first if it runs long — they carry the least that a judge could not infer from the screen.

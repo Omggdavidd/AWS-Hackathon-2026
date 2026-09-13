@@ -1,7 +1,7 @@
 import type { AuditEvent, Evidence, SourceType } from '@openloop/shared'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { approveAction, cancelAction, ignoreLoop, markDone, remindTomorrow } from '@/app/actions'
+import { ignoreLoop, markDone, remindTomorrow } from '@/app/actions'
 import { ActionEffect } from '@/components/action-effect'
 import { StatusChip } from '@/components/status-chip'
 import { SubmitButton } from '@/components/submit-button'
@@ -112,8 +112,8 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
             {proposed.length > 0 && (
               <p className="pending-note">
                 {proposed.length === 1
-                  ? 'The agent has one action waiting for you below.'
-                  : `The agent has ${proposed.length} actions waiting for you below.`}
+                  ? 'The agent has one action waiting for your decision below.'
+                  : `The agent has ${proposed.length} actions waiting for your decision below.`}
               </p>
             )}
             <div className="loop-buttons">
@@ -181,16 +181,9 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
                       </p>
                     </div>
                     {pending && (
-                      <div className="action-buttons">
-                        <form action={approveAction.bind(null, action.id)}>
-                          <SubmitButton pendingLabel="Approving…">Approve</SubmitButton>
-                        </form>
-                        <form action={cancelAction.bind(null, action.id)}>
-                          <SubmitButton pendingLabel="Declining…" subtle>
-                            Decline
-                          </SubmitButton>
-                        </form>
-                      </div>
+                      <Link href={`/decisions?action=${action.id}`} className="decision-review">
+                        Review
+                      </Link>
                     )}
                   </div>
                   {effect && <ActionEffect effect={effect} />}

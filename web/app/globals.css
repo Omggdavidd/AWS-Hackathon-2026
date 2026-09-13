@@ -2127,3 +2127,202 @@ a.hero-line:hover {
   font-size: 12.5px;
   color: var(--muted);
 }
+
+/* Decisions: the strip on Today, the list, and the sheet */
+.decision-strip {
+  margin-top: 22px;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--attention) 30%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--attention) 5%, var(--card));
+}
+.decision-strip h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--attention);
+}
+.decision-strip h2 span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.decision-strip ol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.decision-strip li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.strip-summary {
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.strip-loop {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.strip-more {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--accent);
+}
+.decision-row[data-selected] {
+  background: color-mix(in srgb, var(--accent) 7%, var(--card));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.decision-sheet {
+  max-width: 68ch;
+}
+.decision-kicker {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--attention);
+}
+.decision-sheet[data-status="EXECUTED"] .decision-kicker,
+.decision-sheet[data-status="APPROVED"] .decision-kicker {
+  color: var(--resolved);
+}
+.decision-sheet[data-status="CANCELLED"] .decision-kicker,
+.decision-sheet[data-status="FAILED"] .decision-kicker {
+  color: var(--muted);
+}
+.decision-risk {
+  font-weight: 400;
+  color: var(--muted);
+}
+.decision-head h1 {
+  margin-top: 8px;
+  font-size: clamp(22px, 2.2vw, 28px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.decision-for {
+  margin-top: 10px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.decision-for-link {
+  color: var(--foreground);
+  font-weight: 500;
+}
+.decision-for-link:hover {
+  color: var(--accent);
+}
+.decision-body {
+  margin-top: 22px;
+}
+.decision-body .effect {
+  margin-top: 0;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+.effect-amount {
+  margin-top: 6px;
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.effect-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 15px;
+}
+.effect-options li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.effect-options li span {
+  font-size: 12px;
+  color: var(--resolved);
+}
+.effect-field {
+  display: contents;
+}
+.decision-evidence {
+  margin-top: 24px;
+}
+.decision-evidence h2 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.decision-quote {
+  font-size: 15.5px;
+  line-height: 1.6;
+  padding-left: 14px;
+  border-left: 3px solid var(--attention);
+}
+.decision-evidence .evidence-meta {
+  padding-left: 17px;
+}
+.decision-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 26px;
+}
+.decision-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  transition:
+    background 140ms,
+    color 140ms,
+    border-color 140ms;
+}
+.decision-button[data-choice="approve"] {
+  background: var(--foreground);
+  color: var(--background);
+  border-color: var(--foreground);
+}
+.decision-button[data-choice="approve"][data-armed] {
+  background: var(--resolved);
+  border-color: var(--resolved);
+  color: #fff;
+}
+.decision-button[data-choice="decline"][data-armed] {
+  color: var(--attention);
+  border-color: var(--attention);
+}
+.decision-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.decision-armed-note {
+  width: 100%;
+  min-height: 1.4em;
+  font-size: 13px;
+  color: var(--muted);
+}
+.decision-done {
+  margin-top: 26px;
+  font-size: 15px;
+  font-weight: 500;
+}

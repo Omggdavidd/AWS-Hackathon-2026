@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AgentPanel } from '@/components/agent-panel'
+import { DecisionStrip } from '@/components/decision-strip'
 import { Headline } from '@/components/headline'
 import { LoopDetail } from '@/components/loop-detail'
 import { PaneRest } from '@/components/pane-rest'
@@ -47,6 +48,7 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
       <section className="today-main" aria-label="Today">
         <Headline groups={groups} name={USER_NAME} now={now} />
         <AgentPanel configured={scanConfigured} checked={checked} />
+        <DecisionStrip decisions={decisions} />
         <p className="view-hint">
           Arrow keys move, <kbd>Enter</kbd> opens.
         </p>
@@ -67,12 +69,7 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
               <LoopDetail id={selected} mode="pane" />
             </>
           ) : (
-            <PaneRest
-              closed={resolved}
-              total={loops.length}
-              changed={banner}
-              decisions={decisions}
-            />
+            <PaneRest closed={resolved} total={loops.length} changed={banner} />
           )}
         </div>
       </aside>
