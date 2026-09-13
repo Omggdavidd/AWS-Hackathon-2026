@@ -61,6 +61,8 @@ export function StateIcon({ name }: { name: string }) {
     resolved: 'm7 12 3 3 7-7',
     uncertain: 'M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5 M12 17h.01',
     activity: 'M3 12h4l3-8 4 16 3-8h4',
+    list: 'M4 7h16 M4 12h16 M4 17h16',
+    calendar: 'M4 5h16v15H4z M4 10h16 M8 3v4 M16 3v4',
   }
   return (
     <svg

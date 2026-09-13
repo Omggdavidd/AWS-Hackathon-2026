@@ -18,26 +18,12 @@ export function WorkspaceNav({ counts, mobile = false }: { counts: TabCounts; mo
   const [hash, setHash] = useState('')
   useEffect(() => {
     const update = () => {
-      setHash(window.location.hash)
-      if (pathname === '/' && window.location.hash === '#resolved') {
-        const resolved = document.querySelector<HTMLDetailsElement>('details#resolved')
-        if (resolved) resolved.open = true
-      }
-    }
-    // Clicking a shortcut again must reopen a manually collapsed resolved section.
-    const reveal = (event: MouseEvent) => {
-      if (!(event.target instanceof Element) || pathname !== '/') return
-      if (event.target.closest('a[href="#resolved"], a[href="/#resolved"]')) {
-        const resolved = document.querySelector<HTMLDetailsElement>('details#resolved')
-        if (resolved) resolved.open = true
-      }
+      setHash(pathname === '/' ? window.location.hash : '')
     }
     update()
     window.addEventListener('hashchange', update)
-    document.addEventListener('click', reveal)
     return () => {
       window.removeEventListener('hashchange', update)
-      document.removeEventListener('click', reveal)
     }
   }, [pathname])
   const tabs = [

@@ -1,58 +1,54 @@
-import type { LoopStatus, OpenLoop } from '@openloop/shared'
 import { cookies } from 'next/headers'
-import Link from 'next/link'
 import { AgentPanel } from '@/components/agent-panel'
+import { CalendarView } from '@/components/calendar-view'
 import { ChangeBanner } from '@/components/change-banner'
+
 import { LiveClock } from '@/components/live-clock'
-import { LoopRing, StateIcon } from '@/components/loop-mark'
-import { LoopRow } from '@/components/loop-row'
-import { KindBadge } from '@/components/status-chip'
+import { LoopBoard } from '@/components/loop-board'
+import { LoopRing } from '@/components/loop-mark'
+import { TodayList } from '@/components/today-list'
+import { parseView, ViewSwitch } from '@/components/view-switch'
 import { scanConfigured } from '@/lib/agent'
 import { summarizeChanges } from '@/lib/changes'
-import {
-  DEMO_TIME_ZONE,
-  formatDate,
-  formatDateTime,
-  groupByStatus,
-  STATUS_LABEL,
-  STATUS_ORDER,
-  summaryParts,
-} from '@/lib/format'
+
+import { DEMO_TIME_ZONE, formatDateTime, groupByStatus, summaryParts } from '@/lib/format'
+
 import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
 
 export const dynamic = 'force-dynamic'
 
-const SECTIONS = {
-  NEEDS_YOU: { id: 'needs-you', empty: 'Nothing needs you right now.' },
-  WAITING: { id: 'waiting', empty: 'You are not waiting on anyone.' },
-  WATCHING: { id: 'watching', empty: 'Nothing to watch yet.' },
-  RESOLVED: { id: 'resolved', empty: 'Closed loops will appear here.' },
-  UNCERTAIN: { id: 'uncertain', empty: '' },
-} as const
-
-/** Background events are not changes the user needs to see on the overview. */
-const QUIET_KINDS = new Set(['evidence_added', 'scan_completed', 'catch_up'])
-
-export default async function Home() {
+/**
+ * The overview. Home is a list grouped by time with the state on each row, the way Things,
+ * Todoist and Asana open; Board and Calendar are views on the same loops (SPEC §7, §8A).
+ */
+export default async function Home({ searchParams }: PageProps<'/'>) {
+  const { view: rawView } = await searchParams
+  const view = parseView(rawView)
   const store = await getStore()
   const [loops, audit] = await Promise.all([
     store.listLoops(USER_ID),
     store.listAudit(USER_ID, { limit: 40 }),
   ])
-  const groups = groupByStatus(loops)
-  const titles = new Map(loops.map((loop) => [loop.id, loop.title]))
-  const seenLoops = new Set<string>()
-  const changes = audit
-    .filter((event) => {
-      if (QUIET_KINDS.has(event.kind)) return false
-      const key = event.loopId ?? event.id
-      if (seenLoops.has(key)) return false
-      seenLoops.add(key)
-      return true
-    })
-    .slice(0, 4)
   const lastScan = audit.find((event) => event.kind === 'scan_completed')
+  const checked = lastScan ? formatDateTime(lastScan.at) : undefined
   const now = new Date()
+  const agent = <AgentPanel configured={scanConfigured} checked={checked} />
+
+  if (view === 'board') {
+    return (
+      <LoopBoard
+        loops={loops}
+        now={now.toISOString()}
+        name={USER_NAME}
+        checked={checked}
+        storageKey={`openloops:board:${USER_ID}:v1`}
+        agent={agent}
+      />
+    )
+  }
+
+  const groups = groupByStatus(loops)
+  const resolved = groups.get('RESOLVED')?.length ?? 0
   // Rendered only when something newer than the last dismissal happened, so there is no flash.
   const changed = summarizeChanges(audit, loops, now)
   const seen = (await cookies()).get('openloops-seen')?.value
@@ -65,7 +61,6 @@ export default async function Home() {
     }).format(now),
   )
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
-  const resolved = groups.get('RESOLVED')?.length ?? 0
 
   return (
     <div className="dashboard">
@@ -100,7 +95,8 @@ export default async function Home() {
               return part.section ? (
                 <a
                   key={part.text}
-                  href={`#${part.section}`}
+                  href={`#${part.section === 'needs-you' ? 'overdue' : 'week'}`}
+                  className="hero-line"
                   data-state={part.section}
                   style={style}
                 >
@@ -116,94 +112,20 @@ export default async function Home() {
         </div>
         <LoopRing closed={resolved} total={loops.length} />
       </section>
-      <AgentPanel
-        configured={scanConfigured}
-        checked={lastScan ? formatDateTime(lastScan.at) : undefined}
-      />
-      <div className="dashboard-columns">
-        <div className="loop-sections">
-          {loops.length === 0 && (
-            <div className="onboarding-note">
-              <StateIcon name="overview" />
-              <div>
-                <h2>Less to keep in your head.</h2>
-                <p>
-                  Start with Scan inbox. Open Loops finds responsibilities, checks the evidence, and
-                  brings you the next step.
-                </p>
-              </div>
-            </div>
-          )}
-          {STATUS_ORDER.map((status) => {
-            const items = groups.get(status) ?? []
-            if (status === 'UNCERTAIN' && items.length === 0) return null
-            return <LoopSection key={status} status={status} items={items} now={now} />
-          })}
-        </div>
-        <aside className="dashboard-context" aria-labelledby="changes-heading">
-          <div className="context-heading">
-            <h2 id="changes-heading">Recent activity</h2>
-            <Link href="/activity">All activity</Link>
-          </div>
-          {changes.length === 0 ? (
-            <p className="section-empty">The agent’s work will show here after your first scan.</p>
-          ) : (
-            <ol className="change-list">
-              {changes.map((event) => (
-                <li key={event.id}>
-                  <div className="change-meta">
-                    <KindBadge kind={event.kind} />
-                    <time dateTime={event.at}>{formatDate(event.at)}</time>
-                  </div>
-                  {event.loopId && titles.has(event.loopId) && (
-                    <Link className="change-title" href={`/loops/${event.loopId}`}>
-                      {titles.get(event.loopId)}
-                    </Link>
-                  )}
-                  <p className="change-reason">{event.reason}</p>
-                </li>
-              ))}
-            </ol>
-          )}
-        </aside>
+      {agent}
+      <div className="view-bar">
+        <ViewSwitch current={view} />
+        {view === 'list' && (
+          <p className="view-hint">
+            Arrow keys move, Enter opens, <kbd>D</kbd> marks done.
+          </p>
+        )}
       </div>
-    </div>
-  )
-}
-
-function LoopSection({ status, items, now }: { status: LoopStatus; items: OpenLoop[]; now: Date }) {
-  const section = SECTIONS[status]
-  const header = (
-    <h2 className="section-heading" data-state={section.id}>
-      <StateIcon name={section.id} />
-      <span className="section-label">{STATUS_LABEL[status]}</span>
-      <span className="section-count">{items.length}</span>
-      {status === 'RESOLVED' && (
-        <span className="disclosure-arrow" aria-hidden="true">
-          ⌄
-        </span>
+      {view === 'calendar' ? (
+        <CalendarView loops={loops} now={now} />
+      ) : (
+        <TodayList loops={loops} now={now} />
       )}
-    </h2>
-  )
-  const content =
-    items.length === 0 ? (
-      <p className="section-empty">{section.empty}</p>
-    ) : (
-      <div className="loop-list">
-        {items.map((loop) => (
-          <LoopRow key={loop.id} loop={loop} now={now} />
-        ))}
-      </div>
-    )
-  return status === 'RESOLVED' ? (
-    <details id={section.id} className="loop-section resolved-section" open>
-      <summary>{header}</summary>
-      {content}
-    </details>
-  ) : (
-    <section id={section.id} className="loop-section">
-      {header}
-      {content}
-    </section>
+    </div>
   )
 }
