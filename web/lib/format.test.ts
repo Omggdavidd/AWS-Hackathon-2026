@@ -1,6 +1,15 @@
 import type { OpenLoop } from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatDue, groupByStatus, sortLoops, summarize, summaryParts } from './format'
+import {
+  daysUntil,
+  formatDate,
+  formatDue,
+  groupByStatus,
+  groupByTime,
+  sortLoops,
+  summarize,
+  summaryParts,
+} from './format'
 
 const base: OpenLoop = {
   id: 'x',
@@ -53,5 +62,46 @@ describe('sortLoops and summarize', () => {
     ])
     expect(summarize(groupByStatus([]))).toBe('Let’s find what needs your attention.')
     expect(summarize(groupByStatus([{ ...base, status: 'RESOLVED' }]))).toBe('Nothing needs you.')
+  })
+})
+
+describe('groupByTime', () => {
+  const at = (days: number) => new Date(now.getTime() + days * 86_400_000).toISOString()
+  it('buckets by day in the demo zone, with state as the marker', () => {
+    const loops = [
+      { ...base, id: 'late', dueAt: at(-1) },
+      { ...base, id: 'club', status: 'WATCHING' as const, dueAt: at(-2) },
+      { ...base, id: 'today', dueAt: at(0) },
+      { ...base, id: 'week', dueAt: at(5) },
+      { ...base, id: 'edge', dueAt: at(7) },
+      { ...base, id: 'later', dueAt: at(30) },
+      { ...base, id: 'undated' },
+      { ...base, id: 'done', status: 'RESOLVED' as const, dueAt: at(-3) },
+    ]
+    const groups = groupByTime(loops, now)
+    const ids = (b: Parameters<typeof groups.get>[0]) => groups.get(b)?.map((l) => l.id)
+    expect(ids('overdue')).toEqual(['late'])
+    expect(ids('earlier')).toEqual(['club'])
+    expect(ids('today')).toEqual(['today'])
+    expect(ids('week')).toEqual(['week', 'edge'])
+    expect(ids('later')).toEqual(['later'])
+    expect(ids('undated')).toEqual(['undated'])
+    expect(ids('resolved')).toEqual(['done'])
+  })
+  it('orders a bucket by due date then priority', () => {
+    const loops = [
+      { ...base, id: 'b', dueAt: at(3), priority: 'low' as const },
+      { ...base, id: 'a', dueAt: at(2), priority: 'low' as const },
+      { ...base, id: 'c', dueAt: at(2), priority: 'critical' as const },
+    ]
+    expect(
+      groupByTime(loops, now)
+        .get('week')
+        ?.map((l) => l.id),
+    ).toEqual(['c', 'a', 'b'])
+  })
+  it('counts whole days across the demo zone midnight', () => {
+    expect(daysUntil('2026-09-11T03:00:00Z', new Date('2026-09-10T12:00:00Z'))).toBe(0)
+    expect(daysUntil('2026-09-11T05:00:00Z', new Date('2026-09-10T12:00:00Z'))).toBe(1)
   })
 })
