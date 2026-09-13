@@ -8,6 +8,7 @@ Source of truth for what we are building toward and how we will be judged. Our o
 | `SUBMISSION.md` | Living checklist of dates, eligibility steps and required assets |
 | `state-lifecycle.png`, `architecture-proposal.png` | Diagrams from the playbook. `state-lifecycle.png` still describes the loop states; `architecture-proposal.png` is only a record of the original proposal and does not describe what was built. The submission architecture diagram is [`docs/architecture/`](../architecture/README.md) |
 | `aws_agents_for_humans_openloop_team_playbook.docx` | Original source of `SPEC.md`. Not authoritative once `SPEC.md` diverges |
+| `readiness-2026-09-13.md` | Dated snapshot written one day before the deadline: the pitch, the state of the repository, contributions per person, and the ordered work left to submit. Owns no fact; `STATUS.md` and `SUBMISSION.md` do |
 | `claude_build_prompt_openloop_hackathon.md` | The Phase 0 methodology brief that produced this repository structure. A prompt, not organizer material |
 
 Rules and judging criteria are not split into separate files: `SPEC.md` §17 and §18 own them. A `DEMO.md` is created in Phase 5 when the demo script diverges from `SPEC.md` §14.
