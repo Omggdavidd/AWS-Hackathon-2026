@@ -65,9 +65,15 @@ export function AppRail({
         })}
       </ul>
       <div className="rail-foot">
-        <span className="avatar" title={initial}>
+        <Link
+          href="/settings"
+          className="avatar rail-avatar"
+          title="Settings"
+          aria-label="Settings"
+          data-active={pathname === '/settings' || undefined}
+        >
           {initial[0]}
-        </span>
+        </Link>
       </div>
     </nav>
   )

@@ -7,7 +7,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { invokeCommand, scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
-import { getStore, USER_ID } from '@/lib/ledger'
+import { getStore, resetLedger, USER_ID } from '@/lib/ledger'
 import { type ParkKind, parkLoopByUser } from '@/lib/park'
 import { resolveLoopByUser } from '@/lib/resolve'
 import { restoreLoopByUser } from '@/lib/restore'
@@ -130,4 +130,21 @@ export async function nameAgent(form: FormData): Promise<void> {
   const jar = await cookies()
   jar.set(AGENT_COOKIE, name, { path: '/', maxAge: 31536000, sameSite: 'lax' })
   redirect('/?tour=1')
+}
+
+/** Rename the agent from Settings: same cookie as the welcome screen, no redirect. */
+export async function renameAgent(form: FormData): Promise<void> {
+  const raw = form.get('name')
+  const name = cleanAgentName(typeof raw === 'string' ? raw : undefined)
+  if (!name) return
+  const jar = await cookies()
+  jar.set(AGENT_COOKIE, name, { path: '/', maxAge: 31536000, sameSite: 'lax' })
+  revalidatePath('/', 'layout')
+}
+
+/** Reset the demo ledger (#29 from the web). Destructive on the shared table; the button confirms in place. */
+export async function resetDemo(): Promise<string> {
+  const result = await resetLedger(USER_ID)
+  revalidatePath('/', 'layout')
+  return result
 }

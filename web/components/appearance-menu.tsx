@@ -35,9 +35,7 @@ export function AppearanceMenu({
   density: Density
   home: Home
 }) {
-  const router = useRouter()
   const ref = useRef<HTMLDetailsElement>(null)
-  const [custom, setCustom] = useState(accent ?? DEFAULT_ACCENT)
 
   useEffect(() => {
     const close = (event: Event) => {
@@ -47,6 +45,32 @@ export function AppearanceMenu({
     document.addEventListener('pointerdown', close)
     return () => document.removeEventListener('pointerdown', close)
   }, [])
+
+  return (
+    <details className="appearance" ref={ref}>
+      <summary aria-label="Appearance" title="Appearance">
+        <span className="appearance-swatch" aria-hidden="true" />
+        <span className="appearance-label">Appearance</span>
+      </summary>
+      <div className="appearance-panel">
+        <AppearanceControls accent={accent} density={density} home={home} />
+      </div>
+    </details>
+  )
+}
+
+/** The three controls, usable in the popover or inline on Settings. */
+export function AppearanceControls({
+  accent,
+  density,
+  home,
+}: {
+  accent: string | undefined
+  density: Density
+  home: Home
+}) {
+  const router = useRouter()
+  const [custom, setCustom] = useState(accent ?? DEFAULT_ACCENT)
 
   function setAccent(hex: string | undefined) {
     document.documentElement.style.setProperty('--accent-base', hex ?? DEFAULT_ACCENT)
@@ -69,72 +93,66 @@ export function AppearanceMenu({
   const isPreset = ACCENT_PRESETS.some((p) => p.hex === current)
 
   return (
-    <details className="appearance" ref={ref}>
-      <summary aria-label="Appearance" title="Appearance">
-        <span className="appearance-swatch" aria-hidden="true" />
-        <span className="appearance-label">Appearance</span>
-      </summary>
-      <div className="appearance-panel">
-        <fieldset className="appearance-group">
-          <legend>Accent</legend>
-          <div className="appearance-swatches">
-            {ACCENT_PRESETS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className="appearance-preset"
-                style={{ '--swatch': p.hex } as React.CSSProperties}
-                aria-pressed={current === p.hex}
-                aria-label={p.name}
-                title={p.name}
-                onClick={() => {
-                  setCustom(p.hex)
-                  setAccent(p.hex === DEFAULT_ACCENT ? undefined : p.hex)
-                }}
-              />
-            ))}
-            <label
-              className="appearance-custom"
-              data-active={!isPreset || undefined}
-              title="Custom colour"
+    <>
+      <fieldset className="appearance-group">
+        <legend>Accent</legend>
+        <div className="appearance-swatches">
+          {ACCENT_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="appearance-preset"
+              style={{ '--swatch': p.hex } as React.CSSProperties}
+              aria-pressed={current === p.hex}
+              aria-label={p.name}
+              title={p.name}
+              onClick={() => {
+                setCustom(p.hex)
+                setAccent(p.hex === DEFAULT_ACCENT ? undefined : p.hex)
+              }}
+            />
+          ))}
+          <label
+            className="appearance-custom"
+            data-active={!isPreset || undefined}
+            title="Custom colour"
+          >
+            <input
+              id="appearance-custom"
+              type="color"
+              value={custom}
+              onChange={(e) => setCustom(e.target.value)}
+              onBlur={(e) => setAccent(e.target.value.toLowerCase())}
+            />
+            <span aria-hidden="true">+</span>
+          </label>
+        </div>
+      </fieldset>
+      <fieldset className="appearance-group">
+        <legend>Rows</legend>
+        <div className="appearance-choices">
+          {(['comfortable', 'compact'] as Density[]).map((d) => (
+            <button
+              key={d}
+              type="button"
+              aria-pressed={density === d}
+              onClick={() => setDensity(d)}
             >
-              <input
-                id="appearance-custom"
-                type="color"
-                value={custom}
-                onChange={(e) => setCustom(e.target.value)}
-                onBlur={(e) => setAccent(e.target.value.toLowerCase())}
-              />
-              <span aria-hidden="true">+</span>
-            </label>
-          </div>
-        </fieldset>
-        <fieldset className="appearance-group">
-          <legend>Rows</legend>
-          <div className="appearance-choices">
-            {(['comfortable', 'compact'] as Density[]).map((d) => (
-              <button
-                key={d}
-                type="button"
-                aria-pressed={density === d}
-                onClick={() => setDensity(d)}
-              >
-                {d === 'compact' ? 'Compact' : 'Comfortable'}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <fieldset className="appearance-group">
-          <legend>Opens on</legend>
-          <div className="appearance-choices">
-            {(['today', 'board', 'calendar'] as Home[]).map((h) => (
-              <button key={h} type="button" aria-pressed={home === h} onClick={() => setHome(h)}>
-                {h === 'today' ? 'Today' : h === 'board' ? 'Board' : 'Calendar'}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      </div>
-    </details>
+              {d === 'compact' ? 'Compact' : 'Comfortable'}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="appearance-group">
+        <legend>Opens on</legend>
+        <div className="appearance-choices">
+          {(['today', 'board', 'calendar'] as Home[]).map((h) => (
+            <button key={h} type="button" aria-pressed={home === h} onClick={() => setHome(h)}>
+              {h === 'today' ? 'Today' : h === 'board' ? 'Board' : 'Calendar'}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+    </>
   )
 }
