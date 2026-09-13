@@ -4,9 +4,11 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { AppRail, AppTabs } from '@/components/app-rail'
 import { AppearanceMenu } from '@/components/appearance-menu'
+import { CommandBar } from '@/components/command-bar'
 import { LoopMark } from '@/components/loop-mark'
 import { NotificationBell } from '@/components/notification-bell'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
 import {
   ACCENT_COOKIE,
@@ -92,6 +94,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                 </span>
               </p>
               <div className="header-actions">
+                <CommandBar configured={scanConfigured} />
                 <NotificationBell
                   notices={feed.notices}
                   unread={feed.unread}

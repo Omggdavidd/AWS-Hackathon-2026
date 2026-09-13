@@ -15,6 +15,7 @@ import seedInbox from '../../../demo/seed-inbox.json' with { type: 'json' }
 import seedInboxDelta from '../../../demo/seed-inbox-delta.json' with { type: 'json' }
 import { executeAction, handleWhatYouCan } from './src/actions'
 import { createSpecialists } from './src/agents'
+import { ask } from './src/ask'
 import { catchUp } from './src/catch-up'
 import { jsonLogger } from './src/log'
 import { loadModel, loadModelsByRole } from './src/model'
@@ -26,10 +27,12 @@ import { runScan } from './src/scan'
  * later, live Gmail and DynamoDB (plan steps 9 and the live-Gmail stretch).
  */
 const requestSchema = z.object({
-  /** scan: ingest into the ledger. handle: execute every allowed proposed action. execute: one action by id (after approval). */
-  command: z.enum(['scan', 'handle', 'execute', 'catch_up']).default('scan'),
+  /** scan: ingest into the ledger. handle: execute every allowed proposed action. execute: one action by id (after approval). ask: answer one question, read-only. */
+  command: z.enum(['scan', 'handle', 'execute', 'catch_up', 'ask']).default('scan'),
   /** catch_up: summarize changes since this time; defaults to the previous catch_up or 24 hours ago. */
   since: z.string().optional(),
+  /** ask: the user's question about their own loops. */
+  question: z.string().max(500).optional(),
   actionId: z.string().optional(),
   userId: z.string().min(1),
   /**
@@ -103,6 +106,18 @@ const app = new BedrockAgentCoreApp({
           ...(payload.since ? { since: payload.since } : {}),
         })
         yield { data: JSON.stringify({ type: 'catch_up', ...summary }) }
+        return
+      }
+      if (payload.command === 'ask') {
+        if (!payload.question) throw new Error('question is required for ask')
+        const answer = await ask({
+          store,
+          userId: payload.userId,
+          question: payload.question,
+          specialists,
+          ...(payload.now ? { now: payload.now } : {}),
+        })
+        yield { data: JSON.stringify({ type: 'ask', ...answer }) }
         return
       }
       if (payload.command !== 'scan') {

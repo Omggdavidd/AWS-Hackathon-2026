@@ -151,6 +151,9 @@ const stubs: Specialists = {
   async summarize() {
     return { headline: 'stub', items: [], nothingElse: true }
   },
+  async answer() {
+    return { answer: 'stub', references: [], suggests: 'none' as const, confidence: 0.9 }
+  },
   async judge({ loop }) {
     if (loop.title === "Renew the Dean's Scholarship") {
       return {

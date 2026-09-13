@@ -9,6 +9,7 @@ import {
 } from '@openloop/shared'
 import { handleWhatYouCan } from '../src/actions'
 import { createSpecialists } from '../src/agents'
+import { ask } from '../src/ask'
 import { catchUp } from '../src/catch-up'
 import { jsonLogger, noopLogger } from '../src/log'
 import { loadModel, loadModelsByRole } from '../src/model'
@@ -22,6 +23,7 @@ import { runScan } from '../src/scan'
  *   pnpm --filter @openloop/agent scan -- --delta                     # next-morning batch on top of the base inbox
  *   pnpm --filter @openloop/agent scan -- --handle                    # execute every allowed proposed action instead of scanning
  *   pnpm --filter @openloop/agent scan -- --catch-up                  # summarize what changed since the last catch-up
+ *   pnpm --filter @openloop/agent scan -- --ask "what am I waiting on?"  # answer one question from the ledger, read-only
  *   pnpm --filter @openloop/agent scan -- --log-json                  # the runtime's structured pipeline lines on stderr (#30)
  */
 const repoRoot = path.resolve(import.meta.dirname, '../../../..')
@@ -29,6 +31,8 @@ const reset = process.argv.includes('--reset')
 const delta = process.argv.includes('--delta')
 const handle = process.argv.includes('--handle')
 const catchUpFlag = process.argv.includes('--catch-up')
+const askIdx = process.argv.indexOf('--ask')
+const question = askIdx >= 0 ? process.argv[askIdx + 1] : undefined
 // stderr, so the pipeline lines never interleave with the human-readable progress on stdout.
 const logger = process.argv.includes('--log-json')
   ? jsonLogger((chunk) => void process.stderr.write(chunk))
@@ -60,6 +64,16 @@ const specialists = createSpecialists({
 })
 
 const started = Date.now()
+if (askIdx >= 0) {
+  if (!question) throw new Error('--ask needs a question in quotes')
+  const a = await ask({ store, userId, question, specialists, now: source.fixture.persona.now })
+  console.log(`\n${a.answer}\n`)
+  for (const r of a.references) console.log(`  ${r.title} (${r.loopId}) ${r.sourceIds.join(', ')}`)
+  console.log(
+    `\nsuggests: ${a.suggests}, confidence ${a.confidence}, in ${Math.round((Date.now() - started) / 1000)}s`,
+  )
+  process.exit(0)
+}
 if (catchUpFlag) {
   const s = await catchUp({ store, userId, specialists, now: source.fixture.persona.now })
   console.log(`\n${s.headline}\n`)

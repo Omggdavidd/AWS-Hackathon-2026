@@ -10,7 +10,7 @@ export function loadModel(
   return new BedrockModel({ modelId, region: process.env.AWS_REGION ?? 'us-east-1' })
 }
 
-/** One model per specialist role: all six share `model` unless the Extractor is overridden. */
+/** One model per specialist role: all seven share `model` unless the Extractor is overridden. */
 export function loadModelsByRole(
   model: BedrockModel = loadModel(),
   extractorModelId = process.env.OPENLOOP_EXTRACTOR_MODEL_ID,
@@ -23,5 +23,6 @@ export function loadModelsByRole(
     plan: model,
     judge: model,
     summarize: model,
+    answer: model,
   }
 }

@@ -6,7 +6,7 @@ describe('loadModelsByRole', () => {
     vi.unstubAllEnvs()
   })
 
-  it('runs all six roles on one shared model', () => {
+  it('runs all seven roles on one shared model', () => {
     const model = loadModel(DEFAULT_MODEL_ID)
     const models = loadModelsByRole(model)
 
@@ -17,6 +17,7 @@ describe('loadModelsByRole', () => {
     expect(models.plan).toBe(model)
     expect(models.judge).toBe(model)
     expect(models.summarize).toBe(model)
+    expect(models.answer).toBe(model)
   })
 
   it('takes an Extractor model id override', () => {
