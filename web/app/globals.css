@@ -835,12 +835,15 @@ body::before {
 .tl-row {
   position: relative;
   overflow: hidden;
+  max-height: 240px;
   border-top: 1px solid var(--border);
   outline: none;
   touch-action: pan-y;
   transition:
     box-shadow 160ms,
-    transform 160ms;
+    transform 160ms,
+    max-height 260ms ease 120ms,
+    opacity 200ms ease 120ms;
 }
 .tl-row:first-child {
   border-top: 0;
@@ -2942,5 +2945,169 @@ body:has(.welcome) .bottom-tabs {
   }
   .appearance-panel {
     width: min(300px, calc(100vw - 32px));
+  }
+}
+
+/* Motion: rows land once, a moved row folds away, and pages shimmer before their data arrives */
+.tl-row[data-fresh] {
+  animation: row-land 480ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes row-land {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.tl-row[data-busy] {
+  max-height: 0;
+  opacity: 0;
+  border-top-color: transparent;
+}
+.tl-row[data-busy] .swipe-face {
+  transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sk {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--foreground) 6%, var(--card)) 0%,
+    color-mix(in srgb, var(--foreground) 10%, var(--card)) 40%,
+    color-mix(in srgb, var(--foreground) 6%, var(--card)) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.sk-line {
+  height: 13px;
+}
+.sk-thin {
+  height: 10px;
+}
+.sk-title {
+  height: 30px;
+  width: 30%;
+  border-radius: 8px;
+}
+.daybar-skeleton {
+  padding: 6px 0 24px;
+}
+.sk-track {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+.sk-seg {
+  height: 14px;
+  border-radius: 7px;
+}
+.sk-panel {
+  padding: 18px 22px 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+}
+.sk-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.sk-button {
+  height: 42px;
+  border-radius: 10px;
+}
+.sk-rows {
+  margin-top: 26px;
+}
+.sk-list {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
+.sk-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 8.5rem auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+}
+.sk-row:first-child {
+  border-top: 0;
+}
+.sk-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sk-tile {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+.sk-chip {
+  width: 5.5rem;
+  height: 24px;
+}
+.board-skeleton {
+  position: relative;
+  height: calc(100dvh - 65px);
+  padding: 120px 60px 0;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--foreground) 9%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+}
+.sk-hub {
+  display: block;
+  width: 250px;
+  height: 130px;
+  margin: 0 auto 80px;
+  border-radius: 14px;
+}
+.sk-groups {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+}
+.sk-group {
+  width: 300px;
+  height: 220px;
+  border-radius: 12px;
+}
+@media (max-width: 767px) {
+  .sk-row {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+  .sk-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sk-groups {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-row[data-fresh],
+  .sk {
+    animation: none;
   }
 }
