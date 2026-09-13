@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 /*
- * White and navy reading surfaces, teal brand, and one marker swipe per state heading drawn from
- * the state color itself. Status text and icons carry the same meaning without the stroke.
+ * White and navy reading surfaces, teal brand, and each state heading set in its own state color.
  */
 :root {
   --background: #ffffff;
@@ -20,7 +19,6 @@
   --waiting: #855812;
   --watching: #366aa2;
   --resolved: #266945;
-  --highlight-alpha: 22%;
   --resolved-soft: #f3faee;
 }
 
@@ -48,7 +46,6 @@
   --waiting: #f0d276;
   --watching: #a6ceff;
   --resolved: #b3e786;
-  --highlight-alpha: 30%;
   --resolved-soft: #192d32;
   --surface: #121f34;
   --on-accent: #102c32;
@@ -923,27 +920,7 @@ summary {
   font-weight: 600;
 }
 .section-label {
-  position: relative;
-  isolation: isolate;
-  padding-inline: 2px;
-  color: color-mix(in srgb, var(--state-color) 55%, var(--foreground));
-}
-/* One marker swipe: the state's own ink at low alpha, low across the x-height, a little past
-   the word, slightly skewed, fading as a pen would. */
-.section-label::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 42% -0.35em -6% -0.3em;
-  border-radius: 0.35em 0.6em 0.4em 0.7em / 0.5em 0.3em 0.6em 0.4em;
-  transform: skewX(-9deg) rotate(-0.8deg);
-  transform-origin: left bottom;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--state-color) var(--highlight-alpha), transparent) 0%,
-    color-mix(in srgb, var(--state-color) var(--highlight-alpha), transparent) 62%,
-    color-mix(in srgb, var(--state-color) calc(var(--highlight-alpha) * 0.55), transparent) 100%
-  );
+  color: var(--state-color);
 }
 .section-heading svg {
   width: 17px;
