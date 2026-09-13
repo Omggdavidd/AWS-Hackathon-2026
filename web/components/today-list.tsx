@@ -32,6 +32,37 @@ const EMPTY: Partial<Record<TimeBucket, string>> = {
   week: 'Nothing due this week.',
 }
 
+/** Where to look next when a bucket is empty: the nearest later bucket that has something. */
+const NEXT: Partial<Record<TimeBucket, TimeBucket[]>> = {
+  overdue: ['today', 'week'],
+  today: ['week', 'later'],
+  week: ['later', 'undated'],
+}
+
+function emptyCopy(bucket: TimeBucket, groups: Map<TimeBucket, OpenLoop[]>) {
+  const base = EMPTY[bucket]
+  const next = (NEXT[bucket] ?? []).find((b) => (groups.get(b)?.length ?? 0) > 0)
+  if (!next) return base
+  const n = groups.get(next)?.length ?? 0
+  const where =
+    next === 'today'
+      ? 'due today'
+      : next === 'week'
+        ? 'due this week'
+        : next === 'later'
+          ? 'due later'
+          : 'without a date'
+  return (
+    <>
+      {base}{' '}
+      <a href={`#${next}`} className="tl-empty-link">
+        {n} {where}
+      </a>
+      .
+    </>
+  )
+}
+
 /**
  * The overview as every product in this category opens: a list grouped by time. Each row reads in
  * fixed columns: the area of life, the title and who it is from, when it is due, the state. A title
@@ -50,6 +81,20 @@ export function TodayList({
   selected?: string
 }) {
   const groups = groupByTime(loops, now)
+  if (loops.length === 0) {
+    return (
+      <div className="today-list">
+        <div className="empty-state" data-tour="row">
+          <p className="empty-title">Nothing tracked yet.</p>
+          <p>
+            Scan inbox reads the mail and the calendar, keeps every responsibility that is still
+            open, and sorts it by when it matters. The first scan takes about four minutes; after
+            that, Check for new mail is a few seconds.
+          </p>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="today-list">
       <ListKeys />
@@ -68,7 +113,7 @@ export function TodayList({
               <span>{items.length}</span>
             </h2>
             {items.length === 0 ? (
-              <p className="tl-empty">{EMPTY[bucket]}</p>
+              <p className="tl-empty">{emptyCopy(bucket, groups)}</p>
             ) : (
               <ol className="tl-rows">
                 {items.map((loop, i) => (
