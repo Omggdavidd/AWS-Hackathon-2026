@@ -45,3 +45,26 @@ export interface IngestionSource {
   getThread(threadId: string): Promise<EmailMessage[]>
   listEvents(range?: { from?: string; to?: string }): Promise<CalendarEvent[]>
 }
+
+/**
+ * The filter every `IngestionSource` applies, so fixtures and live Gmail agree on what a query
+ * means. Timestamps are compared as instants rather than strings: Gmail returns UTC while the
+ * fixtures are written with a local offset, and `'...Z' >= '...-04:00'` is true as text for an
+ * instant that is actually earlier.
+ */
+export function matchesMessageQuery(message: EmailMessage, query: MessageQuery = {}): boolean {
+  const at = Date.parse(message.date)
+  const text = query.text?.toLowerCase()
+  return (
+    (query.after === undefined || at >= Date.parse(query.after)) &&
+    (query.before === undefined || at <= Date.parse(query.before)) &&
+    (query.threadId === undefined || message.threadId === query.threadId) &&
+    (text === undefined ||
+      `${message.subject} ${message.from} ${message.body}`.toLowerCase().includes(text))
+  )
+}
+
+/** Oldest first, the order the `IngestionSource` contract promises. */
+export function byDateAscending(a: EmailMessage, b: EmailMessage): number {
+  return Date.parse(a.date) - Date.parse(b.date)
+}

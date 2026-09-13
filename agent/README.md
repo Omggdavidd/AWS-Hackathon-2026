@@ -52,6 +52,23 @@ Invocation payload (validated by the Zod schema in `main.ts`). Without `source.p
 { "command": "scan", "userId": "user-alex", "source": { "kind": "fixture" }, "ledger": { "kind": "dynamo", "table": "openloop-ledger" } }
 ```
 
+`source.kind: "gmail"` reads a real inbox and calendar instead (`GoogleSource` in `@openloop/shared`,
+issue #20). It takes a short-lived Google access token the caller already holds and an optional
+`backfillDays`, default 90:
+
+```json
+{ "command": "scan", "userId": "user-alex", "source": { "kind": "gmail", "accessToken": "<short-lived Google access token>", "backfillDays": 90 }, "ledger": { "kind": "dynamo", "table": "openloop-ledger" } }
+```
+
+The runtime never sees a refresh token and stores no Google credential: the web app owns the OAuth
+flow and mints the access token per invocation (ADR-0011). **Nothing mints that token yet** — the
+OAuth route and the Google Cloud project are the remaining half of #20 — so this path is unreachable
+from the app today and is covered by unit tests against a stubbed transport rather than a live run.
+`GoogleSource` talks to the Gmail and Calendar REST endpoints with `fetch` rather than through
+`googleapis`, which keeps `@openloop/shared` free of framework dependencies. It caps one scan at 250
+messages and 20,000 characters of body per message, runs at most five `messages.get` calls at once
+(Gmail bills five quota units each against 250 per second per user), and retries 429 and 5xx.
+
 Commands: `scan` (default), `handle` (execute every proposed action the policy allows and list the rest), `execute` with `actionId` (one action, used by the web after approval), `catch_up` (state changes since the previous catch-up or `since`; the digest is built in code, the model only writes the sentences, and a `catch_up` audit event marks the check). The policy gate is `mayExecute` in `@openloop/shared`: low risk and prepare-type medium risk run automatically; high risk only when the record is `APPROVED`. Effects go through `FixtureActionSink` today (simulated, recorded as evidence with source `action:<id>`); Gmail and Calendar sinks are the live-path stretch.
 
 Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted. `OPENLOOP_MODEL_ID` overrides the model.

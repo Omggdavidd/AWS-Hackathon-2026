@@ -4,6 +4,8 @@ import { DynamoLedgerStore } from '@openloop/ledger-dynamo'
 import {
   FixtureActionSink,
   FixtureSource,
+  GoogleSource,
+  type IngestionSource,
   type LedgerStore,
   LocalLedgerStore,
 } from '@openloop/shared'
@@ -30,14 +32,25 @@ const requestSchema = z.object({
   since: z.string().optional(),
   actionId: z.string().optional(),
   userId: z.string().min(1),
-  /** Without a path, the demo inbox bundled into the runtime is used (the deployed bundle has no demo/ directory). */
+  /**
+   * fixture: without a path, the demo inbox bundled into the runtime (the deployed bundle has no
+   * demo/ directory). gmail: a real inbox, read with the short-lived access token the web app
+   * obtained (ADR-0011); the runtime never sees a refresh token and stores no credential.
+   */
   source: z
-    .object({
-      kind: z.literal('fixture'),
-      path: z.string().optional(),
-      /** `delta` overlays the next-morning batch (demo/seed-inbox-delta.json) for the delta-path demo. */
-      variant: z.enum(['base', 'delta']).default('base'),
-    })
+    .discriminatedUnion('kind', [
+      z.object({
+        kind: z.literal('fixture'),
+        path: z.string().optional(),
+        /** `delta` overlays the next-morning batch (demo/seed-inbox-delta.json) for the delta-path demo. */
+        variant: z.enum(['base', 'delta']).default('base'),
+      }),
+      z.object({
+        kind: z.literal('gmail'),
+        accessToken: z.string().min(1),
+        backfillDays: z.number().int().positive().max(3650).default(90),
+      }),
+    ])
     .default({ kind: 'fixture', variant: 'base' }),
   /** Where loops are written. Local JSON is ephemeral on the Runtime; DynamoDB is shared with the web app (ADR-0009). */
   ledger: z
@@ -56,11 +69,17 @@ const app = new BedrockAgentCoreApp({
   invocationHandler: {
     requestSchema,
     async *process(payload) {
-      const source = payload.source.path
-        ? await FixtureSource.load(payload.source.path)
-        : payload.source.variant === 'delta'
-          ? FixtureSource.fromDataWithDelta(seedInbox, seedInboxDelta)
-          : FixtureSource.fromData(seedInbox)
+      const source: IngestionSource =
+        payload.source.kind === 'gmail'
+          ? new GoogleSource({
+              accessToken: payload.source.accessToken,
+              backfillDays: payload.source.backfillDays,
+            })
+          : payload.source.path
+            ? await FixtureSource.load(payload.source.path)
+            : payload.source.variant === 'delta'
+              ? FixtureSource.fromDataWithDelta(seedInbox, seedInboxDelta)
+              : FixtureSource.fromData(seedInbox)
       const store: LedgerStore =
         payload.ledger.kind === 'dynamo'
           ? new DynamoLedgerStore({ tableName: payload.ledger.table })
