@@ -4,12 +4,6 @@ import type { SpecialistRole } from './agents'
 /** ADR-0007: Claude Sonnet 4.6 on Bedrock for every role; override per environment. */
 export const DEFAULT_MODEL_ID = 'global.anthropic.claude-sonnet-4-6'
 
-/**
- * Opt-in Extractor model. Faster, but a real scan of the demo inbox dropped the `thr-issue1`
- * loop with it, so it is used only when `OPENLOOP_EXTRACTOR_MODEL_ID` asks for it.
- */
-export const HAIKU_EXTRACTOR_MODEL_ID = 'global.anthropic.claude-haiku-4-5-20251001-v1:0'
-
 export function loadModel(
   modelId = process.env.OPENLOOP_MODEL_ID ?? DEFAULT_MODEL_ID,
 ): BedrockModel {

@@ -19,7 +19,7 @@ agent/
 ## Commands
 
 ```
-pnpm --filter @openloop/agent scan -- --reset   # real model over the demo inbox, ~4 min, writes .openloop/agent-ledger.json
+pnpm --filter @openloop/agent scan -- --reset   # real model over the demo inbox, ~95 to 105s, writes .openloop/agent-ledger.json
 pnpm --filter @openloop/agent scan -- --delta   # then the next-morning batch (demo/seed-inbox-delta.json): updates, not duplicates
 pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed action (drafts, calendar, reminders); high risk waits for approval
 pnpm --filter @openloop/agent scan -- --catch-up  # what changed since the last catch-up, written from the ledger only
@@ -56,9 +56,9 @@ Commands: `scan` (default), `handle` (execute every proposed action the policy a
 
 Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted.
 
-Models and pacing (ADR-0007): all six roles share one Claude Sonnet 4.6 instance. `OPENLOOP_MODEL_ID` overrides the shared model, `OPENLOOP_EXTRACTOR_MODEL_ID` gives the Extractor its own. `runScan` works on three threads at a time; `ScanOptions.concurrency` changes that (1 is the old sequential behaviour). Writes stay ordered within a thread, a loop is never created twice, and `onEvent` still emits one thread's events as a block.
+Models and pacing (ADR-0007): all six roles share one Claude Sonnet 4.6 instance. `OPENLOOP_MODEL_ID` overrides the shared model, `OPENLOOP_EXTRACTOR_MODEL_ID` gives the Extractor its own. `runScan` works on three threads at a time; `ScanOptions.concurrency` changes that (1 is the old sequential behaviour). Writes stay ordered within a thread, a loop is never created twice, and `onEvent` still emits one thread's events as a block. The block is held until the thread finishes rather than emitted when it starts, so the web scan log stays empty until the first thread is done and then lands in bursts of about three threads, out of inbox order; adjacency is what `AgentPanel` needs to keep a thread's lines together, so do not trade it back for a running commentary.
 
-Measured over the 10-thread `demo/seed-inbox.json` that preceded #54: 219s sequential, 89s with concurrency at the default model, both producing the expected 9 loops of that inbox. A Claude Haiku 4.5 Extractor ran in 76s but read `thr-issue1` as not a responsibility and produced only 8, so it is opt-in through `OPENLOOP_EXTRACTOR_MODEL_ID` rather than the default. The 12-thread inbox has not been re-timed with concurrency.
+Measured over the current 12-thread `demo/seed-inbox.json` on Claude Sonnet 4.6 in `us-east-1`: 263s, 276s and 277s sequential across three runs, and 95s, 103s and 104s at concurrency 3, so about 95 to 105 seconds. The 95s run, taken after the cross-thread claim fix in `scan.ts`, produced the 11 loops of `demo/seed-ledger.json` exactly, `thr-passport` included: 1 resolved, 6 needs you, 3 watching, 1 waiting. On the 10-thread inbox that preceded #54, a Claude Haiku 4.5 Extractor ran in 76s but read `thr-issue1` as not a responsibility and produced 8 loops instead of 9, so Haiku stays opt-in: set `OPENLOOP_EXTRACTOR_MODEL_ID=global.anthropic.claude-haiku-4-5-20251001-v1:0` if you want it.
 
 ## Structured logs
 
