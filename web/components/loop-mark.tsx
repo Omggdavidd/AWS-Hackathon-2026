@@ -64,6 +64,10 @@ export function StateIcon({ name }: { name: string }) {
     list: 'M4 7h16 M4 12h16 M4 17h16',
     calendar: 'M4 5h16v15H4z M4 10h16 M8 3v4 M16 3v4',
     decisions: 'M3 13V5h18v8 M3 13h5l2 3h4l2-3h5v6H3z',
+    digest:
+      'M4 6h16 M4 12h11 M4 18h7 M18 15l1.2 2.4L21.6 18l-2.4 1.2L18 21.6l-1.2-2.4L14.4 18l2.4-1.2z',
+    mail: 'M3 6h18v12H3z M3 7l9 6 9-6',
+    refresh: 'M21 12a9 9 0 1 1-2.6-6.4 M21 4v5h-5',
     about: 'M12 11v5 M12 8h.01',
   }
   return (

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { StateIcon } from '@/components/loop-mark'
 import { DEMO_TIME_ZONE } from '@/lib/format'
 
 type Op = 'catch_up' | 'handle' | 'delta' | 'scan'
@@ -70,6 +71,13 @@ const LABEL: Record<Op, { idle: string; busy: string; title: string; hint: strin
     title: 'Scan',
     hint: 'Read the whole inbox from the start. About four minutes.',
   },
+}
+
+const ICON: Record<Op, string> = {
+  catch_up: 'digest',
+  handle: 'resolved',
+  delta: 'mail',
+  scan: 'refresh',
 }
 
 const KIND: Record<CatchUp['items'][number]['kind'], { label: string; state: string }> = {
@@ -206,7 +214,10 @@ export function AgentPanel({
                 data-primary={op === 'scan' || undefined}
                 title={configured ? undefined : 'Available when the workspace is connected'}
               >
-                {running === op ? LABEL[op].busy : LABEL[op].idle}
+                <span className="agent-op-icon">
+                  <StateIcon name={ICON[op]} />
+                </span>
+                <span>{running === op ? LABEL[op].busy : LABEL[op].idle}</span>
               </button>
               <p id={`agent-op-${op}`} className="agent-op-hint">
                 {LABEL[op].hint}
