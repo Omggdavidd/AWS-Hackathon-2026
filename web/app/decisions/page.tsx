@@ -64,26 +64,18 @@ export default async function DecisionsPage({ searchParams }: PageProps<'/decisi
           </ol>
         )}
       </section>
-      <aside className="pane" aria-label={selected ? 'Decision' : 'Decisions'}>
-        <div className="pane-inner">
-          {selected ? (
-            <>
-              <div className="pane-bar">
-                <Link href="/decisions" className="pane-close" scroll={false}>
-                  ← Back to the list
-                </Link>
-              </div>
-              <DecisionSheet actionId={selected} />
-            </>
-          ) : (
-            <p className="pane-hint">
-              {n === 0
-                ? 'When the agent needs a yes or no, it will appear here.'
-                : 'Choose a decision to see exactly what the agent would do, then approve or decline it.'}
-            </p>
-          )}
-        </div>
-      </aside>
+      {selected && (
+        <aside className="pane" aria-label="Decision">
+          <div className="pane-inner">
+            <div className="pane-bar">
+              <Link href="/decisions" className="pane-close" scroll={false}>
+                ← Back to the list
+              </Link>
+            </div>
+            <DecisionSheet actionId={selected} />
+          </div>
+        </aside>
+      )}
     </div>
   )
 }
