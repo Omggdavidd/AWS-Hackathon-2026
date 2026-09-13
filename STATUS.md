@@ -27,7 +27,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 |---|---|
 | Omggdavidd (hard + front end) | nothing open; #19 shipped |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration, #31 command bar (stretch) |
-| tdare514 (medium) | nothing open; #99 shipped |
+| tdare514 (medium) | PR #111 re-judge on the delta path |
 | ab00bae (medium-easy) | nothing open |
 | AyomideAw (easiest) | nothing open |
 | Omggdavidd (stretch, after #19) | #20 live Gmail, #21 Google sinks |
