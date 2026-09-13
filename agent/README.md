@@ -10,6 +10,7 @@ agent/
     ├── src/agents/       Extractor, Investigator, Risk Judge as structured-output Agents; prompts.ts
     ├── src/tools/        search_inbox, get_thread, list_calendar_events, find_open_loops
     ├── src/scan.ts       Orchestrator: thread -> extract -> investigate -> judge -> ledger
+    │                     (tracked thread -> update -> judge on a state change -> ledger)
     ├── scripts/scan.ts   Local runner over demo/seed-inbox.json with the real model
     └── test/             Orchestrator tests with stubbed specialists (no model calls)
 ```
@@ -61,6 +62,19 @@ pnpm --filter @openloop/agent scan -- --reset --log-json 2>pipeline.jsonl
 
 Lines go to stderr so they never interleave with the human-readable progress. Line shapes, the
 Logs Insights queries and what to screenshot are in `docs/architecture/observability/`.
+
+## Re-judging on the delta path
+
+A scan of an already-tracked thread runs the Investigator's update role, which decides the state and
+nothing else. When that state actually changes, the Risk Judge runs again over the full evidence and
+rewrites `consequence`, `riskLevel`, `priority`, `nextAction` and `interruptUser`; when it does not,
+the new mail is recorded as evidence and no model call is spent. The reason is that what a
+responsibility costs you depends on whose move it is: a loop that was Waiting on somebody else and
+now asks something of the user would otherwise keep the low priority it earned while it was not the
+user's problem, and would never interrupt.
+
+`dueAt` is still fixed at creation. Changing it needs the Extractor to re-read the thread, not the
+Judge, so a rescheduled deadline does not yet move the date on the loop.
 
 ## Areas
 
