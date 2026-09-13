@@ -1,11 +1,14 @@
 import type { LoopStatus, OpenLoop } from '@openloop/shared'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { AgentPanel } from '@/components/agent-panel'
+import { ChangeBanner } from '@/components/change-banner'
 import { LiveClock } from '@/components/live-clock'
 import { LoopRing, StateIcon } from '@/components/loop-mark'
 import { LoopRow } from '@/components/loop-row'
 import { KindBadge } from '@/components/status-chip'
 import { scanConfigured } from '@/lib/agent'
+import { summarizeChanges } from '@/lib/changes'
 import {
   DEMO_TIME_ZONE,
   formatDate,
@@ -50,6 +53,10 @@ export default async function Home() {
     .slice(0, 4)
   const lastScan = audit.find((event) => event.kind === 'scan_completed')
   const now = new Date()
+  // Rendered only when something newer than the last dismissal happened, so there is no flash.
+  const changed = summarizeChanges(audit, loops, now)
+  const seen = (await cookies()).get('openloops-seen')?.value
+  const banner = changed && (!seen || changed.latestAt > seen) ? changed : undefined
   const hour = Number(
     new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
@@ -62,6 +69,7 @@ export default async function Home() {
 
   return (
     <div className="dashboard">
+      {banner && <ChangeBanner sentences={banner.sentences} latestAt={banner.latestAt} />}
       <section className="hero" aria-labelledby="headline">
         <div className="hero-copy">
           <p className="hero-date">
