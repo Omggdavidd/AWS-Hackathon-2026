@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /*
- * White and navy reading surfaces, teal brand, and small highlighter strokes on state headings.
- * Status text and icons carry the same meaning when the highlight is not visible.
+ * White and navy reading surfaces, teal brand, and one marker swipe per state heading drawn from
+ * the state color itself. Status text and icons carry the same meaning without the stroke.
  */
 :root {
   --background: #ffffff;
@@ -20,12 +20,8 @@
   --waiting: #855812;
   --watching: #366aa2;
   --resolved: #266945;
+  --highlight-alpha: 22%;
   --resolved-soft: #f3faee;
-  --highlight-attention: #ffd4e1;
-  --highlight-waiting: #fff0a8;
-  --highlight-watching: #cde9ff;
-  --highlight-resolved: #d4f7a5;
-  --highlight-uncertain: #e6defa;
 }
 
 @theme inline {
@@ -52,14 +48,10 @@
   --waiting: #f0d276;
   --watching: #a6ceff;
   --resolved: #b3e786;
+  --highlight-alpha: 30%;
   --resolved-soft: #192d32;
   --surface: #121f34;
   --on-accent: #102c32;
-  --highlight-attention: #653348;
-  --highlight-waiting: #605429;
-  --highlight-watching: #214c69;
-  --highlight-resolved: #355b34;
-  --highlight-uncertain: #4a3c69;
 }
 
 body {
@@ -187,23 +179,18 @@ summary {
 }
 [data-state="needs-you"] {
   --state-color: var(--attention);
-  --state-highlight: var(--highlight-attention);
 }
 [data-state="waiting"] {
   --state-color: var(--waiting);
-  --state-highlight: var(--highlight-waiting);
 }
 [data-state="watching"] {
   --state-color: var(--watching);
-  --state-highlight: var(--highlight-watching);
 }
 [data-state="resolved"] {
   --state-color: var(--resolved);
-  --state-highlight: var(--highlight-resolved);
 }
 [data-state="uncertain"] {
   --state-color: var(--muted);
-  --state-highlight: var(--highlight-uncertain);
 }
 .nav-item:where([data-active="true"][data-state]) > svg {
   color: var(--state-color, var(--accent));
@@ -936,16 +923,27 @@ summary {
   font-weight: 600;
 }
 .section-label {
-  padding-inline: 5px;
-  border-radius: 3px;
+  position: relative;
+  isolation: isolate;
+  padding-inline: 2px;
+  color: color-mix(in srgb, var(--state-color) 55%, var(--foreground));
+}
+/* One marker swipe: the state's own ink at low alpha, low across the x-height, a little past
+   the word, slightly skewed, fading as a pen would. */
+.section-label::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 42% -0.35em -6% -0.3em;
+  border-radius: 0.35em 0.6em 0.4em 0.7em / 0.5em 0.3em 0.6em 0.4em;
+  transform: skewX(-9deg) rotate(-0.8deg);
+  transform-origin: left bottom;
   background: linear-gradient(
-    transparent 36%,
-    var(--state-highlight) 36%,
-    var(--state-highlight) 92%,
-    transparent 92%
+    90deg,
+    color-mix(in srgb, var(--state-color) var(--highlight-alpha), transparent) 0%,
+    color-mix(in srgb, var(--state-color) var(--highlight-alpha), transparent) 62%,
+    color-mix(in srgb, var(--state-color) calc(var(--highlight-alpha) * 0.55), transparent) 100%
   );
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
 }
 .section-heading svg {
   width: 17px;
