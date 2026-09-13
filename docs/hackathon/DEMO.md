@@ -14,14 +14,20 @@ The five-minute video is the submission (SPEC §18). This is the shot list: what
 
 ## Before you record
 
-**The agent buttons do not work without AWS.** `AgentPanel` disables all four when `scanConfigured` is false, which is `Boolean(OPENLOOP_RUNTIME_ARN && OPENLOOP_LEDGER_TABLE)`. On the seeded local ledger the panel reads *"Sample loops. Connect the workspace to run it"* and Catch me up, Handle what you can, Check for new mail and Scan inbox are all greyed. Record with `web/.env.local` filled in, against DynamoDB.
+**Record against the deployed app: <https://openloop-neon.vercel.app>.** Since #19 it is live, connected to the runtime and to DynamoDB, so the agent buttons work without any local setup — and it is the same thing a judge will click. Verified 2026-09-13: HTTP 200, the panel reads *"Your agent"* with all four buttons live.
+
+If you record locally instead, the agent buttons only work with `web/.env.local` filled in: `AgentPanel` disables all four when `scanConfigured` is false, which is `Boolean(OPENLOOP_RUNTIME_ARN && OPENLOOP_LEDGER_TABLE)`. On the bare seeded ledger the panel reads *"Sample loops. Connect the workspace to run it"* and every button is greyed. You would reach scene 5 before finding out.
+
+**Loop titles are written by the model and change between runs.** `agent/README.md` says it plainly: *"Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities."* The titles in this script are the seeded ledger's. A real scan produces the same eleven loops in the same states with its own wording — on the deployed app today the insurance loop is titled *"Submit renter's insurance certificate to Maple Court PM before move-in"*, not *"Send proof of renter's insurance"*.
+
+So: **identify rows by what they are, not by the string in this script, and read aloud whatever is on screen.** The counts are stable and worth checking; the wording is not.
 
 **Do not record a cold scan.** A full scan is four to five and a half minutes, measured across four runs — longer than the whole video. Open on a ledger that has already been scanned (#29's reset script). Scene 6 explains how to show the agent working without waiting for it.
 
 Check before you hit record:
 
-- [ ] `web/.env.local` has `OPENLOOP_LEDGER_TABLE` and `OPENLOOP_RUNTIME_ARN`; the agent panel says *"Your agent"* with the buttons live, not greyed.
-- [ ] The ledger is in its post-scan state: the overview headline reads **6 things need you. 1 is waiting on others. 3 on your radar.** and the ring says **1 / 11 loops closed**.
+- [ ] The agent panel says *"Your agent"* with all four buttons live, not greyed. On the deployed URL this is already true; locally it needs `web/.env.local`.
+- [ ] The ledger has been reset and freshly scanned, not left mid-demo. The headline should read **6 things need you. 1 is waiting on others. 3 on your radar.** with **1 / 11 loops closed**. (As of 2026-09-13 the deployed ledger is mid-demo — 3 need you, 5 of 12 closed, a delta already run — so it *must* be reset before a take. That is #29.)
 - [ ] Light theme, browser at 1440 wide, bookmarks bar hidden, notifications silenced.
 - [ ] A second browser tab already open on `docs/architecture/openloop-architecture.png` and one on the CloudWatch log group, for scene 7.
 
@@ -93,6 +99,8 @@ Show the drafted email inside the insurance loop, then the deposit's **Approve /
 >
 > Not "you have six new emails". What changed, and what it means.
 
+Two places show it, both added since the spec was written: the quiet line across the top of the overview, and the bell in the header with a count on it (#101). The line is the one to narrate; the bell is there if someone asks where the history lives.
+
 **This is the scene most likely to break the take.** The delta run is a real model call. Record the click, stop, let it finish, and resume on the result — or pre-run it and show the finished state. Do not sit watching a progress bar.
 
 ### 7 · How it is built — 4:00 to 4:35 — 61 words
@@ -133,6 +141,6 @@ From SPEC §17's list of traps, the ones this script is built to avoid:
 
 ## Rehearsal status
 
-Walked twice against the running app on 2026-09-13 at commit `c624216`, confirming that every click in this file exists and every quoted on-screen string matches: the headline, the bucket names and counts, the facts strip on the deposit, the evidence quote, the History line, the three loop-page buttons, the Approve and Decline pair, and all four agent-panel labels.
+Walked against the deployed app at <https://openloop-neon.vercel.app> and against the app running locally on the seeded ledger, most recently on 2026-09-13 at commit `c8c221c`, confirming that every click in this file exists and every quoted on-screen string matches: the headline, the bucket names and counts, the facts strip on the deposit, the evidence quote, the History line, the three loop-page buttons, the Approve and Decline pair, and all four agent-panel labels.
 
 **Not yet done: a spoken read-through against a stopwatch.** The 550 words are counted from this file, but turning words into seconds is arithmetic at an assumed pace, not a measurement of anyone actually reading it. Whoever records should read it aloud once end to end, note the real time at the top of this file, and cut from scenes 2 and 4 first if it runs long — they carry the least that a judge could not infer from the screen.
