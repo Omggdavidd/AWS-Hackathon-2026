@@ -8,7 +8,7 @@ Current phase: Phase 2, Foundation (definitions in `docs/process/phases.md`). En
 
 ## Demo readiness
 
-Runnable locally: `pnpm --filter @openloop/web dev` renders the seeded ledger, and with `OPENLOOP_LEDGER_TABLE` and `OPENLOOP_RUNTIME_ARN` set the Scan button drives the deployed runtime. Not yet reachable by a judge: the web app has no public URL (#19). Submission deadline Mon Sep 14, 2026, 8:00 PM ET; dates and checklist in `docs/hackathon/SUBMISSION.md`.
+Public URL: https://openloop-neon.vercel.app (Vercel project `openloop`, production from `main`, preview per PR; scoped IAM user `openloop-web`). Scan, Check for new mail, Handle and Approve drive the deployed runtime from there. Locally, `pnpm --filter @openloop/web dev` renders the seeded ledger, and with `OPENLOOP_LEDGER_TABLE` and `OPENLOOP_RUNTIME_ARN` set the same buttons work. Submission deadline Mon Sep 14, 2026, 8:00 PM ET; dates and checklist in `docs/hackathon/SUBMISSION.md`.
 
 ## What works
 
@@ -25,7 +25,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 
 | Owner | Issues, hardest first within each row |
 |---|---|
-| Omggdavidd (hard + front end) | #19 Vercel deploy |
+| Omggdavidd (hard + front end) | nothing open; #19 shipped |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration, #31 command bar (stretch) |
 | tdare514 (medium) | nothing open |
 | ab00bae (medium-easy) | nothing open |
@@ -42,15 +42,16 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 - 2026-09-13 CI builds the web app in `workspace-checks`, so a route that fails to compile cannot reach `main` (#38, tdare514); `executeAction` re-reads the loop before writing a status, so an action in flight can no longer reopen a loop the user resolved while it ran (#66, ab00bae); Remind me tomorrow and Ignore on the loop page, park a responsibility in Watching without claiming it is done (#36, ab00bae); quiet change banner on the overview: one or two sentences of what changed in the last day, built from the audit trail, each named loop linked, dismissible until something newer happens (#39, ab00bae).
 - 2026-09-13 Dashboard reimagined as a responsibility whiteboard with saved arrangements and accessible controls; hub headline, docked agent panel and a professional finish (#83); overview direction after product research: List by time as home, Board and Calendar as views (#88).
 
+- 2026-09-13 Web app deployed to Vercel at https://openloop-neon.vercel.app with the least-privilege IAM user `openloop-web` (#19).
 - 2026-09-13 Demo script for the five-minute video, written against the app as built and walked twice against the running app (#22, ab00bae, taken over from AyomideAw).
 
 ## Blocked
 
-- Nothing external. AWS is ready: personal account, `openloop-dev` IAM user with AdministratorAccess, CLI configured on David's machine in `us-east-1`, Bedrock use-case form accepted, Claude Sonnet 4.6 answers. Google Cloud and Vercel projects not yet created (needed for plan steps 16 and the live-Gmail stretch).
+- Nothing external. AWS is ready: personal account, `openloop-dev` IAM user with AdministratorAccess, CLI configured on David's machine in `us-east-1`, Bedrock use-case form accepted, Claude Sonnet 4.6 answers. Google Cloud project not yet created (needed for the live-Gmail stretch, #20). The Vercel project exists.
 
 ## Next up
 
-Must-ship in the order the demo needs them: #29, #14, #19, #22. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
+Must-ship in the order the demo needs them: #29, #14. Then quality (#15, #16), then stretch. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
 
 ## Known issues
 
