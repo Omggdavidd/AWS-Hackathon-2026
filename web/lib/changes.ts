@@ -7,7 +7,7 @@ const WINDOW_MS = 86_400_000
  * working, not a change in the world; proposals and approvals are already visible as buttons on
  * the loop. SPEC §8H: notify state changes and decisions, never "you have 6 emails".
  */
-const NOTABLE: ReadonlySet<AuditKind> = new Set<AuditKind>([
+export const NOTABLE: ReadonlySet<AuditKind> = new Set<AuditKind>([
   'state_changed',
   'loop_created',
   'action_executed',
