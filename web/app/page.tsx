@@ -61,7 +61,7 @@ export default async function Home() {
 
   return (
     <div className="dashboard">
-      <section className="hero" aria-labelledby="greeting">
+      <section className="hero" aria-labelledby="headline">
         <div className="hero-copy">
           <p className="hero-date">
             <span>
@@ -74,20 +74,36 @@ export default async function Home() {
             </span>
             <LiveClock timeZone={DEMO_TIME_ZONE} />
           </p>
-          <h1 id="greeting">
+          <p className="hero-greeting">
             {greeting}, {USER_NAME}.
-          </h1>
-          <p className="hero-summary">
-            {summaryParts(groups).map((part) =>
-              part.section ? (
-                <a key={part.text} href={`#${part.section}`}>
-                  {part.text}
+          </p>
+          <h1 id="headline" className="hero-summary">
+            {summaryParts(groups).map((part, index) => {
+              const [, count, rest] = part.text.match(/^(\d+)\s(.*)$/) ?? []
+              const line = count ? (
+                <>
+                  <strong className="hero-count">{count}</strong> {rest}
+                </>
+              ) : (
+                part.text
+              )
+              const style = { '--line': index } as React.CSSProperties
+              return part.section ? (
+                <a
+                  key={part.text}
+                  href={`#${part.section}`}
+                  data-state={part.section}
+                  style={style}
+                >
+                  {line}
                 </a>
               ) : (
-                <span key={part.text}>{part.text}</span>
-              ),
-            )}
-          </p>
+                <span key={part.text} className="hero-line" style={style}>
+                  {line}
+                </span>
+              )
+            })}
+          </h1>
         </div>
         <LoopRing closed={resolved} total={loops.length} />
       </section>

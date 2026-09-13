@@ -779,8 +779,8 @@ summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 10px 0 28px;
+  gap: 32px;
+  padding: 14px 0 34px;
 }
 .hero-copy {
   min-width: 0;
@@ -792,47 +792,64 @@ summary {
   color: var(--muted);
   font-size: 13px;
 }
-.hero h1 {
-  margin-top: 7px;
-  font-size: clamp(27px, 2.6vw, 36px);
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.035em;
-}
-.hero-summary {
-  margin-top: 12px;
-  font-size: 15px;
-  line-height: 1.6;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.45em;
+.hero-greeting {
+  margin-top: 14px;
+  font-size: 19px;
+  font-weight: 500;
   color: var(--muted);
+  letter-spacing: -0.01em;
+}
+/* The headline is what needs you, not the greeting: one fragment per line, the count in its
+   state color. Lines rise in once on load, staggered by --line; the ring draws alongside. */
+.hero-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: 6px;
+  font-size: clamp(32px, 3.3vw, 46px);
+  line-height: 1.12;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.hero-line {
+  animation: hero-rise 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--line, 0) * 90ms + 60ms);
+}
+.hero-count {
+  font-weight: 700;
+  color: var(--state-color, var(--foreground));
+  font-variant-numeric: tabular-nums;
 }
 .hero-summary a {
-  text-decoration: underline;
-  text-decoration-color: var(--border);
-  text-underline-offset: 4px;
+  color: var(--foreground);
+  text-decoration: none;
+  transition: color 160ms;
+}
+.hero-summary a:not(:first-child) {
+  color: var(--muted);
 }
 .hero-summary a:hover {
-  color: var(--accent);
-  text-decoration-color: currentColor;
+  color: var(--state-color, var(--accent));
 }
-.hero-summary a:first-child {
-  color: var(--foreground);
-  font-weight: 550;
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }
 .loop-ring {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   margin: 0;
-  padding-left: 25px;
+  padding-left: 32px;
   border-left: 1px solid var(--border);
 }
 .loop-ring svg {
-  width: 68px;
-  height: 68px;
+  width: 104px;
+  height: 104px;
 }
 .loop-ring figcaption {
   display: flex;
@@ -914,26 +931,28 @@ summary {
 .section-heading {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 11px;
-  font-size: 16px;
-  font-weight: 600;
+  gap: 9px;
+  margin-bottom: 14px;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 .section-label {
   color: var(--state-color);
 }
 .section-heading svg {
-  width: 17px;
-  height: 17px;
+  width: 22px;
+  height: 22px;
   color: var(--state-color);
 }
 .section-count {
-  font-size: 12px;
+  margin-left: 2px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--muted);
   background: var(--surface);
-  border-radius: 5px;
-  padding: 1px 6px;
+  border-radius: 7px;
+  padding: 2px 9px;
   font-variant-numeric: tabular-nums;
 }
 .loop-list {
@@ -1092,11 +1111,15 @@ summary {
     gap: 15px;
     padding: 0 0 22px;
   }
-  .hero h1 {
-    font-size: 26px;
+  .hero-greeting {
+    font-size: 16px;
+    margin-top: 10px;
   }
   .hero-summary {
-    font-size: 15px;
+    font-size: clamp(28px, 8.5vw, 34px);
+  }
+  .section-heading {
+    font-size: 19px;
   }
   .loop-ring {
     padding-left: 0;
@@ -1200,7 +1223,8 @@ summary {
   :root[data-theme-transition]::view-transition-new(root) {
     animation: none;
   }
-  .ring-progress {
+  .ring-progress,
+  .hero-line {
     animation: none;
   }
   *,
