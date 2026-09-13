@@ -50,21 +50,26 @@ const LABEL: Record<Op, { idle: string; busy: string; title: string; hint: strin
     idle: 'Catch me up',
     busy: 'Catching up…',
     title: 'What changed',
-    hint: 'What changed since you last looked',
+    hint: 'A short digest of what changed since you last looked.',
   },
   handle: {
     idle: 'Handle what you can',
     busy: 'Handling…',
     title: 'Handled',
-    hint: 'Do everything that is safe to do without asking',
+    hint: 'Do everything that is safe without asking. The rest waits for you.',
   },
   delta: {
     idle: 'Check for new mail',
     busy: 'Checking…',
     title: 'New mail',
-    hint: 'Read what arrived since the last scan',
+    hint: 'Read only what arrived since the last scan.',
   },
-  scan: { idle: 'Scan inbox', busy: 'Scanning…', title: 'Scan', hint: 'Read the whole inbox' },
+  scan: {
+    idle: 'Scan inbox',
+    busy: 'Scanning…',
+    title: 'Scan',
+    hint: 'Read the whole inbox from the start. About four minutes.',
+  },
 }
 
 const KIND: Record<CatchUp['items'][number]['kind'], { label: string; state: string }> = {
@@ -191,17 +196,22 @@ export function AgentPanel({
         </div>
         <div className="agent-actions">
           {ops.map((op) => (
-            <button
-              key={op}
-              type="button"
-              onClick={() => run(op)}
-              disabled={!configured || busy}
-              aria-busy={running === op || undefined}
-              data-primary={op === 'scan' || undefined}
-              title={configured ? LABEL[op].hint : 'Available when the workspace is connected'}
-            >
-              {running === op ? LABEL[op].busy : LABEL[op].idle}
-            </button>
+            <div key={op} className="agent-op">
+              <button
+                type="button"
+                onClick={() => run(op)}
+                disabled={!configured || busy}
+                aria-busy={running === op || undefined}
+                aria-describedby={`agent-op-${op}`}
+                data-primary={op === 'scan' || undefined}
+                title={configured ? undefined : 'Available when the workspace is connected'}
+              >
+                {running === op ? LABEL[op].busy : LABEL[op].idle}
+              </button>
+              <p id={`agent-op-${op}`} className="agent-op-hint">
+                {LABEL[op].hint}
+              </p>
+            </div>
           ))}
         </div>
       </div>
