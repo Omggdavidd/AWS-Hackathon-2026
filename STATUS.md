@@ -27,7 +27,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 |---|---|
 | Omggdavidd (hard + front end) | #19 Vercel deploy |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration |
-| tdare514 (medium) | #38 CI builds web |
+| tdare514 (medium) | nothing open |
 | ab00bae (medium-easy) | nothing open |
 | AyomideAw (easiest) | #22 demo script |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
@@ -39,7 +39,7 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 - 2026-09-10 Phase 0 foundation (f1156d9); Phase 1 merged (#1); workspace scaffold and shared package merged (#2); `main` ruleset enabled; MIT license added.
 - 2026-09-11 Web dashboard shell (#4), agent pipeline (#8), AgentCore deploy (#9), DynamoDB and Scan button (#10), delta path (#11), actions and approval (#12).
 - 2026-09-12 Loop page shows executed effects (#17); message page behind evidence links (#35, tdare514); Catch me up command and button (#13); dashboard design and responsive navigation (#18); dashboard at a glance: readable rows, one summary line, refined open-ring identity, compact progress, white default with persistent themes and consistent detail/source panels (#52); reading themes: highlighter headings, Inter, navy dark mode with reveal toggle (#61); loop page in reading order and a live clock (#67); observability evidence: structured pipeline logs in the runtime and CloudWatch captures of one scan (#30, tdare514 with Omggdavidd); submission README, architecture diagram and the missing `web/.env.example` (#33, ab00bae).
-- 2026-09-13 `executeAction` re-reads the loop before writing a status, so an action in flight can no longer reopen a loop the user resolved while it ran (#66, ab00bae); Remind me tomorrow and Ignore on the loop page, park a responsibility in Watching without claiming it is done (#36, ab00bae); quiet change banner on the overview: one or two sentences of what changed in the last day, built from the audit trail, each named loop linked, dismissible until something newer happens (#39, ab00bae).
+- 2026-09-13 CI builds the web app in `workspace-checks`, so a route that fails to compile cannot reach `main` (#38, tdare514); `executeAction` re-reads the loop before writing a status, so an action in flight can no longer reopen a loop the user resolved while it ran (#66, ab00bae); Remind me tomorrow and Ignore on the loop page, park a responsibility in Watching without claiming it is done (#36, ab00bae); quiet change banner on the overview: one or two sentences of what changed in the last day, built from the audit trail, each named loop linked, dismissible until something newer happens (#39, ab00bae).
 - 2026-09-13 Dashboard reimagined as a responsibility whiteboard with saved arrangements and accessible controls; hub headline, docked agent panel and a professional finish (#83); overview direction after product research: List by time as home, Board and Calendar as views (#88).
 
 ## Blocked

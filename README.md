@@ -60,7 +60,7 @@ This runs with no AWS account: the orchestrator is tested against stubbed specia
 
 ```
 OPENLOOP_DYNAMO_TEST_TABLE=openloop-ledger-test pnpm --filter @openloop/ledger-dynamo test
-pnpm --filter @openloop/agent scan -- --reset    # the real model over the demo inbox, about 4 minutes
+pnpm --filter @openloop/agent scan -- --reset    # the real model over the demo inbox, four to five and a half minutes
 ```
 
 ## Running the whole system
@@ -75,7 +75,7 @@ cp web/.env.example web/.env.local                   # then fill in the table na
 pnpm --filter @openloop/web dev
 ```
 
-`agentcore status --json`, run from `agent/`, prints the runtime ARN for `web/.env.local`. With both values set, **Scan inbox** runs the real agent over the demo inbox and the dashboard fills in as loops land (about four minutes), **Check for new mail** replays the next morning's batch, **Handle what you can** executes every action the risk gate allows, and **Approve** executes a single high-risk action.
+`agentcore status --json`, run from `agent/`, prints the runtime ARN for `web/.env.local`. With both values set, **Scan inbox** runs the real agent over the demo inbox and the dashboard fills in as loops land (four to five and a half minutes), **Check for new mail** replays the next morning's batch, **Handle what you can** executes every action the risk gate allows, and **Approve** executes a single high-risk action.
 
 You can also run the agent without the web app:
 
