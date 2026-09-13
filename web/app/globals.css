@@ -682,49 +682,59 @@ summary {
   }
 }
 
-/* View switch */
-.view-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 26px;
-  margin-bottom: 14px;
-}
+/* View switch: the three views are the page's primary navigation */
 .view-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 18px;
 }
 .view-switch a {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 500;
+  gap: 12px;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
   color: var(--muted);
-  border-radius: 6px;
+  transition:
+    border-color 140ms,
+    background 140ms,
+    color 140ms;
 }
 .view-switch a:hover {
   color: var(--foreground);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 .view-switch a[aria-current="page"] {
-  background: var(--card);
   color: var(--foreground);
-  box-shadow: 0 1px 4px #102c3212;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--card));
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .view-switch svg {
-  width: 14px;
-  height: 14px;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.view-switch strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.view-switch small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
 }
 .view-hint {
+  margin: 18px 0 -12px;
   font-size: 12px;
   color: var(--muted);
+  text-align: right;
 }
 .view-hint kbd {
   font: inherit;
@@ -843,6 +853,17 @@ summary {
 .tl-meta em {
   font-style: normal;
   color: var(--foreground);
+}
+.area-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 .tl-due {
   font-size: 13px;
@@ -1009,9 +1030,15 @@ summary {
     width: 56px;
     height: 56px;
   }
-  .view-bar {
-    flex-direction: column;
-    align-items: flex-start;
+  .view-switch {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .view-switch a {
+    padding: 10px 14px;
+  }
+  .view-switch small {
+    display: none;
   }
   .view-hint {
     display: none;

@@ -6,7 +6,7 @@ import { ActionEffect } from '@/components/action-effect'
 import { StatusChip } from '@/components/status-chip'
 import { SubmitButton } from '@/components/submit-button'
 import { parseEffect, STATUS_TEXT, terminalReason } from '@/lib/effects'
-import { formatDate, formatDue, formatMoney, formatPercent } from '@/lib/format'
+import { AREA_LABEL, formatDate, formatDue, formatMoney, formatPercent } from '@/lib/format'
 import { getStore, USER_ID } from '@/lib/ledger'
 import { hasSourcePage, messageHref, SOURCE_LABEL } from '@/lib/source'
 
@@ -54,6 +54,7 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
     (due === 'Due today' || due === 'Due tomorrow' || due.startsWith('Overdue'))
   const facts: { label: string; value: string; soon?: boolean }[] = [
     ...(due ? [{ label: 'When', value: due, soon }] : []),
+    ...(loop.area !== 'other' ? [{ label: 'Area', value: AREA_LABEL[loop.area] }] : []),
     ...(loop.amount ? [{ label: 'Amount', value: formatMoney(loop.amount) ?? '' }] : []),
     ...(loop.status === 'WAITING' && loop.waitingOn
       ? [{ label: 'Waiting on', value: loop.waitingOn }]

@@ -23,7 +23,14 @@ import {
   restorePositions,
   zoomCamera,
 } from '@/lib/board'
-import { DEMO_TIME_ZONE, formatDate, formatDue, formatMoney, groupByStatus } from '@/lib/format'
+import {
+  AREA_LABEL,
+  DEMO_TIME_ZONE,
+  formatDate,
+  formatDue,
+  formatMoney,
+  groupByStatus,
+} from '@/lib/format'
 import { LiveClock } from './live-clock'
 import { LoopMark, StateIcon } from './loop-mark'
 import './loop-board.css'
@@ -110,21 +117,21 @@ const CATEGORY_GROUPS: Group[] = (Object.keys(CATEGORY_LABEL) as LoopCategory[])
   }),
 )
 
-const AREA_LABEL: Record<LoopArea, [title: string, hint: string]> = {
-  school: ['School', 'Courses, credits, the registrar'],
-  work: ['Work', 'Colleagues, clients, reviews'],
-  money: ['Money', 'Bills, fees, subscriptions'],
-  health: ['Health', 'Doctors, dentists, claims'],
-  home: ['Home', 'Lease, utilities, moving'],
-  travel: ['Travel', 'Flights, documents, stays'],
-  community: ['Clubs', 'Teams, volunteering, events'],
-  other: ['Other', 'Everything else'],
+const AREA_HINT: Record<LoopArea, string> = {
+  school: 'Courses, credits, the registrar',
+  work: 'Colleagues, clients, reviews',
+  money: 'Bills, fees, subscriptions',
+  health: 'Doctors, dentists, claims',
+  home: 'Lease, utilities, moving',
+  travel: 'Flights, documents, stays',
+  community: 'Teams, volunteering, events',
+  other: 'Everything else',
 }
 
-const AREA_GROUPS: Group[] = (Object.keys(AREA_LABEL) as LoopArea[]).map((area, i) => ({
+const AREA_GROUPS: Group[] = (Object.keys(AREA_HINT) as LoopArea[]).map((area, i) => ({
   id: `area-${area}`,
-  title: AREA_LABEL[area][0],
-  hint: AREA_LABEL[area][1],
+  title: AREA_LABEL[area],
+  hint: AREA_HINT[area],
   empty: '',
   position: { x: 40 + (i % 4) * 335, y: 215 + Math.floor(i / 4) * 300 },
   tone: 'category',
