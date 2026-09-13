@@ -66,31 +66,6 @@ body:has(.mindboard) .bottom-tabs {
   padding: 6px 30px 14px;
   flex-shrink: 0;
 }
-.board-state-nav button {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 9px;
-  font-size: 13px;
-  border-radius: 6px;
-  color: var(--muted);
-}
-.board-state-nav button:hover {
-  background: var(--surface);
-  color: var(--foreground);
-}
-.board-state-nav b {
-  font-size: 12px;
-  font-weight: 500;
-  margin-left: 2px;
-  font-variant-numeric: tabular-nums;
-}
-.board-state-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--state-color);
-}
 .board-save-note {
   margin-left: auto;
   font-size: 12px;
@@ -378,28 +353,6 @@ body:has(.mindboard) .bottom-tabs {
 }
 
 /* Group by switch */
-.board-groupby {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  margin-right: 10px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface);
-}
-.board-groupby button {
-  padding: 4px 9px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  border-radius: 5px;
-}
-.board-groupby button[aria-pressed="true"] {
-  background: var(--card);
-  color: var(--foreground);
-  box-shadow: 0 1px 3px #102c3212;
-}
 [data-state="category"] {
   --state-color: var(--accent);
 }
@@ -589,16 +542,6 @@ body:has(.mindboard) .bottom-tabs {
     gap: 1px;
     overflow: auto;
   }
-  .board-groupby {
-    flex-shrink: 0;
-    margin-right: 6px;
-  }
-  .board-state-nav button {
-    flex-shrink: 0;
-    padding: 5px 7px;
-    font-size: 11px;
-    gap: 5px;
-  }
   .board-save-note {
     display: none;
   }
@@ -637,4 +580,86 @@ body:has(.mindboard) .bottom-tabs {
   .dock-chevron {
     transition: none;
   }
+}
+
+.board-groupmenu {
+  position: relative;
+}
+.board-groupmenu > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 13px;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.board-groupmenu > summary::-webkit-details-marker {
+  display: none;
+}
+.board-groupmenu-label {
+  color: var(--muted);
+}
+.board-groupmenu > summary b {
+  font-weight: 600;
+}
+.board-groupmenu > summary svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  transition: transform 160ms;
+}
+.board-groupmenu[open] > summary svg {
+  transform: rotate(180deg);
+}
+.board-groupmenu > ul {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  width: 300px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 25%);
+}
+.board-groupmenu li button {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-align: left;
+  color: var(--foreground);
+}
+.board-groupmenu li button:hover {
+  background: var(--surface);
+}
+.board-groupmenu li button[aria-pressed="true"] {
+  background: var(--accent-soft);
+}
+.board-groupmenu li strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.board-groupmenu li small {
+  display: block;
+  margin-top: 1px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.board-groupmenu-glyph {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  color: var(--accent);
 }

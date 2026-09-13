@@ -34,7 +34,7 @@ export function AppRail({ pending, initial }: { pending: number; initial: string
       <Link href="/" className="rail-mark" aria-label="Open Loops, today">
         <LoopMark />
       </Link>
-      <ul>
+      <ul data-tour="views">
         {items(pending).map((item) => {
           const active = isActive(item, pathname)
           return (
@@ -67,7 +67,7 @@ export function AppRail({ pending, initial }: { pending: number; initial: string
 export function AppTabs({ pending }: { pending: number }) {
   const pathname = usePathname()
   return (
-    <nav className="bottom-tabs" aria-label="Primary">
+    <nav className="bottom-tabs" aria-label="Primary" data-tour="views">
       {items(pending)
         .filter((item) => item.id !== 'about')
         .map((item) => {

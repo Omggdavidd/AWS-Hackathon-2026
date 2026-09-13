@@ -1,7 +1,9 @@
+import { cookies } from 'next/headers'
 import { AgentPanel } from '@/components/agent-panel'
 import { CalendarView } from '@/components/calendar-view'
 import { Headline } from '@/components/headline'
 import { scanConfigured } from '@/lib/agent'
+import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
 import { formatDateTime, groupByStatus } from '@/lib/format'
 import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
 
@@ -9,6 +11,7 @@ export const dynamic = 'force-dynamic'
 
 /** Deadlines on a six-week grid, with the same headline and agent controls as Today. */
 export default async function CalendarPage() {
+  const agentName = cleanAgentName((await cookies()).get(AGENT_COOKIE)?.value)
   const store = await getStore()
   const [loops, audit] = await Promise.all([
     store.listLoops(USER_ID),
@@ -20,7 +23,7 @@ export default async function CalendarPage() {
   return (
     <div className="page-column">
       <Headline groups={groupByStatus(loops)} name={USER_NAME} now={now} />
-      <AgentPanel configured={scanConfigured} checked={checked} />
+      <AgentPanel configured={scanConfigured} checked={checked} name={agentName} />
       <CalendarView loops={loops} now={now} />
     </div>
   )

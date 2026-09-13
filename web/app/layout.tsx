@@ -6,6 +6,7 @@ import { AppRail, AppTabs } from '@/components/app-rail'
 import { LoopMark } from '@/components/loop-mark'
 import { NotificationBell } from '@/components/notification-bell'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
 import { pendingDecisions } from '@/lib/decisions'
 import { formatDateTime } from '@/lib/format'
 import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
@@ -35,6 +36,7 @@ export const dynamic = 'force-dynamic'
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const jar = await cookies()
   const theme = jar.get('openloops-theme')?.value === 'dark' ? 'dark' : 'light'
+  const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value) ?? 'Your agent'
   const store = await getStore()
   const [loops, audit] = await Promise.all([
     store.listLoops(USER_ID),
@@ -66,7 +68,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
               <p className="agent-status" data-tour="agent-status">
                 <span className="agent-pulse" aria-hidden="true" />
                 <span>
-                  Your agent
+                  {agentName}
                   <small>
                     {lastScan ? ` checked ${formatDateTime(lastScan.at)}` : ' has not checked yet'}
                   </small>

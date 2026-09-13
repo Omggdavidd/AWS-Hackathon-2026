@@ -37,6 +37,27 @@ import './loop-board.css'
 
 type Mode = 'state' | 'category' | 'area'
 
+const MODES: { id: Mode; title: string; hint: string; icon: string }[] = [
+  {
+    id: 'state',
+    title: 'State',
+    hint: 'Needs you, Waiting, Watching, Resolved',
+    icon: 'needs-you',
+  },
+  {
+    id: 'category',
+    title: 'Category',
+    hint: 'Payments, forms, replies, travel and so on',
+    icon: 'list',
+  },
+  {
+    id: 'area',
+    title: 'Area of life',
+    hint: 'School, work, money, health, home and so on',
+    icon: 'overview',
+  },
+]
+
 type Group = {
   id: string
   title: string
@@ -475,28 +496,7 @@ export function LoopBoard({
         </div>
       </div>
       <nav className="board-state-nav" aria-label="Find a group">
-        <fieldset className="board-groupby" aria-label="Group by">
-          <button type="button" aria-pressed={mode === 'state'} onClick={() => switchMode('state')}>
-            By state
-          </button>
-          <button
-            type="button"
-            aria-pressed={mode === 'category'}
-            onClick={() => switchMode('category')}
-          >
-            By category
-          </button>
-          <button type="button" aria-pressed={mode === 'area'} onClick={() => switchMode('area')}>
-            By area
-          </button>
-        </fieldset>
-        {visible.map((g) => (
-          <button type="button" key={g.id} data-state={g.tone} onClick={() => focusGroup(g.id)}>
-            <span className="board-state-dot" />
-            {g.title}
-            <b>{members(g).length}</b>
-          </button>
-        ))}
+        <GroupMenu mode={mode} onChange={switchMode} />
         {storageError && (
           <span className="board-save-note">Layout is kept for this visit only.</span>
         )}
@@ -721,5 +721,61 @@ function BoardCard({ loop, now, showState }: { loop: OpenLoop; now: string; show
         </span>
       )}
     </Link>
+  )
+}
+
+/**
+ * One control for how the board is grouped, opened on demand: each option carries a glyph and a
+ * line saying what the groups would be, so choosing is not a guess. Closes on choice or outside.
+ */
+function GroupMenu({ mode, onChange }: { mode: Mode; onChange: (next: Mode) => void }) {
+  const ref = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    const close = (event: Event) => {
+      const el = ref.current
+      if (el?.open && event.target instanceof Node && !el.contains(event.target)) el.open = false
+    }
+    document.addEventListener('pointerdown', close)
+    return () => document.removeEventListener('pointerdown', close)
+  }, [])
+  const current = MODES.find((m) => m.id === mode) ?? MODES[0]
+  return (
+    <details className="board-groupmenu" ref={ref}>
+      <summary>
+        <span className="board-groupmenu-label">Group by</span>
+        <b>{current.title}</b>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </summary>
+      <ul>
+        {MODES.map((m) => (
+          <li key={m.id}>
+            <button
+              type="button"
+              aria-pressed={m.id === mode}
+              onClick={() => {
+                onChange(m.id)
+                if (ref.current) ref.current.open = false
+              }}
+            >
+              <span className="board-groupmenu-glyph">
+                <StateIcon name={m.icon} />
+              </span>
+              <span>
+                <strong>{m.title}</strong>
+                <small>{m.hint}</small>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </details>
   )
 }

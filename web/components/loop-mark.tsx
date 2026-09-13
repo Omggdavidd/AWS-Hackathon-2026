@@ -85,3 +85,34 @@ export function StateIcon({ name }: { name: string }) {
     </svg>
   )
 }
+
+const AREA_PATH: Record<string, string> = {
+  school: 'M2 9l10-5 10 5-10 5z M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5 M22 9v6',
+  work: 'M4 8h16v12H4z M9 8V5h6v3 M4 13h16',
+  money: 'M12 3v18 M16 7H10a2.5 2.5 0 0 0 0 5h4a2.5 2.5 0 0 1 0 5H8',
+  health: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z',
+  home: 'M3 11l9-8 9 8 M5 10v10h14V10 M10 20v-6h4v6',
+  travel: 'M3 13l7-1 4-8h2l-2 8 6 1v2l-6 1-1 5h-2l-1-5-7-1z',
+  community:
+    'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M16 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z M2 20a6 6 0 0 1 12 0 M14 20a4.5 4.5 0 0 1 8 0',
+  other: 'M12 12h.01 M7 12h.01 M17 12h.01',
+}
+
+/** The area of life a loop belongs to, as a glyph a row can carry without a word. */
+export function AreaIcon({ area }: { area: string }) {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={AREA_PATH[area] ?? AREA_PATH.other} />
+    </svg>
+  )
+}

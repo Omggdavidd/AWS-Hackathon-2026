@@ -1,6 +1,6 @@
 import { LocalLedgerStore, type OpenLoop, type ProposedAction } from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
-import { needsDecision, pendingDecisions } from './decisions'
+import { describeProposal, needsDecision, pendingDecisions } from './decisions'
 
 const now = '2026-09-13T12:00:00.000Z'
 
@@ -61,5 +61,49 @@ describe('pendingDecisions', () => {
     const decisions = await pendingDecisions(store, 'u')
     expect(decisions.map((d) => d.action.id)).toEqual(['new', 'old'])
     expect(decisions[0].loop?.title).toBe('loop-a')
+  })
+})
+
+describe('describeProposal', () => {
+  it('renders an email draft as an email', () => {
+    const p = describeProposal(
+      action('a', {
+        type: 'draft_email',
+        payload: { to: 'x@y.z', subject: 'Re: hi', body: 'Hello' },
+      }),
+    )
+    expect(p).toEqual({ kind: 'email', to: 'x@y.z', subject: 'Re: hi', body: 'Hello' })
+  })
+  it('renders a payment with its amount and portal', () => {
+    const p = describeProposal(
+      action('b', {
+        type: 'pay',
+        payload: { amount: 200, currency: 'USD', portal: 'Student Accounts' },
+      }),
+    )
+    expect(p).toEqual({ kind: 'payment', amount: '$200.00', portal: 'Student Accounts' })
+  })
+  it('renders a booking as a choice between slots', () => {
+    const p = describeProposal(
+      action('c', {
+        type: 'book_appointment',
+        payload: { candidates: ['Tue 2:00 PM', 'Fri 4:15 PM'], conflictFree: ['Fri 4:15 PM'] },
+      }),
+    )
+    expect(p).toEqual({
+      kind: 'choice',
+      options: ['Tue 2:00 PM', 'Fri 4:15 PM'],
+      free: ['Fri 4:15 PM'],
+    })
+  })
+  it('falls back to labelled fields and hides nothing but the executed effect', () => {
+    const p = describeProposal(
+      action('d', {
+        type: 'follow_up',
+        payload: { after: '2026-09-11', effect: { kind: 'note' } },
+      }),
+    )
+    expect(p).toEqual({ kind: 'fields', fields: [{ label: 'After', value: '2026-09-11' }] })
+    expect(describeProposal(action('e', { type: 'other', payload: {} }))).toBeUndefined()
   })
 })

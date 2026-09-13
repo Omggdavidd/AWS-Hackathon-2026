@@ -1,8 +1,7 @@
 import type { OpenLoop } from '@openloop/shared'
 import Link from 'next/link'
-import { markDone } from '@/app/actions'
-import { StateIcon } from '@/components/loop-mark'
-import { SubmitButton } from '@/components/submit-button'
+import { AreaIcon } from '@/components/loop-mark'
+import { StatusChip } from '@/components/status-chip'
 import {
   ACTION_LABEL,
   AREA_LABEL,
@@ -32,10 +31,11 @@ const EMPTY: Partial<Record<TimeBucket, string>> = {
 }
 
 /**
- * The overview as every product in this category opens: a list grouped by time, with the state as
- * the marker on each row and the action one hover away. A title opens the loop in the pane beside
- * the list (a sheet on a phone). Buckets with nothing in them are shown only where their emptiness
- * is itself the news (overdue, today, this week).
+ * The overview as every product in this category opens: a list grouped by time. Each row reads in
+ * fixed columns: the area of life, the title and who it is from, when it is due, the state. A title
+ * opens the loop in the pane beside the list (a sheet on a phone); nothing on a row closes or
+ * approves anything, so a slip cannot do damage. Buckets with nothing in them are shown only where
+ * their emptiness is itself the news (overdue, today, this week).
  */
 export function TodayList({
   loops,
@@ -63,8 +63,16 @@ export function TodayList({
               <p className="tl-empty">{EMPTY[bucket]}</p>
             ) : (
               <ol className="tl-rows">
-                {items.map((loop) => (
-                  <Row key={loop.id} loop={loop} now={now} selected={loop.id === selected} />
+                {items.map((loop, i) => (
+                  <Row
+                    key={loop.id}
+                    loop={loop}
+                    now={now}
+                    selected={loop.id === selected}
+                    first={
+                      i === 0 && bucket === TIME_ORDER.find((b) => (groups.get(b)?.length ?? 0) > 0)
+                    }
+                  />
                 ))}
               </ol>
             )}
@@ -84,7 +92,17 @@ export function TodayList({
   )
 }
 
-function Row({ loop, now, selected }: { loop: OpenLoop; now: Date; selected: boolean }) {
+function Row({
+  loop,
+  now,
+  selected,
+  first,
+}: {
+  loop: OpenLoop
+  now: Date
+  selected: boolean
+  first: boolean
+}) {
   const owed = loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
   const closed = loop.status === 'RESOLVED'
   const due = closed
@@ -105,6 +123,7 @@ function Row({ loop, now, selected }: { loop: OpenLoop; now: Date; selected: boo
   const verb = !closed && owed ? ACTION_LABEL[loop.actionType] : undefined
   const amount = closed ? undefined : formatMoney(loop.amount)
   const source = loop.sourceRefs.find((ref) => hasSourcePage(ref.sourceType))
+  const what = [verb, amount].filter(Boolean).join(' ')
   return (
     <li
       className="tl-row"
@@ -113,39 +132,35 @@ function Row({ loop, now, selected }: { loop: OpenLoop; now: Date; selected: boo
       data-loop-id={loop.id}
       data-selected={selected || undefined}
       aria-current={selected ? 'true' : undefined}
+      data-tour={first ? 'row' : undefined}
     >
-      <span className="tl-state" title={loop.status.replace('_', ' ').toLowerCase()}>
-        <StateIcon name={STATE_ID[loop.status]} />
+      <span className="tl-area" title={AREA_LABEL[loop.area]}>
+        <AreaIcon area={loop.area} />
       </span>
       <div className="tl-main">
         <Link href={`/?loop=${loop.id}`} className="tl-title" scroll={false}>
           {loop.title}
         </Link>
         <span className="tl-meta">
-          {loop.area !== 'other' && (
-            <span className="area-pill" data-area={loop.area}>
-              {AREA_LABEL[loop.area]}
-            </span>
-          )}
-          {verb && <em>{verb}</em>}
-          {amount && <span>{amount}</span>}
           {who && <span>{who}</span>}
+          {what && <em>{what}</em>}
         </span>
       </div>
-      {due && <span className="tl-due">{due}</span>}
-      <div className="tl-actions">
-        {source && (
-          <Link href={messageHref(source.sourceId, loop.id)} className="tl-action">
-            Source
+      <span className="tl-due">{due ?? ''}</span>
+      <div className="tl-end">
+        <span className="tl-chip">
+          <StatusChip status={loop.status} />
+        </span>
+        <div className="tl-actions">
+          <Link href={`/loops/${loop.id}`} className="tl-action">
+            Open
           </Link>
-        )}
-        {!closed && (
-          <form action={markDone.bind(null, loop.id)} className="tl-done">
-            <SubmitButton pendingLabel="Saving…" subtle>
-              Done
-            </SubmitButton>
-          </form>
-        )}
+          {source && (
+            <Link href={messageHref(source.sourceId, loop.id)} className="tl-action">
+              Source
+            </Link>
+          )}
+        </div>
       </div>
     </li>
   )
