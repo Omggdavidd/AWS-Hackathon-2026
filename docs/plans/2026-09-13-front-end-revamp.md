@@ -1,6 +1,6 @@
 # Front-end revamp: a product, not a dashboard
 
-Status: active (steps 1 to 4 merged 2026-09-13; tiers 2 and 3 tracked in #109)
+Status: done (steps 1 to 4 merged 2026-09-13; tiers 2 and 3 merged the same evening under #109; the command bar stays #31)
 Owner: Omggdavidd
 Related: SPEC §7, §8A, §8B, §8H, §12; ADR-0006 (Next.js on Vercel); the ranked list the team reviewed on 2026-09-13
 

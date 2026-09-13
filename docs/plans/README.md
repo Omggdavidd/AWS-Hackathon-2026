@@ -12,4 +12,4 @@ Claude Code: use plan mode to draft, then save the result here only if other peo
 ## Active plans
 
 - [MVP: Open Loops end to end by Sunday](2026-09-10-mvp.md)
-- [Front-end revamp: a product, not a dashboard](2026-09-13-front-end-revamp.md)
+- [Front-end revamp: a product, not a dashboard](2026-09-13-front-end-revamp.md) (done)
