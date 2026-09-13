@@ -25,7 +25,7 @@ Check before you hit record:
 - [ ] Light theme, browser at 1440 wide, bookmarks bar hidden, notifications silenced.
 - [ ] A second browser tab already open on `docs/architecture/openloop-architecture.png` and one on the CloudWatch log group, for scene 7.
 
-**The dates move.** The fixtures are anchored to `persona.now = 2026-09-10` but the app renders against the real clock, so the relative dates change every day. On **Sunday Sep 14**, recording day, the overview reads:
+**The dates move.** The fixtures are anchored to `persona.now = 2026-09-10` but the app renders against the real clock, so the relative dates change every day. On **Monday Sep 14**, recording day, the overview reads:
 
 | Bucket | Rows |
 |---|---|
@@ -34,6 +34,7 @@ Check before you hit record:
 | This week (3) | **Pay registration deposit — *Due tomorrow***; Return signed participation form — *Due in 2 days*; Return desk lamp for refund — *Due in 5 days* |
 | Later (2) | Flight NW 0412; Renew passport before June 2027 |
 | No date (2) | Issue #1 write-up review; Book dental cleaning |
+| Earlier (1) | Robotics Club meeting moved — *Sep 10*, a past date the user does not owe, so it is not Overdue |
 | Resolved (1) | Pay housing application fee |
 
 "Due tomorrow" on the deposit is the best version of this story we will get, so record on the 14th rather than earlier. Do not say "due Friday" — read what is on screen.
