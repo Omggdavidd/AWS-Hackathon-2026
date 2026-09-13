@@ -3,10 +3,20 @@ import { Geist_Mono, Inter } from 'next/font/google'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { AppRail, AppTabs } from '@/components/app-rail'
+import { AppearanceMenu } from '@/components/appearance-menu'
 import { LoopMark } from '@/components/loop-mark'
 import { NotificationBell } from '@/components/notification-bell'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
+import {
+  ACCENT_COOKIE,
+  DEFAULT_ACCENT,
+  DENSITY_COOKIE,
+  HOME_COOKIE,
+  parseAccent,
+  parseDensity,
+  parseHome,
+} from '@/lib/appearance'
 import { pendingDecisions } from '@/lib/decisions'
 import { formatDateTime } from '@/lib/format'
 import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
@@ -37,6 +47,10 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const jar = await cookies()
   const theme = jar.get('openloops-theme')?.value === 'dark' ? 'dark' : 'light'
   const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value) ?? 'Your agent'
+  const accent = parseAccent(jar.get(ACCENT_COOKIE)?.value)
+  const density = parseDensity(jar.get(DENSITY_COOKIE)?.value)
+  const home = parseHome(jar.get(HOME_COOKIE)?.value)
+  const todayHref = home === 'today' ? '/' : '/?view=list'
   const store = await getStore()
   const [loops, audit] = await Promise.all([
     store.listLoops(USER_ID),
@@ -51,6 +65,9 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
     <html
       lang="en"
       data-theme={theme}
+      data-accent={accent ? 'custom' : undefined}
+      data-density={density === 'compact' ? 'compact' : undefined}
+      style={{ '--accent-base': accent ?? DEFAULT_ACCENT } as React.CSSProperties}
       className={`${sans.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
@@ -58,7 +75,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
           Skip to content
         </a>
         <div className="app-shell">
-          <AppRail pending={decisions.length} initial={USER_NAME} />
+          <AppRail pending={decisions.length} initial={USER_NAME} todayHref={todayHref} />
           <div className="workspace">
             <header className="topbar">
               <Link href="/" className="wordmark topbar-wordmark">
@@ -80,6 +97,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                   unread={feed.unread}
                   latestAt={feed.latestAt}
                 />
+                <AppearanceMenu accent={accent} density={density} home={home} />
                 <ThemeToggle initialTheme={theme} />
               </div>
             </header>
@@ -88,7 +106,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
             </main>
           </div>
         </div>
-        <AppTabs pending={decisions.length} />
+        <AppTabs pending={decisions.length} todayHref={todayHref} />
       </body>
     </html>
   )
