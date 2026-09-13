@@ -433,6 +433,77 @@ body:has(.mindboard) .bottom-tabs,
   border-radius: 8px;
 }
 
+/* Group by switch */
+.board-groupby {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 10px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.board-groupby button {
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  border-radius: 5px;
+}
+.board-groupby button[aria-pressed="true"] {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 1px 3px #102c3212;
+}
+[data-state="category"] {
+  --state-color: var(--accent);
+}
+
+/* Resize by the bottom edge */
+.board-resize {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -5px;
+  height: 12px;
+  cursor: ns-resize;
+  border-radius: 6px;
+  touch-action: none;
+}
+.board-resize::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 16px);
+  bottom: 4px;
+  width: 32px;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--state-color) 35%, var(--border));
+  transition: background 120ms;
+}
+.board-resize:hover::after,
+.board-resize:focus-visible::after {
+  background: var(--state-color);
+}
+.board-group:has(.board-resize) .board-group-body {
+  padding-bottom: 16px;
+}
+.board-card-state {
+  display: inline-grid;
+  place-items: center;
+  vertical-align: -3px;
+  margin-right: 7px;
+  color: var(--state-color);
+}
+.board-card-state svg {
+  width: 15px;
+  height: 15px;
+}
+.mindboard[data-mode="category"] .board-card {
+  border-left: 3px solid var(--state-color);
+}
+
 /* Canvas tools and hint */
 .board-canvas-tools {
   position: absolute;
@@ -588,6 +659,10 @@ body:has(.mindboard) .bottom-tabs,
     padding: 4px 12px 10px;
     gap: 1px;
     overflow: auto;
+  }
+  .board-groupby {
+    flex-shrink: 0;
+    margin-right: 6px;
   }
   .board-state-nav button {
     flex-shrink: 0;

@@ -1,9 +1,14 @@
 export type Point = { x: number; y: number }
 export type Camera = Point & { zoom: number }
-export type BoardPositions = Record<string, Point>
+/** A group's saved place on the board, and its height once the user has resized it. */
+export type Node = Point & { h?: number }
+export type BoardPositions = Record<string, Node>
 export type Bounds = Point & { width: number; height: number }
 export const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value))
+/** A group can be dragged down to show everything it holds, within reason. */
+export const MIN_HEIGHT = 120
+export const MAX_HEIGHT = 2400
 
 /** Saved layout is untrusted browser data; retain only known nodes and finite coordinates. */
 export function restorePositions(raw: string | null, defaults: BoardPositions): BoardPositions {
@@ -13,12 +18,10 @@ export function restorePositions(raw: string | null, defaults: BoardPositions): 
     return Object.fromEntries(
       Object.entries(defaults).map(([id, fallback]) => {
         const p = parsed?.[id]
-        return [
-          id,
-          p && Number.isFinite(p.x) && Number.isFinite(p.y)
-            ? { x: clamp(p.x, -3000, 3000), y: clamp(p.y, -3000, 3000) }
-            : fallback,
-        ]
+        if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return [id, fallback]
+        const node: Node = { x: clamp(p.x, -3000, 3000), y: clamp(p.y, -3000, 3000) }
+        if (Number.isFinite(p.h)) node.h = clamp(p.h, MIN_HEIGHT, MAX_HEIGHT)
+        return [id, node]
       }),
     )
   } catch {

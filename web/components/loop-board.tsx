@@ -1,6 +1,6 @@
 'use client'
 
-import type { LoopStatus, OpenLoop } from '@openloop/shared'
+import type { LoopCategory, LoopStatus, OpenLoop } from '@openloop/shared'
 import Link from 'next/link'
 import {
   type KeyboardEvent,
@@ -17,6 +17,8 @@ import {
   type Camera,
   clamp,
   fitCamera,
+  MAX_HEIGHT,
+  MIN_HEIGHT,
   type Point,
   restorePositions,
   zoomCamera,
@@ -26,69 +28,110 @@ import { LiveClock } from './live-clock'
 import { LoopMark, StateIcon } from './loop-mark'
 import './loop-board.css'
 
-const GROUPS: {
+type Mode = 'state' | 'category'
+
+type Group = {
   id: string
-  status: LoopStatus
   title: string
   hint: string
   empty: string
   position: Point
-}[] = [
-  {
-    id: 'needs-you',
-    status: 'NEEDS_YOU',
-    title: 'Needs you',
-    hint: 'Your move',
-    empty: 'Nothing needs you.',
-    position: { x: 40, y: 215 },
-  },
-  {
-    id: 'waiting',
-    status: 'WAITING',
-    title: 'Waiting',
-    hint: 'Their move next',
-    empty: 'No one to chase.',
-    position: { x: 375, y: 245 },
-  },
-  {
-    id: 'watching',
-    status: 'WATCHING',
-    title: 'Watching',
-    hint: 'No action needed now',
-    empty: 'Nothing being watched.',
-    position: { x: 710, y: 215 },
-  },
-  {
-    id: 'resolved',
-    status: 'RESOLVED',
-    title: 'Resolved',
-    hint: 'Closed by evidence or by you',
-    empty: 'Closed loops land here.',
-    position: { x: 1045, y: 245 },
-  },
-  {
-    id: 'uncertain',
-    status: 'UNCERTAIN',
-    title: 'Uncertain',
-    hint: 'A quick check would help',
+  /** Drives the group's color: a state id, or "category" for the neutral accent. */
+  tone: string
+  member: (loop: OpenLoop) => boolean
+  /** Shown even when empty: the four states are the model, an empty state is news. */
+  always: boolean
+}
+
+const STATE_ID: Record<LoopStatus, string> = {
+  NEEDS_YOU: 'needs-you',
+  WAITING: 'waiting',
+  WATCHING: 'watching',
+  RESOLVED: 'resolved',
+  UNCERTAIN: 'uncertain',
+}
+
+const STATE_GROUPS: Group[] = (
+  [
+    ['NEEDS_YOU', 'Needs you', 'Your move', 'Nothing needs you.', { x: 40, y: 215 }, true],
+    ['WAITING', 'Waiting', 'Their move next', 'No one to chase.', { x: 375, y: 245 }, true],
+    [
+      'WATCHING',
+      'Watching',
+      'No action needed now',
+      'Nothing being watched.',
+      { x: 710, y: 215 },
+      true,
+    ],
+    [
+      'RESOLVED',
+      'Resolved',
+      'Closed by evidence or by you',
+      'Closed loops land here.',
+      { x: 1045, y: 245 },
+      true,
+    ],
+    ['UNCERTAIN', 'Uncertain', 'A quick check would help', '', { x: 375, y: 700 }, false],
+  ] as const
+).map(([status, title, hint, empty, position, always]) => ({
+  id: STATE_ID[status],
+  title,
+  hint,
+  empty,
+  position,
+  tone: STATE_ID[status],
+  member: (loop) => loop.status === status,
+  always,
+}))
+
+const CATEGORY_LABEL: Record<LoopCategory, [title: string, hint: string]> = {
+  payment: ['Payments', 'Money that is due'],
+  subscription: ['Subscriptions', 'Plans and renewals'],
+  form: ['Forms', 'Things to sign or submit'],
+  reply: ['Replies', 'Messages owed'],
+  appointment: ['Appointments', 'Bookings and visits'],
+  meeting: ['Meetings', 'Where to be, and when'],
+  travel: ['Travel', 'Flights, stays, documents'],
+  purchase: ['Purchases', 'Orders and returns'],
+  admin: ['Admin', 'Paperwork and accounts'],
+  other: ['Other', 'Everything else'],
+}
+
+const CATEGORY_GROUPS: Group[] = (Object.keys(CATEGORY_LABEL) as LoopCategory[]).map(
+  (category, i) => ({
+    id: `cat-${category}`,
+    title: CATEGORY_LABEL[category][0],
+    hint: CATEGORY_LABEL[category][1],
     empty: '',
-    position: { x: 375, y: 700 },
-  },
-]
-const DEFAULTS = Object.fromEntries(GROUPS.map((g) => [g.id, g.position]))
+    position: { x: 40 + (i % 4) * 335, y: 215 + Math.floor(i / 4) * 300 },
+    tone: 'category',
+    member: (loop) => loop.category === category,
+    always: false,
+  }),
+)
+
+const DEFAULTS: BoardPositions = Object.fromEntries(
+  [...STATE_GROUPS, ...CATEGORY_GROUPS].map((g) => [g.id, g.position]),
+)
 const HUB = { x: 555, y: 26, width: 250, height: 150 }
 const WIDTH = 300
 const DOCK_INSET = 104
-const groupHeight = (count: number, closed: boolean) =>
-  closed ? 79 : 88 + Math.min(Math.max(count, 1) * 102, 322)
-type Gesture = { id?: string; pointer: number; start: Point; origin: Point; active: boolean }
 const DRAG_THRESHOLD = 6
+const groupHeight = (count: number) => 88 + Math.min(Math.max(count, 1) * 102, 322)
+type Gesture = {
+  kind: 'pan' | 'move' | 'resize'
+  id?: string
+  pointer: number
+  start: Point
+  origin: Point & { h?: number }
+  active: boolean
+}
 
 /**
- * The overview as a whiteboard: state groups around a hub, arranged by the user and kept that way
- * (SPEC §7, §8A). Dragging changes presentation coordinates only; every card links to its loop.
- * The agent panel is docked at the bottom of the canvas so a scan or a catch-up never leaves the
- * board.
+ * The overview as a whiteboard: groups around a hub, arranged by the user and kept that way
+ * (SPEC §7, §8A). Groups are the four states or, with one switch, the loops' categories. Drag a
+ * handle to move a group, its bottom edge to make it taller; nothing here changes a loop. The agent
+ * panel is docked at the bottom of the canvas so a scan or a catch-up never leaves the board.
  */
 export function LoopBoard({
   loops,
@@ -106,9 +149,13 @@ export function LoopBoard({
   agent: ReactNode
 }) {
   const groups = groupByStatus(loops)
-  const visible = GROUPS.filter(
-    (g) => g.status !== 'UNCERTAIN' || (groups.get(g.status)?.length ?? 0) > 0,
-  )
+  const [mode, setMode] = useState<Mode>('state')
+  const members = (g: Group) => loops.filter(g.member)
+  const shownFor = (m: Mode) =>
+    (m === 'state' ? STATE_GROUPS : CATEGORY_GROUPS).filter(
+      (g) => g.always || members(g).length > 0,
+    )
+  const visible = shownFor(mode)
   const [positions, setPositions] = useState<BoardPositions>(DEFAULTS)
   const positionsRef = useRef(positions)
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 })
@@ -121,39 +168,35 @@ export function LoopBoard({
   const dockRef = useRef(true)
   const viewport = useRef<HTMLDivElement>(null)
   const gesture = useRef<Gesture | null>(null)
-  const height = (id: string, count: number) => groupHeight(count, Boolean(collapsed[id]))
+  const heightOf = (nodes: BoardPositions, g: Group) =>
+    collapsed[g.id] ? 79 : (nodes[g.id]?.h ?? groupHeight(members(g).length))
 
   const updateCamera = useCallback((next: Camera) => {
     cameraRef.current = next
     setCamera(next)
   }, [])
+  function persist(key: string, value: string) {
+    try {
+      localStorage.setItem(key, value)
+      setStorageError(false)
+    } catch {
+      setStorageError(true)
+    }
+  }
   function updatePositions(next: BoardPositions, save = false) {
     positionsRef.current = next
     setPositions(next)
-    if (save) {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(next))
-        setStorageError(false)
-      } catch {
-        setStorageError(true)
-      }
-    }
+    if (save) persist(storageKey, JSON.stringify(next))
   }
-  function toggleDock(open: boolean) {
-    dockRef.current = open
-    setDockOpen(open)
-  }
-  function fitBoard(nodes = positionsRef.current) {
+  function fitBoard(nodes = positionsRef.current, forMode = mode) {
     const el = viewport.current
     if (!el) return
-    const x = Math.min(HUB.x, ...visible.map((g) => nodes[g.id].x)) - 20
-    const y = Math.min(HUB.y, ...visible.map((g) => nodes[g.id].y)) - 30
-    const right = Math.max(HUB.x + HUB.width, ...visible.map((g) => nodes[g.id].x + WIDTH)) + 20
+    const shown = shownFor(forMode)
+    const x = Math.min(HUB.x, ...shown.map((g) => nodes[g.id].x)) - 20
+    const y = Math.min(HUB.y, ...shown.map((g) => nodes[g.id].y)) - 30
+    const right = Math.max(HUB.x + HUB.width, ...shown.map((g) => nodes[g.id].x + WIDTH)) + 20
     const bottom =
-      Math.max(
-        HUB.y + HUB.height,
-        ...visible.map((g) => nodes[g.id].y + height(g.id, groups.get(g.status)?.length ?? 0)),
-      ) + 25
+      Math.max(HUB.y + HUB.height, ...shown.map((g) => nodes[g.id].y + heightOf(nodes, g))) + 25
     const inset = dockRef.current ? DOCK_INSET : 40
     const cam = fitCamera(
       { x, y, width: right - x, height: bottom - y },
@@ -162,6 +205,15 @@ export function LoopBoard({
     )
     updateCamera({ ...cam, y: cam.y + 8 })
   }
+  function switchMode(next: Mode) {
+    setMode(next)
+    persist(`${storageKey}:by`, next)
+    requestAnimationFrame(() => fitBoard(positionsRef.current, next))
+  }
+  function toggleDock(open: boolean) {
+    dockRef.current = open
+    setDockOpen(open)
+  }
   function focusGroup(id: string) {
     const el = viewport.current
     const group = visible.find((g) => g.id === id)
@@ -169,7 +221,7 @@ export function LoopBoard({
     const point = positionsRef.current[id]
     updateCamera(
       fitCamera(
-        { ...point, width: WIDTH, height: height(id, groups.get(group.status)?.length ?? 0) },
+        { ...point, width: WIDTH, height: heightOf(positionsRef.current, group) },
         el.clientWidth,
         el.clientHeight - (dockRef.current ? DOCK_INSET : 40),
       ),
@@ -197,11 +249,12 @@ export function LoopBoard({
     window.addEventListener('hashchange', navigate)
     return () => window.removeEventListener('hashchange', navigate)
   }, [ready])
-  // Read presentation-only coordinates after hydration; unavailable storage leaves a usable board.
+  // Read presentation-only layout after hydration; unavailable storage leaves a usable board.
   useEffect(() => {
     let saved = DEFAULTS
     try {
       saved = restorePositions(localStorage.getItem(storageKey), DEFAULTS)
+      if (localStorage.getItem(`${storageKey}:by`) === 'category') setMode('category')
     } catch {
       setStorageError(true)
     }
@@ -245,23 +298,28 @@ export function LoopBoard({
     return () => el.removeEventListener('wheel', wheel)
   }, [updateCamera])
 
-  function begin(event: PointerEvent<HTMLElement>, id?: string) {
+  function begin(event: PointerEvent<HTMLElement>, kind: Gesture['kind'], group?: Group) {
     if (event.button !== 0 || gesture.current) return
     if (
-      !id &&
+      kind === 'pan' &&
       event.target instanceof Element &&
       event.target.closest('a,button,article,.board-dock,.board-canvas-tools')
     )
       return
     event.preventDefault()
     event.stopPropagation()
-    if (id) event.currentTarget.focus()
+    if (group) event.currentTarget.focus()
     event.currentTarget.setPointerCapture(event.pointerId)
+    const node = group ? positionsRef.current[group.id] : undefined
     gesture.current = {
-      id,
+      kind,
+      id: group?.id,
       pointer: event.pointerId,
       start: { x: event.clientX, y: event.clientY },
-      origin: id ? positionsRef.current[id] : cameraRef.current,
+      origin:
+        kind === 'pan' || !group || !node
+          ? cameraRef.current
+          : { x: node.x, y: node.y, h: heightOf(positionsRef.current, group) },
       active: false,
     }
   }
@@ -275,12 +333,22 @@ export function LoopBoard({
       g.active = true
       setDragging(g.id ?? 'canvas')
     }
-    if (g.id)
+    const zoom = cameraRef.current.zoom
+    if (g.kind === 'move' && g.id)
       updatePositions({
         ...positionsRef.current,
         [g.id]: {
-          x: clamp(g.origin.x + dx / cameraRef.current.zoom, -3000, 3000),
-          y: clamp(g.origin.y + dy / cameraRef.current.zoom, -3000, 3000),
+          ...positionsRef.current[g.id],
+          x: clamp(g.origin.x + dx / zoom, -3000, 3000),
+          y: clamp(g.origin.y + dy / zoom, -3000, 3000),
+        },
+      })
+    else if (g.kind === 'resize' && g.id)
+      updatePositions({
+        ...positionsRef.current,
+        [g.id]: {
+          ...positionsRef.current[g.id],
+          h: clamp((g.origin.h ?? 0) + dy / zoom, MIN_HEIGHT, MAX_HEIGHT),
         },
       })
     else updateCamera({ ...cameraRef.current, x: g.origin.x + dx, y: g.origin.y + dy })
@@ -307,8 +375,25 @@ export function LoopBoard({
       {
         ...positionsRef.current,
         [id]: {
+          ...p,
           x: clamp(p.x + delta.x * step, -3000, 3000),
           y: clamp(p.y + delta.y * step, -3000, 3000),
+        },
+      },
+      true,
+    )
+  }
+  function stretch(event: KeyboardEvent<HTMLButtonElement>, group: Group) {
+    const delta = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : 0
+    if (!delta) return
+    event.preventDefault()
+    const step = event.shiftKey ? 120 : 40
+    updatePositions(
+      {
+        ...positionsRef.current,
+        [group.id]: {
+          ...positionsRef.current[group.id],
+          h: clamp(heightOf(positionsRef.current, group) + delta * step, MIN_HEIGHT, MAX_HEIGHT),
         },
       },
       true,
@@ -336,7 +421,7 @@ export function LoopBoard({
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 
   return (
-    <div className="mindboard">
+    <div className="mindboard" data-mode={mode}>
       <div className="board-topline">
         <div className="board-title">
           <p className="board-date">
@@ -373,11 +458,23 @@ export function LoopBoard({
         </div>
       </div>
       <nav className="board-state-nav" aria-label="Find a group">
+        <fieldset className="board-groupby" aria-label="Group by">
+          <button type="button" aria-pressed={mode === 'state'} onClick={() => switchMode('state')}>
+            By state
+          </button>
+          <button
+            type="button"
+            aria-pressed={mode === 'category'}
+            onClick={() => switchMode('category')}
+          >
+            By category
+          </button>
+        </fieldset>
         {visible.map((g) => (
-          <button type="button" key={g.id} data-state={g.id} onClick={() => focusGroup(g.id)}>
+          <button type="button" key={g.id} data-state={g.tone} onClick={() => focusGroup(g.id)}>
             <span className="board-state-dot" />
             {g.title}
-            <b>{groups.get(g.status)?.length ?? 0}</b>
+            <b>{members(g).length}</b>
           </button>
         ))}
         {storageError && (
@@ -388,7 +485,7 @@ export function LoopBoard({
         className="board-viewport"
         ref={viewport}
         data-dragging={Boolean(dragging)}
-        onPointerDown={(e) => begin(e)}
+        onPointerDown={(e) => begin(e, 'pan')}
         onPointerMove={move}
         onPointerUp={end}
         onPointerCancel={end}
@@ -398,65 +495,63 @@ export function LoopBoard({
           data-ready={ready}
           style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})` }}
         >
-          <>
-            <svg className="board-connections" aria-hidden="true">
-              {visible.map((g) => {
-                const p = positions[g.id]
-                const startX = HUB.x + HUB.width / 2
-                const startY = HUB.y + HUB.height
-                const endX = p.x + WIDTH / 2
-                const endY = p.y
-                const middleY = startY + (endY - startY) * 0.5
-                return (
-                  <g key={g.id} data-state={g.id}>
-                    <path
-                      d={`M ${startX} ${startY} C ${startX} ${middleY}, ${endX} ${middleY}, ${endX} ${endY}`}
-                    />
-                    <circle cx={endX} cy={endY} r="4.5" />
-                  </g>
-                )
-              })}
-            </svg>
-            <div className="board-hub" style={{ left: HUB.x, top: HUB.y }}>
-              <span className="hub-mark">
-                <LoopMark />
-              </span>
-              <p className="hub-headline">
-                {needs > 0 ? (
-                  <>
-                    <strong>{needs}</strong> {needs === 1 ? 'thing needs' : 'things need'} you
-                  </>
-                ) : (
-                  'Nothing needs you'
-                )}
-              </p>
-              <p className="hub-sub">
-                {closed} of {loops.length} closed
-                {checked ? ` · checked ${checked}` : ''}
-              </p>
-            </div>
-          </>
+          <svg className="board-connections" aria-hidden="true">
+            {visible.map((g) => {
+              const p = positions[g.id]
+              const startX = HUB.x + HUB.width / 2
+              const startY = HUB.y + HUB.height
+              const endX = p.x + WIDTH / 2
+              const endY = p.y
+              const middleY = startY + (endY - startY) * 0.5
+              return (
+                <g key={g.id} data-state={g.tone}>
+                  <path
+                    d={`M ${startX} ${startY} C ${startX} ${middleY}, ${endX} ${middleY}, ${endX} ${endY}`}
+                  />
+                  <circle cx={endX} cy={endY} r="4.5" />
+                </g>
+              )
+            })}
+          </svg>
+          <div className="board-hub" style={{ left: HUB.x, top: HUB.y }}>
+            <span className="hub-mark">
+              <LoopMark />
+            </span>
+            <p className="hub-headline">
+              {needs > 0 ? (
+                <>
+                  <strong>{needs}</strong> {needs === 1 ? 'thing needs' : 'things need'} you
+                </>
+              ) : (
+                'Nothing needs you'
+              )}
+            </p>
+            <p className="hub-sub">
+              {closed} of {loops.length} closed
+              {checked ? ` · checked ${checked}` : ''}
+            </p>
+          </div>
           {visible.map((g) => {
-            const items = groups.get(g.status) ?? []
+            const items = members(g)
             const isCollapsed = Boolean(collapsed[g.id])
             return (
               <article
                 key={g.id}
                 id={`board-${g.id}`}
                 className="board-group"
-                data-state={g.id}
+                data-state={g.tone}
                 data-dragging={dragging === g.id}
                 style={{
                   left: positions[g.id].x,
                   top: positions[g.id].y,
-                  height: height(g.id, items.length),
+                  height: heightOf(positions, g),
                 }}
               >
                 <div className="board-group-head">
                   <button
                     type="button"
                     className="board-drag-handle"
-                    onPointerDown={(e) => begin(e, g.id)}
+                    onPointerDown={(e) => begin(e, 'move', g)}
                     onKeyDown={(e) => nudge(e, g.id)}
                     aria-label={`Move ${g.title} group`}
                     aria-describedby="board-drag-help"
@@ -467,7 +562,7 @@ export function LoopBoard({
                   </button>
                   <div>
                     <h2>
-                      <StateIcon name={g.id} />
+                      {g.tone !== 'category' && <StateIcon name={g.tone} />}
                       {g.title}
                       <span>{items.length}</span>
                     </h2>
@@ -488,9 +583,26 @@ export function LoopBoard({
                   {items.length === 0 ? (
                     <p className="board-empty">{g.empty}</p>
                   ) : (
-                    items.map((loop) => <BoardCard key={loop.id} loop={loop} now={now} />)
+                    items.map((loop) => (
+                      <BoardCard
+                        key={loop.id}
+                        loop={loop}
+                        now={now}
+                        showState={mode === 'category'}
+                      />
+                    ))
                   )}
                 </div>
+                {!isCollapsed && (
+                  <button
+                    type="button"
+                    className="board-resize"
+                    onPointerDown={(e) => begin(e, 'resize', g)}
+                    onKeyDown={(e) => stretch(e, g)}
+                    aria-label={`Resize ${g.title} group`}
+                    title="Drag to show more"
+                  />
+                )}
               </article>
             )
           })}
@@ -518,7 +630,8 @@ export function LoopBoard({
           </button>
         </fieldset>
         <p className="board-gesture-hint" id="board-drag-help">
-          Drag a handle to move a group. Drag the canvas to pan. Arrow keys move a focused handle.
+          Drag a handle to move a group, its bottom edge to show more. Drag the canvas to pan. Arrow
+          keys move a focused handle.
         </p>
         <aside className="board-dock" data-open={dockOpen} aria-label="Your agent">
           <button
@@ -542,7 +655,7 @@ export function LoopBoard({
   )
 }
 
-function BoardCard({ loop, now }: { loop: OpenLoop; now: string }) {
+function BoardCard({ loop, now, showState }: { loop: OpenLoop; now: string; showState: boolean }) {
   const needs = loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
   const closed = loop.status === 'RESOLVED'
   const due = closed
@@ -555,12 +668,24 @@ function BoardCard({ loop, now }: { loop: OpenLoop; now: string }) {
   const source =
     loop.status === 'WAITING' && loop.waitingOn ? `With ${loop.waitingOn}` : loop.requestedBy
   return (
-    <Link href={`/loops/${loop.id}`} className="board-card" title={loop.title} draggable={false}>
+    <Link
+      href={`/loops/${loop.id}`}
+      className="board-card"
+      data-state={STATE_ID[loop.status]}
+      title={loop.title}
+      draggable={false}
+    >
       <span className="board-card-title">
-        {closed && (
-          <span className="board-card-check" aria-hidden="true">
-            ✓
+        {showState ? (
+          <span className="board-card-state" role="img" aria-label={loop.status.replace('_', ' ')}>
+            <StateIcon name={STATE_ID[loop.status]} />
           </span>
+        ) : (
+          closed && (
+            <span className="board-card-check" aria-hidden="true">
+              ✓
+            </span>
+          )
         )}
         {loop.title}
       </span>
