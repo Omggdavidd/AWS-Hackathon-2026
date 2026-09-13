@@ -61,6 +61,8 @@ export const OpenLoop = z.object({
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
   resolvedAt: IsoDateTime.optional(),
+  /** When the user asked to be reminded again, after parking the loop in Watching (SPEC 8B). */
+  remindAt: IsoDateTime.optional(),
 })
 export type OpenLoop = z.infer<typeof OpenLoop>
 export type OpenLoopInput = z.input<typeof OpenLoop>

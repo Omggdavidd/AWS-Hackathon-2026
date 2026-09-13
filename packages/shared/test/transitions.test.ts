@@ -23,6 +23,14 @@ describe('transitions', () => {
     expect(reopened.updatedAt).toBe('2026-09-11T00:00:00.000Z')
   })
 
+  it('clears a pending reminder when the loop closes, and only then', () => {
+    const parked = loop({ status: 'WATCHING', remindAt: '2026-09-11T13:00:00.000Z' })
+    expect(applyTransition(parked, 'RESOLVED', '2026-09-10T00:00:00.000Z').remindAt).toBeUndefined()
+    expect(applyTransition(parked, 'NEEDS_YOU', '2026-09-10T00:00:00.000Z').remindAt).toBe(
+      '2026-09-11T13:00:00.000Z',
+    )
+  })
+
   it('throws on an invalid transition', () => {
     expect(() =>
       applyTransition(loop({ status: 'RESOLVED' }), 'UNCERTAIN', '2026-09-10T00:00:00.000Z'),

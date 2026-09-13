@@ -31,7 +31,10 @@ export class InvalidTransitionError extends Error {
 export function applyTransition(loop: OpenLoop, to: LoopStatus, now: string): OpenLoop {
   if (!canTransition(loop.status, to)) throw new InvalidTransitionError(loop.status, to)
   const next: OpenLoop = { ...loop, status: to, updatedAt: now }
-  if (to === 'RESOLVED') next.resolvedAt = now
-  else delete next.resolvedAt
+  if (to === 'RESOLVED') {
+    next.resolvedAt = now
+    // A closed loop cannot still be waiting to remind you about itself.
+    delete next.remindAt
+  } else delete next.resolvedAt
   return next
 }

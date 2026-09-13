@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { invokeCommand, scanConfigured } from '@/lib/agent'
 import { getStore, USER_ID } from '@/lib/ledger'
+import { type ParkKind, parkLoopByUser } from '@/lib/park'
 import { resolveLoopByUser } from '@/lib/resolve'
 
 /** "I already did this": the user closes a loop by hand, cancelling what it leaves behind (SPEC §8B). */
@@ -13,6 +14,26 @@ export async function markDone(loopId: string): Promise<void> {
   revalidatePath('/')
   revalidatePath(`/loops/${loopId}`)
   revalidatePath('/activity')
+}
+
+/**
+ * "Remind me tomorrow" and "Ignore" (SPEC §8B): park the loop in Watching so it stops asking for
+ * attention, and leave a reason in the timeline. Neither calls the agent.
+ */
+async function park(loopId: string, kind: ParkKind): Promise<void> {
+  const store = await getStore()
+  if (!(await parkLoopByUser(store, USER_ID, loopId, kind))) return
+  revalidatePath('/')
+  revalidatePath(`/loops/${loopId}`)
+  revalidatePath('/activity')
+}
+
+export async function remindTomorrow(loopId: string): Promise<void> {
+  await park(loopId, 'remind')
+}
+
+export async function ignoreLoop(loopId: string): Promise<void> {
+  await park(loopId, 'ignore')
 }
 
 /**
