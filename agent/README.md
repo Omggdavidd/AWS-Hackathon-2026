@@ -23,6 +23,7 @@ pnpm --filter @openloop/agent scan -- --reset   # real model over the demo inbox
 pnpm --filter @openloop/agent scan -- --delta   # then the next-morning batch (demo/seed-inbox-delta.json): updates, not duplicates
 pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed action (drafts, calendar, reminders); high risk waits for approval
 pnpm --filter @openloop/agent scan -- --catch-up  # what changed since the last catch-up, written from the ledger only
+pnpm --filter @openloop/agent agreement         # 3 real scans, per-thread status against demo/seed-ledger.json (OPENLOOP_AGREEMENT_RUNS overrides)
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm reset-demo --dry-run                       # count the rows a reset would delete; deletes nothing
 pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~4 min)
@@ -96,6 +97,29 @@ The Extractor sets `area` on every loop (school, work, money, health, home, trav
 
 ## Known calibration
 
-Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and states, except the rescheduled club meeting, which the Investigator sometimes marks Needs You rather than Watching (once in four observed runs on the 12-thread inbox, and previously about half the time on the 10-thread one). Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
+Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and states. The rescheduled club meeting was the one thread that drifted: on the prompt before the change below, the Investigator marked it Needs You rather than Watching once in four observed runs on the 12-thread inbox, and about half the time on the earlier 10-thread one. Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities. `pnpm --filter @openloop/agent agreement` measures that drift: it runs the base scan three times and prints each thread's status next to the expected one, with an agreement count. The comparison itself is `src/agreement.ts`, covered by `test/agreement.test.ts`; the runs need AWS credentials.
+
+The Investigator prompt now states the rule outright (a meeting already on the calendar whose time changed is Watching unless another event overlaps the new slot or the organizer asks for a reply).
+
+That change is what the table below measures. Measured 2026-09-13 over `demo/seed-inbox.json` (12 threads), Claude Sonnet 4.6 on Bedrock `us-east-1`, sequential scan, runs of 277s, 276s and 263s. Every thread landed on its expected state in all three runs, the club meeting included; three runs is three runs, so rerun the harness after any prompt change.
+
+```
+thread         expected  run 1     run 2     run 3
+thr-deposit    NEEDS_YOU NEEDS_YOU NEEDS_YOU NEEDS_YOU ✓
+thr-housing    RESOLVED  RESOLVED  RESOLVED  RESOLVED  ✓
+thr-insurance  NEEDS_YOU NEEDS_YOU NEEDS_YOU NEEDS_YOU ✓
+thr-issue1     WAITING   WAITING   WAITING   WAITING   ✓
+thr-club       WATCHING  WATCHING  WATCHING  WATCHING  ✓
+thr-flight     WATCHING  WATCHING  WATCHING  WATCHING  ✓
+thr-dentist    NEEDS_YOU NEEDS_YOU NEEDS_YOU NEEDS_YOU ✓
+thr-return     NEEDS_YOU NEEDS_YOU NEEDS_YOU NEEDS_YOU ✓
+thr-streaming  NEEDS_YOU NEEDS_YOU NEEDS_YOU NEEDS_YOU ✓
+thr-form       NEEDS_YOU NEEDS_YOU NEEDS_YOU NEEDS_YOU ✓
+thr-passport   WATCHING  WATCHING  WATCHING  WATCHING  ✓
+
+agreement 11/11 threads over 3 runs
+```
+
+Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
 
 `AGENTS.md` here is the CLI's own guide to `agentcore/` config and applies alongside the root `AGENTS.md`.
