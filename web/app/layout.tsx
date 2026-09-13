@@ -4,8 +4,10 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { BottomTabs, WorkspaceNav } from '@/components/bottom-tabs'
 import { LoopMark } from '@/components/loop-mark'
+import { NotificationBell } from '@/components/notification-bell'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
+import { buildNotices } from '@/lib/notifications'
 import './globals.css'
 
 const sans = Inter({
@@ -24,9 +26,14 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
-  const theme = (await cookies()).get('openloops-theme')?.value === 'dark' ? 'dark' : 'light'
+  const jar = await cookies()
+  const theme = jar.get('openloops-theme')?.value === 'dark' ? 'dark' : 'light'
   const store = await getStore()
-  const loops = await store.listLoops(USER_ID)
+  const [loops, audit] = await Promise.all([
+    store.listLoops(USER_ID),
+    store.listAudit(USER_ID, { limit: 60 }),
+  ])
+  const feed = buildNotices(audit, loops, jar.get('openloops-seen')?.value)
   const counts = {
     needsYou: loops.filter((l) => l.status === 'NEEDS_YOU').length,
     waiting: loops.filter((l) => l.status === 'WAITING').length,
@@ -66,7 +73,14 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
             <header className="workspace-header">
               <div className="mobile-wordmark">{wordmark}</div>
               <span className="workspace-label">Personal workspace</span>
-              <ThemeToggle initialTheme={theme} />
+              <div className="header-actions">
+                <NotificationBell
+                  notices={feed.notices}
+                  unread={feed.unread}
+                  latestAt={feed.latestAt}
+                />
+                <ThemeToggle initialTheme={theme} />
+              </div>
             </header>
             <main id="main-content" className="main-content">
               {children}
