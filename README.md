@@ -8,7 +8,7 @@ Team entry for the AWS **Agents for Humans** hackathon, Everyday Agents track.
 
 | | |
 |---|---|
-| **Live demo** | _being deployed — see [#19](https://github.com/Omggdavidd/AWS-Hackathon-2026/issues/19); until then, the 60-second local run below needs no AWS account_ |
+| **Live demo** | <https://openloop-neon.vercel.app> (Scan, Check for new mail, Handle and Approve all run the deployed agent) |
 | **Demo video** | _recorded before submission; link added here_ |
 | **Architecture** | [diagram](docs/architecture/openloop-architecture.png) · [system description](docs/architecture.md) |
 | **License** | [MIT](LICENSE) |

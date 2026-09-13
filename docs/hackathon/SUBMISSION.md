@@ -35,13 +35,13 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 
 ## Optional boosters
 
-- [ ] Live demo link
+- [x] Live demo link: https://openloop-neon.vercel.app
 - [ ] AgentCore Runtime deployment shown
 - [ ] builder.aws post(s) with "Agents for Humans" in the title (up to 0.6 bonus points, 0.2 each)
 
 ## Submission day
 
-- [ ] Fill the live demo and video links in the table at the top of `README.md`
+- [ ] Fill the video link in the table at the top of `README.md` (the live demo link is in)
 - [ ] Clean-machine install and test from README
 - [ ] Final video recorded early and uploaded
 - [ ] Devpost form complete
