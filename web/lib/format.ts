@@ -83,6 +83,27 @@ export function formatPercent(confidence: number): string {
   return `${Math.round(confidence * 100)}%`
 }
 
+/**
+ * Text the model wrote with a machine id in it, made fit for a person: "Reply to thread thr-insurance
+ * with the certificate" reads "Reply to the thread with the certificate". Older loops carry such ids;
+ * the Risk Judge is now told not to write them.
+ */
+export function humanize(text: string): string {
+  return text
+    .replace(/\s*\((?:thr|msg|evt|cal)-[\w-]+\)/gi, '')
+    .replace(/\b(thread|message|event)\s+(?:thr|msg|evt|cal)-[\w-]+/gi, 'the $1')
+    .replace(/\b(?:thr|msg|evt|cal)-[\w-]+\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([,.;:])/g, '$1')
+    .trim()
+}
+
+/** Confidence as a sentence: "Sure this is still open (97%)" rather than a bare percentage. */
+export function confidenceSentence(confidence: number, resolved: boolean): string {
+  const word = confidence >= 0.85 ? 'Sure' : confidence >= 0.6 ? 'Fairly sure' : 'Not sure'
+  return `${word} this is ${resolved ? 'done' : 'still open'} (${formatPercent(confidence)})`
+}
+
 /** How each action type reads as the verb on a dashboard row. `none` has no verb. */
 export const ACTION_LABEL: Record<ActionType, string | undefined> = {
   pay: 'Pay',

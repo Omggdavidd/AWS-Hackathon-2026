@@ -3275,3 +3275,53 @@ body:has(.welcome) .site-foot,
     gap: 10px;
   }
 }
+
+/* Loop page: the decision leads */
+.loop-confidence {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.loop-offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+}
+.loop-offer[data-risk="high"] {
+  border-color: color-mix(in srgb, var(--attention) 40%, var(--border));
+  background: color-mix(in srgb, var(--attention) 5%, var(--card));
+}
+.loop-offer-kicker {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.loop-offer[data-risk="high"] .loop-offer-kicker {
+  color: var(--attention);
+}
+.loop-offer-summary {
+  margin-top: 3px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.loop-offer-more {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.loop-offer-link {
+  color: var(--accent);
+}
+@media (max-width: 767px) {
+  .loop-offer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
