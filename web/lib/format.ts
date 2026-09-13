@@ -49,8 +49,7 @@ export function formatMoney(m: Money | undefined): string | undefined {
 /** "Due in 3 days", "Due today", "Overdue by 2 days". `now` is injectable for tests and the demo clock. */
 export function formatDue(dueAt: string | undefined, now: Date): string | undefined {
   if (!dueAt) return undefined
-  const day = (d: Date) => Math.floor(d.getTime() / 86_400_000)
-  const days = day(new Date(dueAt)) - day(now)
+  const days = daysUntil(dueAt, now)
   if (days < 0) return `Overdue by ${-days} day${days === -1 ? '' : 's'}`
   if (days === 0) return 'Due today'
   if (days === 1) return 'Due tomorrow'
@@ -140,4 +139,69 @@ export function summarize(groups: Map<LoopStatus, OpenLoop[]>): string {
   return summaryParts(groups)
     .map((p) => p.text)
     .join(' ')
+}
+
+export type TimeBucket = 'overdue' | 'earlier' | 'today' | 'week' | 'later' | 'undated' | 'resolved'
+
+export const TIME_ORDER: TimeBucket[] = [
+  'overdue',
+  'today',
+  'week',
+  'later',
+  'undated',
+  'earlier',
+  'resolved',
+]
+
+export const TIME_LABEL: Record<TimeBucket, string> = {
+  overdue: 'Overdue',
+  earlier: 'Earlier',
+  today: 'Today',
+  week: 'This week',
+  later: 'Later',
+  undated: 'No date',
+  resolved: 'Resolved',
+}
+
+/** Calendar day in the demo zone as "YYYY-MM-DD", so buckets flip at local midnight, not UTC. */
+export function dayKey(iso: string | Date, timeZone = DEMO_TIME_ZONE): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone,
+  }).format(typeof iso === 'string' ? new Date(iso) : iso)
+}
+
+/** Whole days from `now` to `iso` in the demo zone; negative when past. */
+export function daysUntil(iso: string, now: Date): number {
+  const [y1, m1, d1] = dayKey(now).split('-').map(Number)
+  const [y2, m2, d2] = dayKey(iso).split('-').map(Number)
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86_400_000)
+}
+
+/**
+ * The overview's grouping: by time, with state as the marker on each row (Things, Todoist and
+ * Asana all open this way). Overdue is only for loops the user owes; a past date on something the
+ * user is merely watching or waiting on is "Earlier". Resolved loops sit apart at the end.
+ */
+export function groupByTime(loops: OpenLoop[], now: Date): Map<TimeBucket, OpenLoop[]> {
+  const groups = new Map<TimeBucket, OpenLoop[]>(TIME_ORDER.map((b) => [b, []]))
+  const bucket = (loop: OpenLoop): TimeBucket => {
+    if (loop.status === 'RESOLVED') return 'resolved'
+    if (!loop.dueAt) return 'undated'
+    const days = daysUntil(loop.dueAt, now)
+    const owed = loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
+    if (days < 0) return owed ? 'overdue' : 'earlier'
+    if (days === 0) return 'today'
+    if (days <= 7) return 'week'
+    return 'later'
+  }
+  const sorted = [...loops].sort(
+    (a, b) =>
+      (a.dueAt ?? '9999').localeCompare(b.dueAt ?? '9999') ||
+      PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
+  )
+  for (const loop of sorted) groups.get(bucket(loop))?.push(loop)
+  return groups
 }
