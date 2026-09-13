@@ -7,9 +7,9 @@ import { LoopMark, StateIcon } from './loop-mark'
 
 type Item = { id: string; href: string; label: string; icon: string; count?: number }
 
-function items(pending: number): Item[] {
+function items(pending: number, todayHref: string): Item[] {
   return [
-    { id: 'today', href: '/', label: 'Today', icon: 'list' },
+    { id: 'today', href: todayHref, label: 'Today', icon: 'list' },
     { id: 'board', href: '/board', label: 'Board', icon: 'overview' },
     { id: 'calendar', href: '/calendar', label: 'Calendar', icon: 'calendar' },
     { id: 'decisions', href: '/decisions', label: 'Decisions', icon: 'decisions', count: pending },
@@ -19,7 +19,7 @@ function items(pending: number): Item[] {
 }
 
 function isActive(item: Item, pathname: string): boolean {
-  if (item.href === '/') return pathname === '/' || pathname.startsWith('/loops')
+  if (item.id === 'today') return pathname === '/' || pathname.startsWith('/loops')
   return pathname === item.href || pathname.startsWith(`${item.href}/`)
 }
 
@@ -28,7 +28,15 @@ function isActive(item: Item, pathname: string): boolean {
  * and Notion Calendar keep a rail. State counts are not destinations, so they live on the rows
  * and in the headline, not here. The Decisions item carries the one count that is an inbox.
  */
-export function AppRail({ pending, initial }: { pending: number; initial: string }) {
+export function AppRail({
+  pending,
+  initial,
+  todayHref = '/',
+}: {
+  pending: number
+  initial: string
+  todayHref?: string
+}) {
   const pathname = usePathname()
   const mark = useTilt()
   return (
@@ -37,7 +45,7 @@ export function AppRail({ pending, initial }: { pending: number; initial: string
         <LoopMark />
       </Link>
       <ul data-tour="views">
-        {items(pending).map((item) => {
+        {items(pending, todayHref).map((item) => {
           const active = isActive(item, pathname)
           return (
             <li key={item.id}>
@@ -66,11 +74,11 @@ export function AppRail({ pending, initial }: { pending: number; initial: string
 }
 
 /** The same destinations as a phone's bottom bar, without About, which the header's wordmark covers. */
-export function AppTabs({ pending }: { pending: number }) {
+export function AppTabs({ pending, todayHref = '/' }: { pending: number; todayHref?: string }) {
   const pathname = usePathname()
   return (
     <nav className="bottom-tabs" aria-label="Primary" data-tour="views">
-      {items(pending)
+      {items(pending, todayHref)
         .filter((item) => item.id !== 'about')
         .map((item) => {
           const active = isActive(item, pathname)

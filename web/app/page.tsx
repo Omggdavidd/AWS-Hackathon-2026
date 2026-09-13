@@ -11,6 +11,7 @@ import { Tour } from '@/components/tour'
 import { Welcome } from '@/components/welcome'
 import { scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName, TOUR_COOKIE } from '@/lib/agent-name'
+import { HOME_COOKIE, HOME_HREF, parseHome } from '@/lib/appearance'
 import { summarizeChanges } from '@/lib/changes'
 import { pendingDecisions } from '@/lib/decisions'
 import { formatDateTime, groupByStatus } from '@/lib/format'
@@ -33,6 +34,9 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
   const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value)
   // First visit: nothing is named yet, so the product introduces itself before showing a list.
   if (!agentName) return <Welcome />
+  // The view the person chose to open on, unless the list is asked for by name or a loop is named.
+  const home = parseHome(jar.get(HOME_COOKIE)?.value)
+  if (home !== 'today' && view !== 'list' && !selected && !rawTour) redirect(HOME_HREF[home])
   const tour = rawTour === '1' || !jar.get(TOUR_COOKIE)
 
   const store = await getStore()
