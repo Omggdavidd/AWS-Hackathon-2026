@@ -1,4 +1,4 @@
-import type { ActionType, LoopStatus, Money, OpenLoop, Priority } from '@openloop/shared'
+import type { ActionType, LoopArea, LoopStatus, Money, OpenLoop, Priority } from '@openloop/shared'
 
 /**
  * The demo's clock. Every fixture date carries a -04:00 offset and the demo script says the club
@@ -204,4 +204,16 @@ export function groupByTime(loops: OpenLoop[], now: Date): Map<TimeBucket, OpenL
   )
   for (const loop of sorted) groups.get(bucket(loop))?.push(loop)
   return groups
+}
+
+/** How an area reads to a person. One owner for the words; the board and the rows share it. */
+export const AREA_LABEL: Record<LoopArea, string> = {
+  school: 'School',
+  work: 'Work',
+  money: 'Money',
+  health: 'Health',
+  home: 'Home',
+  travel: 'Travel',
+  community: 'Clubs',
+  other: 'Other',
 }

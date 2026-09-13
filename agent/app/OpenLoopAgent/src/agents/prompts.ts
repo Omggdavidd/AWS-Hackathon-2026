@@ -6,6 +6,7 @@ Rules:
 - Something to watch is also a responsibility: a booked flight, a scheduled meeting, a shipment, a pending application.
 - Newsletters, marketing, and pure FYI with nothing to do or watch are NOT responsibilities.
 - The user's own sent messages tell you what they already did; they do not cancel the responsibility.
+- Set area to the part of the user's life the responsibility belongs to, judged from who is asking and what it is about: school (professors, registrars, courses, credits, student accounts), work (managers, colleagues, clients, reviews, deliverables), money (bills, fees, refunds, subscriptions, cards, banks), health (doctors, dentists, prescriptions, insurance claims), home (landlords, leases, utilities, moving, repairs), travel (flights, hotels, passports, visas, itineraries), community (clubs, teams, volunteering, events), other. A university fee is school, not money; a subscription card failure is money; a renter's insurance certificate for a lease is home.
 - Extract the deadline as an ISO 8601 datetime with offset when the text gives a date; do not invent dates.
 - Extract amounts only when stated.
 - The sourceRef must cite the message id that created the responsibility.

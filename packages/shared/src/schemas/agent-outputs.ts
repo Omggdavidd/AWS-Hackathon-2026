@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { Confidence, IsoDateTime, LoopStatus, Money, Priority, RiskTier, SourceRef } from './common'
 import { EvidenceSupports } from './evidence'
-import { ActionType, LoopCategory } from './open-loop'
+import { ActionType, LoopArea, LoopCategory } from './open-loop'
 import { ProposedActionType } from './proposed-action'
 
 /** Extractor: does this message or event create or modify a responsibility? (ADR-0003) */
@@ -11,6 +11,7 @@ export const ExtractorOutput = z.object({
     .object({
       title: z.string().max(120),
       category: LoopCategory,
+      area: LoopArea,
       actionType: ActionType,
       requestedBy: z.string().optional(),
       dueAt: IsoDateTime.optional(),

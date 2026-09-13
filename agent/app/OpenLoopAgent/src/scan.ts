@@ -177,6 +177,7 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       userId,
       title: candidate.title,
       category: candidate.category,
+      area: candidate.area,
       status,
       owner: status === 'WAITING' ? 'other' : status === 'WATCHING' ? 'nobody' : 'user',
       actionType: candidate.actionType,

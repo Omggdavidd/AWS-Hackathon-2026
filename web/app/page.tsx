@@ -112,15 +112,13 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
         </div>
         <LoopRing closed={resolved} total={loops.length} />
       </section>
+      <ViewSwitch current={view} />
       {agent}
-      <div className="view-bar">
-        <ViewSwitch current={view} />
-        {view === 'list' && (
-          <p className="view-hint">
-            Arrow keys move, Enter opens, <kbd>D</kbd> marks done.
-          </p>
-        )}
-      </div>
+      {view === 'list' && (
+        <p className="view-hint">
+          Arrow keys move, Enter opens, <kbd>D</kbd> marks done.
+        </p>
+      )}
       {view === 'calendar' ? (
         <CalendarView loops={loops} now={now} />
       ) : (

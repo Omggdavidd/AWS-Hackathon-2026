@@ -24,6 +24,23 @@ export const LoopCategory = z.enum([
 ])
 export type LoopCategory = z.infer<typeof LoopCategory>
 
+/**
+ * The part of life a responsibility belongs to, the way people sort their own to-do lists.
+ * Category says what kind of admin it is; area says whose world it lives in. The Extractor sets it;
+ * records written before it existed default to "other".
+ */
+export const LoopArea = z.enum([
+  'school',
+  'work',
+  'money',
+  'health',
+  'home',
+  'travel',
+  'community',
+  'other',
+])
+export type LoopArea = z.infer<typeof LoopArea>
+
 export const ActionType = z.enum([
   'pay',
   'reply',
@@ -45,6 +62,7 @@ export const OpenLoop = z.object({
   userId: Id,
   title: z.string().min(1).max(120),
   category: LoopCategory,
+  area: LoopArea.default('other'),
   status: LoopStatus,
   requestedBy: z.string().optional(),
   owner: z.enum(['user', 'other', 'nobody']).default('user'),

@@ -89,14 +89,16 @@ body:has(.mindboard) .bottom-tabs,
 .board-view-switch a {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 11px;
+  gap: 7px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--muted);
-  border-radius: 6px;
+  border-radius: 7px;
 }
 .board-view-switch svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 .board-view-switch a[aria-current="page"] {
   background: var(--card);
@@ -500,7 +502,7 @@ body:has(.mindboard) .bottom-tabs,
   width: 15px;
   height: 15px;
 }
-.mindboard[data-mode="category"] .board-card {
+.mindboard:not([data-mode="state"]) .board-card {
   border-left: 3px solid var(--state-color);
 }
 
