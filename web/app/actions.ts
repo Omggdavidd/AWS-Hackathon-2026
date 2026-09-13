@@ -2,7 +2,10 @@
 
 import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { invokeCommand, scanConfigured } from '@/lib/agent'
+import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
 import { getStore, USER_ID } from '@/lib/ledger'
 import { type ParkKind, parkLoopByUser } from '@/lib/park'
 import { resolveLoopByUser } from '@/lib/resolve'
@@ -103,4 +106,16 @@ export async function cancelAction(actionId: string): Promise<void> {
   revalidatePath('/decisions')
   revalidatePath(`/loops/${action.loopId}`)
   revalidatePath('/activity')
+}
+
+/**
+ * First visit: the person names their agent (#108). The name lives in a cookie beside the theme
+ * and replaces "Your agent" everywhere; Today then opens with the tour.
+ */
+export async function nameAgent(form: FormData): Promise<void> {
+  const raw = form.get('name')
+  const name = cleanAgentName(typeof raw === 'string' ? raw : undefined) ?? 'Loop'
+  const jar = await cookies()
+  jar.set(AGENT_COOKIE, name, { path: '/', maxAge: 31536000, sameSite: 'lax' })
+  redirect('/?tour=1')
 }

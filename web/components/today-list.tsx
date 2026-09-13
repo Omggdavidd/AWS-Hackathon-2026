@@ -63,8 +63,16 @@ export function TodayList({
               <p className="tl-empty">{EMPTY[bucket]}</p>
             ) : (
               <ol className="tl-rows">
-                {items.map((loop) => (
-                  <Row key={loop.id} loop={loop} now={now} selected={loop.id === selected} />
+                {items.map((loop, i) => (
+                  <Row
+                    key={loop.id}
+                    loop={loop}
+                    now={now}
+                    selected={loop.id === selected}
+                    first={
+                      i === 0 && bucket === TIME_ORDER.find((b) => (groups.get(b)?.length ?? 0) > 0)
+                    }
+                  />
                 ))}
               </ol>
             )}
@@ -84,7 +92,17 @@ export function TodayList({
   )
 }
 
-function Row({ loop, now, selected }: { loop: OpenLoop; now: Date; selected: boolean }) {
+function Row({
+  loop,
+  now,
+  selected,
+  first,
+}: {
+  loop: OpenLoop
+  now: Date
+  selected: boolean
+  first: boolean
+}) {
   const owed = loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
   const closed = loop.status === 'RESOLVED'
   const due = closed
@@ -114,6 +132,7 @@ function Row({ loop, now, selected }: { loop: OpenLoop; now: Date; selected: boo
       data-loop-id={loop.id}
       data-selected={selected || undefined}
       aria-current={selected ? 'true' : undefined}
+      data-tour={first ? 'row' : undefined}
     >
       <span className="tl-area" title={AREA_LABEL[loop.area]}>
         <AreaIcon area={loop.area} />

@@ -80,7 +80,15 @@ const KIND: Record<CatchUp['items'][number]['kind'], { label: string; state: str
  * last is shown below the controls, formatted as what it is: a digest, a list of things done,
  * or a scan in progress. The dashboard refreshes as loops land.
  */
-export function AgentPanel({ configured, checked }: { configured: boolean; checked?: string }) {
+export function AgentPanel({
+  configured,
+  checked,
+  name = 'Your agent',
+}: {
+  configured: boolean
+  checked?: string
+  name?: string
+}) {
   const router = useRouter()
   const [running, setRunning] = useState<Op>()
   const [result, setResult] = useState<Result>()
@@ -161,12 +169,17 @@ export function AgentPanel({ configured, checked }: { configured: boolean; check
   const busy = running !== undefined
 
   return (
-    <section className="agent-panel" aria-labelledby="agent-heading" data-busy={busy || undefined}>
+    <section
+      className="agent-panel"
+      aria-labelledby="agent-heading"
+      data-busy={busy || undefined}
+      data-tour="agent"
+    >
       <div className="agent-head">
         <div className="agent-identity">
           <span className="agent-pulse" aria-hidden="true" />
           <div>
-            <h2 id="agent-heading">Your agent</h2>
+            <h2 id="agent-heading">{name}</h2>
             <p>
               {configured
                 ? checked

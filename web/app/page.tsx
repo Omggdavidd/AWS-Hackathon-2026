@@ -7,7 +7,10 @@ import { Headline } from '@/components/headline'
 import { LoopDetail } from '@/components/loop-detail'
 import { PaneRest } from '@/components/pane-rest'
 import { TodayList } from '@/components/today-list'
+import { Tour } from '@/components/tour'
+import { Welcome } from '@/components/welcome'
 import { scanConfigured } from '@/lib/agent'
+import { AGENT_COOKIE, cleanAgentName, TOUR_COOKIE } from '@/lib/agent-name'
 import { summarizeChanges } from '@/lib/changes'
 import { pendingDecisions } from '@/lib/decisions'
 import { formatDateTime, groupByStatus } from '@/lib/format'
@@ -21,11 +24,16 @@ export const dynamic = 'force-dynamic'
  * narrow screen the same URL opens the loop as a sheet over the list.
  */
 export default async function Home({ searchParams }: PageProps<'/'>) {
-  const { view, loop: rawLoop } = await searchParams
+  const { view, loop: rawLoop, tour: rawTour } = await searchParams
   // The views used to be query strings on this page; every old link still lands somewhere.
   if (view === 'board') redirect('/board')
   if (view === 'calendar') redirect('/calendar')
   const selected = typeof rawLoop === 'string' && rawLoop ? rawLoop : undefined
+  const jar = await cookies()
+  const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value)
+  // First visit: nothing is named yet, so the product introduces itself before showing a list.
+  if (!agentName) return <Welcome />
+  const tour = rawTour === '1' || !jar.get(TOUR_COOKIE)
 
   const store = await getStore()
   const [loops, audit] = await Promise.all([
@@ -40,14 +48,15 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
   const resolved = groups.get('RESOLVED')?.length ?? 0
   // Rendered only when something newer than the last dismissal happened, so there is no flash.
   const changed = summarizeChanges(audit, loops, now)
-  const seen = (await cookies()).get('openloops-seen')?.value
+  const seen = jar.get('openloops-seen')?.value
   const banner = changed && (!seen || changed.latestAt > seen) ? changed : undefined
 
   return (
     <div className="today" data-open={selected ? '' : undefined}>
+      {tour && <Tour />}
       <section className="today-main" aria-label="Today">
         <Headline groups={groups} name={USER_NAME} now={now} />
-        <AgentPanel configured={scanConfigured} checked={checked} />
+        <AgentPanel configured={scanConfigured} checked={checked} name={agentName} />
         <DecisionStrip decisions={decisions} />
         <p className="view-hint">
           Arrow keys move, <kbd>Enter</kbd> opens.
