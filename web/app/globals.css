@@ -1148,7 +1148,14 @@ summary {
 }
 
 .hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
   padding: 6px 0 26px;
+}
+.hero-copy {
+  min-width: 0;
 }
 .hero-date {
   display: flex;
@@ -1869,13 +1876,15 @@ a.hero-line:hover {
   }
 }
 
-/* Today: the list and, beside it, the loop you chose */
+/* Today: one wide column until a loop is chosen, then the list and the loop side by side */
 .today {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
 }
 .today-main {
   min-width: 0;
+  max-width: 960px;
+  margin-inline: auto;
 }
 .pane-bar {
   display: flex;
@@ -1896,62 +1905,6 @@ a.hero-line:hover {
   font-size: 14px;
   color: var(--muted);
 }
-.pane-rest {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-[data-ring="bare"] > .loop-ring {
-  padding-left: 0;
-  border-left: 0;
-}
-.pane-card {
-  padding: 18px 20px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--card);
-}
-.pane-card h2 {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-.pane-card .change-banner {
-  margin: 0;
-  padding: 0;
-  background: none;
-  border-radius: 0;
-}
-.pane-decisions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.pane-decisions li {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 14.5px;
-  line-height: 1.45;
-}
-.pane-decision {
-  font-weight: 500;
-}
-.pane-decision:hover {
-  color: var(--accent);
-}
-.pane-decision-loop {
-  font-size: 12.5px;
-  color: var(--muted);
-}
-.pane-link {
-  display: inline-block;
-  margin-top: 12px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--accent);
-}
 .pane-hint {
   font-size: 13px;
   color: var(--muted);
@@ -1964,14 +1917,15 @@ a.hero-line:hover {
   background: var(--card);
 }
 @media (min-width: 1100px) {
-  :where(.app-shell:has(.today)) .main-content {
+  :where(.app-shell:has(.today[data-open])) .main-content {
     padding: 0;
   }
-  .today {
-    grid-template-columns: minmax(460px, 640px) minmax(0, 1fr);
+  .today[data-open] {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
     height: calc(100dvh - 65px);
   }
-  .today-main {
+  .today[data-open] .today-main {
+    max-width: none;
     overflow-y: auto;
     padding: 26px 32px 56px 36px;
   }
@@ -1989,24 +1943,23 @@ a.hero-line:hover {
   .pane-inner .loop-page {
     max-width: none;
   }
-  .today-main .agent-head {
+  .today[data-open] .agent-head {
     flex-direction: column;
     align-items: stretch;
   }
-  .today-main .agent-actions {
+  .today[data-open] .agent-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .today-main .agent-actions button {
+  .today[data-open] .agent-actions button {
     padding-inline: 8px;
+  }
+  .today[data-open] .loop-ring {
+    display: none;
   }
 }
 @media (max-width: 1099px) {
-  .pane {
-    display: none;
-  }
   .today[data-open] .pane {
-    display: block;
     position: fixed;
     inset: 0;
     z-index: 30;

@@ -2,10 +2,11 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AgentPanel } from '@/components/agent-panel'
+import { ChangeBanner } from '@/components/change-banner'
 import { DecisionStrip } from '@/components/decision-strip'
 import { Headline } from '@/components/headline'
 import { LoopDetail } from '@/components/loop-detail'
-import { PaneRest } from '@/components/pane-rest'
+import { LoopRing } from '@/components/loop-mark'
 import { TodayList } from '@/components/today-list'
 import { Tour } from '@/components/tour'
 import { Welcome } from '@/components/welcome'
@@ -55,7 +56,13 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
     <div className="today" data-open={selected ? '' : undefined}>
       {tour && <Tour />}
       <section className="today-main" aria-label="Today">
-        <Headline groups={groups} name={USER_NAME} now={now} />
+        {banner && <ChangeBanner sentences={banner.sentences} latestAt={banner.latestAt} />}
+        <Headline
+          groups={groups}
+          name={USER_NAME}
+          now={now}
+          aside={<LoopRing closed={resolved} total={loops.length} />}
+        />
         <AgentPanel configured={scanConfigured} checked={checked} name={agentName} />
         <DecisionStrip decisions={decisions} />
         <p className="view-hint">
@@ -63,25 +70,21 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
         </p>
         <TodayList loops={loops} now={now} selected={selected} />
       </section>
-      <aside className="pane" aria-label={selected ? 'Selected loop' : 'Your day'}>
-        <div className="pane-inner">
-          {selected ? (
-            <>
-              <div className="pane-bar">
-                <Link href="/" className="pane-close" scroll={false}>
-                  ← Back to the list
-                </Link>
-                <Link href={`/loops/${selected}`} className="pane-open">
-                  Open as a page
-                </Link>
-              </div>
-              <LoopDetail id={selected} mode="pane" />
-            </>
-          ) : (
-            <PaneRest closed={resolved} total={loops.length} changed={banner} />
-          )}
-        </div>
-      </aside>
+      {selected && (
+        <aside className="pane" aria-label="Selected loop">
+          <div className="pane-inner">
+            <div className="pane-bar">
+              <Link href="/" className="pane-close" scroll={false}>
+                ← Back to the list
+              </Link>
+              <Link href={`/loops/${selected}`} className="pane-open">
+                Open as a page
+              </Link>
+            </div>
+            <LoopDetail id={selected} mode="pane" />
+          </div>
+        </aside>
+      )}
     </div>
   )
 }
