@@ -111,19 +111,39 @@ export async function executeAction(
     }
     await store.putAction(executed)
     await store.appendAudit(audit(userId, action, 'action_executed', result.summary, now))
-    if (plan.loopStatusAfter && canTransition(loop.status, plan.loopStatusAfter)) {
-      const moved = applyTransition(loop, plan.loopStatusAfter, now)
-      await store.putLoop(moved)
-      await store.appendAudit({
-        ...audit(
-          userId,
-          action,
-          'state_changed',
-          `${plan.summary}; ${loop.status} -> ${moved.status}`,
-          now,
-        ),
-        details: { from: loop.status, to: moved.status },
-      })
+    if (plan.loopStatusAfter) {
+      // `loop` is the snapshot taken before the model and the sink ran, and that window is the
+      // length of a real execution — about 20 seconds with "I already did this" on screen. Build
+      // the transition from what the ledger says now, or a resolution made in the meantime is
+      // silently overwritten and the loop reopens under the user (#66).
+      const current = (await store.getLoop(userId, loop.id)) ?? loop
+      if (current.status === 'RESOLVED') {
+        // The effect still happened and is already recorded above; only the status write is
+        // dropped. The user closing a loop outranks what the agent planned before they did.
+        log({ evt: 'transition_skipped', actionId, loopId: loop.id, reason: 'already resolved' })
+        await store.appendAudit(
+          audit(
+            userId,
+            action,
+            'notification',
+            `${plan.summary}; you had already marked this done, so it stays closed`,
+            now,
+          ),
+        )
+      } else if (canTransition(current.status, plan.loopStatusAfter)) {
+        const moved = applyTransition(current, plan.loopStatusAfter, now)
+        await store.putLoop(moved)
+        await store.appendAudit({
+          ...audit(
+            userId,
+            action,
+            'state_changed',
+            `${plan.summary}; ${current.status} -> ${moved.status}`,
+            now,
+          ),
+          details: { from: current.status, to: moved.status },
+        })
+      }
     }
     log({ evt: 'action_executed', actionId, loopId: loop.id, ms: elapsed(startedAt) })
     return { actionId, status: 'EXECUTED', summary: result.summary }
