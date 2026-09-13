@@ -1,7 +1,7 @@
 import type { AuditEvent, Evidence, SourceType } from '@openloop/shared'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { approveAction, cancelAction, markDone } from '@/app/actions'
+import { approveAction, cancelAction, ignoreLoop, markDone, remindTomorrow } from '@/app/actions'
 import { ActionEffect } from '@/components/action-effect'
 import { StatusChip } from '@/components/status-chip'
 import { SubmitButton } from '@/components/submit-button'
@@ -60,6 +60,9 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
       : loop.requestedBy
         ? [{ label: 'From', value: loop.requestedBy }]
         : []),
+    ...(loop.remindAt && !resolved
+      ? [{ label: 'Reminder', value: formatDate(loop.remindAt, now) }]
+      : []),
     {
       label: 'Confidence',
       value: `${formatPercent(loop.confidence)} ${resolved ? 'done' : 'still open'}`,
@@ -113,6 +116,18 @@ export default async function LoopPage({ params }: PageProps<'/loops/[id]'>) {
               <form action={markDone.bind(null, loop.id)}>
                 <SubmitButton pendingLabel="Saving…">I already did this</SubmitButton>
               </form>
+              <form action={remindTomorrow.bind(null, loop.id)}>
+                <SubmitButton pendingLabel="Saving…" subtle>
+                  Remind me tomorrow
+                </SubmitButton>
+              </form>
+              {loop.status !== 'WATCHING' && (
+                <form action={ignoreLoop.bind(null, loop.id)}>
+                  <SubmitButton pendingLabel="Saving…" subtle>
+                    Ignore
+                  </SubmitButton>
+                </form>
+              )}
             </div>
           </>
         )}
