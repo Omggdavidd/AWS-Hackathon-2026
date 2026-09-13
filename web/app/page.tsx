@@ -1,6 +1,6 @@
 import type { LoopStatus, OpenLoop } from '@openloop/shared'
 import Link from 'next/link'
-import { AgentToolbar } from '@/components/agent-toolbar'
+import { AgentPanel } from '@/components/agent-panel'
 import { LiveClock } from '@/components/live-clock'
 import { LoopRing, StateIcon } from '@/components/loop-mark'
 import { LoopRow } from '@/components/loop-row'
@@ -9,6 +9,7 @@ import { scanConfigured } from '@/lib/agent'
 import {
   DEMO_TIME_ZONE,
   formatDate,
+  formatDateTime,
   groupByStatus,
   STATUS_LABEL,
   STATUS_ORDER,
@@ -107,9 +108,9 @@ export default async function Home() {
         </div>
         <LoopRing closed={resolved} total={loops.length} />
       </section>
-      <AgentToolbar
+      <AgentPanel
         configured={scanConfigured}
-        checked={lastScan ? formatDate(lastScan.at) : undefined}
+        checked={lastScan ? formatDateTime(lastScan.at) : undefined}
       />
       <div className="dashboard-columns">
         <div className="loop-sections">
