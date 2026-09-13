@@ -77,6 +77,8 @@ describe('demo expected ledger', () => {
     ])
     const loopIds = new Set(loops.map((l: { id: string }) => l.id))
     expect(loops).toHaveLength(11)
+    // Every seeded loop names its area so the board's By area view shows the full picture.
+    for (const l of loops) expect(l.area, l.id).not.toBe('other')
     for (const l of loops)
       for (const r of l.sourceRefs) expect(known.has(r.sourceId), r.sourceId).toBe(true)
     for (const e of evidence) expect(loopIds.has(e.loopId), e.loopId).toBe(true)

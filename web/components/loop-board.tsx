@@ -1,6 +1,6 @@
 'use client'
 
-import type { LoopCategory, LoopStatus, OpenLoop } from '@openloop/shared'
+import type { LoopArea, LoopCategory, LoopStatus, OpenLoop } from '@openloop/shared'
 import Link from 'next/link'
 import {
   type KeyboardEvent,
@@ -28,7 +28,7 @@ import { LiveClock } from './live-clock'
 import { LoopMark, StateIcon } from './loop-mark'
 import './loop-board.css'
 
-type Mode = 'state' | 'category'
+type Mode = 'state' | 'category' | 'area'
 
 type Group = {
   id: string
@@ -110,8 +110,36 @@ const CATEGORY_GROUPS: Group[] = (Object.keys(CATEGORY_LABEL) as LoopCategory[])
   }),
 )
 
+const AREA_LABEL: Record<LoopArea, [title: string, hint: string]> = {
+  school: ['School', 'Courses, credits, the registrar'],
+  work: ['Work', 'Colleagues, clients, reviews'],
+  money: ['Money', 'Bills, fees, subscriptions'],
+  health: ['Health', 'Doctors, dentists, claims'],
+  home: ['Home', 'Lease, utilities, moving'],
+  travel: ['Travel', 'Flights, documents, stays'],
+  community: ['Clubs', 'Teams, volunteering, events'],
+  other: ['Other', 'Everything else'],
+}
+
+const AREA_GROUPS: Group[] = (Object.keys(AREA_LABEL) as LoopArea[]).map((area, i) => ({
+  id: `area-${area}`,
+  title: AREA_LABEL[area][0],
+  hint: AREA_LABEL[area][1],
+  empty: '',
+  position: { x: 40 + (i % 4) * 335, y: 215 + Math.floor(i / 4) * 300 },
+  tone: 'category',
+  member: (loop) => loop.area === area,
+  always: false,
+}))
+
+const GROUPS_BY_MODE: Record<Mode, Group[]> = {
+  state: STATE_GROUPS,
+  category: CATEGORY_GROUPS,
+  area: AREA_GROUPS,
+}
+
 const DEFAULTS: BoardPositions = Object.fromEntries(
-  [...STATE_GROUPS, ...CATEGORY_GROUPS].map((g) => [g.id, g.position]),
+  [...STATE_GROUPS, ...CATEGORY_GROUPS, ...AREA_GROUPS].map((g) => [g.id, g.position]),
 )
 const HUB = { x: 555, y: 26, width: 250, height: 150 }
 const WIDTH = 300
@@ -129,7 +157,8 @@ type Gesture = {
 
 /**
  * The overview as a whiteboard: groups around a hub, arranged by the user and kept that way
- * (SPEC §7, §8A). Groups are the four states or, with one switch, the loops' categories. Drag a
+ * (SPEC §7, §8A). Groups are the four states or, with one switch, the loops' categories or areas
+ * of life. Drag a
  * handle to move a group, its bottom edge to make it taller; nothing here changes a loop. The agent
  * panel is docked at the bottom of the canvas so a scan or a catch-up never leaves the board.
  */
@@ -151,10 +180,7 @@ export function LoopBoard({
   const groups = groupByStatus(loops)
   const [mode, setMode] = useState<Mode>('state')
   const members = (g: Group) => loops.filter(g.member)
-  const shownFor = (m: Mode) =>
-    (m === 'state' ? STATE_GROUPS : CATEGORY_GROUPS).filter(
-      (g) => g.always || members(g).length > 0,
-    )
+  const shownFor = (m: Mode) => GROUPS_BY_MODE[m].filter((g) => g.always || members(g).length > 0)
   const visible = shownFor(mode)
   const [positions, setPositions] = useState<BoardPositions>(DEFAULTS)
   const positionsRef = useRef(positions)
@@ -254,7 +280,8 @@ export function LoopBoard({
     let saved = DEFAULTS
     try {
       saved = restorePositions(localStorage.getItem(storageKey), DEFAULTS)
-      if (localStorage.getItem(`${storageKey}:by`) === 'category') setMode('category')
+      const by = localStorage.getItem(`${storageKey}:by`)
+      if (by === 'category' || by === 'area') setMode(by)
     } catch {
       setStorageError(true)
     }
@@ -469,6 +496,9 @@ export function LoopBoard({
           >
             By category
           </button>
+          <button type="button" aria-pressed={mode === 'area'} onClick={() => switchMode('area')}>
+            By area
+          </button>
         </fieldset>
         {visible.map((g) => (
           <button type="button" key={g.id} data-state={g.tone} onClick={() => focusGroup(g.id)}>
@@ -584,12 +614,7 @@ export function LoopBoard({
                     <p className="board-empty">{g.empty}</p>
                   ) : (
                     items.map((loop) => (
-                      <BoardCard
-                        key={loop.id}
-                        loop={loop}
-                        now={now}
-                        showState={mode === 'category'}
-                      />
+                      <BoardCard key={loop.id} loop={loop} now={now} showState={mode !== 'state'} />
                     ))
                   )}
                 </div>

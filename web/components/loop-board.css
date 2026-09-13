@@ -500,7 +500,7 @@ body:has(.mindboard) .bottom-tabs,
   width: 15px;
   height: 15px;
 }
-.mindboard[data-mode="category"] .board-card {
+.mindboard:not([data-mode="state"]) .board-card {
   border-left: 3px solid var(--state-color);
 }
 

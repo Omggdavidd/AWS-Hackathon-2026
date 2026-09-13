@@ -21,6 +21,7 @@ const stubs: Specialists = {
       candidate: {
         title: root.subject,
         category: root.threadId === 'thr-deposit' ? 'payment' : 'other',
+        area: root.threadId === 'thr-deposit' ? 'school' : 'other',
         actionType: root.threadId === 'thr-deposit' ? 'pay' : 'none',
         sourceRef: { sourceType: 'email', sourceId: root.id, threadId: root.threadId },
         ...(root.threadId === 'thr-deposit'

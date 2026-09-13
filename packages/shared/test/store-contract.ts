@@ -9,6 +9,7 @@ export function loop(overrides: Partial<OpenLoop> = {}): OpenLoop {
     userId: 'user-1',
     title: 'Pay registration deposit',
     category: 'payment',
+    area: 'school',
     status: 'NEEDS_YOU',
     owner: 'user',
     actionType: 'pay',

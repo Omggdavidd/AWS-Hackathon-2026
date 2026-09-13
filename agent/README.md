@@ -62,6 +62,10 @@ pnpm --filter @openloop/agent scan -- --reset --log-json 2>pipeline.jsonl
 Lines go to stderr so they never interleave with the human-readable progress. Line shapes, the
 Logs Insights queries and what to screenshot are in `docs/architecture/observability/`.
 
+## Areas
+
+The Extractor sets `area` on every loop (school, work, money, health, home, travel, community, other) from who is asking and what it is about; the prompt gives one line of guidance per area. Records written before the field existed parse with `other`. The board's By area view groups on it.
+
 ## Known calibration
 
 Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and states, except the rescheduled club meeting, which the Investigator sometimes marks Needs You rather than Watching (once in four observed runs on the 12-thread inbox, and previously about half the time on the 10-thread one). Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities. Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
