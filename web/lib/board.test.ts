@@ -13,6 +13,18 @@ describe('whiteboard layout', () => {
       resolved: defaults.resolved,
     })
   })
+  it('keeps a saved height only when it is a sane number', () => {
+    expect(restorePositions('{"needs":{"x":1,"y":2,"h":640}}', defaults).needs).toEqual({
+      x: 1,
+      y: 2,
+      h: 640,
+    })
+    expect(restorePositions('{"needs":{"x":1,"y":2,"h":"tall"}}', defaults).needs).toEqual({
+      x: 1,
+      y: 2,
+    })
+    expect(restorePositions('{"needs":{"x":1,"y":2,"h":99999}}', defaults).needs.h).toBe(2400)
+  })
   it('fits a moved board, including negative positions, within the viewport', () => {
     const bounds = { x: -500, y: -200, width: 1400, height: 700 }
     const camera = fitCamera(bounds, 1200, 800)
