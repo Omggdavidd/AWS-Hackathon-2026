@@ -473,23 +473,6 @@ export function LoopBoard({
             {greeting}, {name}.
           </h1>
         </div>
-        <div className="board-top-actions">
-          <nav className="board-view-switch" aria-label="View">
-            <Link href="/">
-              <StateIcon name="list" /> List
-            </Link>
-            <Link href="/?view=board" aria-current="page">
-              <StateIcon name="overview" /> Board
-            </Link>
-            <Link href="/?view=calendar">
-              <StateIcon name="calendar" /> Calendar
-            </Link>
-          </nav>
-          <Link href="/activity" className="board-activity">
-            <StateIcon name="activity" />
-            Activity
-          </Link>
-        </div>
       </div>
       <nav className="board-state-nav" aria-label="Find a group">
         <fieldset className="board-groupby" aria-label="Group by">
