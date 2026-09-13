@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { StateIcon } from '@/components/loop-mark'
 
@@ -59,6 +60,20 @@ export default function AboutPage() {
           keeps its link to the message it came from, and no email is sent or payment made without
           your approval.
         </p>
+        <figure className="about-diagram">
+          <Image
+            className="about-diagram-img"
+            src="/architecture.png"
+            alt="Architecture: the Next.js app on Vercel and the Strands agents on AgentCore Runtime share one DynamoDB ledger; the agents read the inbox and calendar and call Claude on Bedrock."
+            width={1600}
+            height={900}
+            sizes="(max-width: 1100px) 100vw, 900px"
+          />
+          <figcaption>
+            The web app and the agents never talk to each other directly; both read and write the
+            same ledger.
+          </figcaption>
+        </figure>
       </section>
       <section className="about-section" aria-labelledby="about-team">
         <h2 id="about-team">Built for the AWS Agents for Humans hackathon</h2>

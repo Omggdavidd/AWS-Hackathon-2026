@@ -104,6 +104,23 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
             <main id="main-content" className="main-content">
               {children}
             </main>
+            <footer className="site-foot">
+              <p>
+                <Link href="/about" className="foot-link">
+                  About
+                </Link>
+                <Link href="/settings" className="foot-link">
+                  Settings
+                </Link>
+                <Link href="/?tour=1" className="foot-link">
+                  Replay the tour
+                </Link>
+                <a href="https://github.com/Omggdavidd/AWS-Hackathon-2026" className="foot-link">
+                  Source
+                </a>
+              </p>
+              <p>Open Loops, built for the AWS Agents for Humans hackathon, 2026.</p>
+            </footer>
           </div>
         </div>
         <AppTabs pending={decisions.length} todayHref={todayHref} />
