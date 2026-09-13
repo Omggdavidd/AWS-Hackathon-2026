@@ -1,6 +1,7 @@
 'use server'
 
 import { randomUUID } from 'node:crypto'
+import type { LoopStatus } from '@openloop/shared'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -9,6 +10,7 @@ import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
 import { getStore, USER_ID } from '@/lib/ledger'
 import { type ParkKind, parkLoopByUser } from '@/lib/park'
 import { resolveLoopByUser } from '@/lib/resolve'
+import { restoreLoopByUser } from '@/lib/restore'
 
 /** "I already did this": the user closes a loop by hand, cancelling what it leaves behind (SPEC §8B). */
 export async function markDone(loopId: string): Promise<void> {
@@ -27,6 +29,16 @@ async function park(loopId: string, kind: ParkKind): Promise<void> {
   const store = await getStore()
   if (!(await parkLoopByUser(store, USER_ID, loopId, kind))) return
   revalidatePath('/')
+  revalidatePath(`/loops/${loopId}`)
+  revalidatePath('/activity')
+}
+
+/** Undo for a swipe or a hover move: back to the state before, proposals restored (SPEC §8B). */
+export async function undoMove(loopId: string, previous: LoopStatus, since: string): Promise<void> {
+  const store = await getStore()
+  if (!(await restoreLoopByUser(store, USER_ID, loopId, previous, since))) return
+  revalidatePath('/')
+  revalidatePath('/decisions')
   revalidatePath(`/loops/${loopId}`)
   revalidatePath('/activity')
 }
