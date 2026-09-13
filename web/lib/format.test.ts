@@ -22,6 +22,7 @@ const base: OpenLoop = {
   actionType: 'none',
   riskLevel: 'low',
   priority: 'medium',
+  interruptUser: false,
   confidence: 0.5,
   sourceRefs: [{ sourceType: 'email', sourceId: 's' }],
   createdAt: '2026-09-10T00:00:00.000Z',

@@ -17,6 +17,12 @@ export type Notice = {
   kind: NoticeKind
   at: string
   unread: boolean
+  /**
+   * Whether this notice may interrupt: the Risk Judge flagged the loop as needing a real decision
+   * (`interruptUser`) *and* the news is that something is still owed. Good news never taps anyone
+   * on the shoulder, so a loop that was flagged at creation and has since resolved goes quiet.
+   */
+  interrupts: boolean
 }
 
 export type NoticeFeed = {
@@ -81,6 +87,7 @@ export function buildNotices(
       kind,
       at: newest.at,
       unread: !seen || newest.at > seen,
+      interrupts: loop.interruptUser && (kind === 'new' || kind === 'needs_you'),
     })
   }
 

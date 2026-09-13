@@ -25,6 +25,8 @@ Base-inbox ids run `msg-001` to `msg-013` plus `msg-018` and `msg-019`; the gap 
 
 Each expected loop also carries an `area`, the part of life it belongs to (school, work, money, health, home, travel, community, other), which the Extractor sets from who is asking and what it is about; the board's By area view groups on it.
 
+Three loops carry `interruptUser` — the deposit, the insurance proof and the participation form — and no others. It is the Risk Judge's answer to "is this worth a tap on the shoulder?", and the web app raises a browser notification only for a flagged loop that still needs the user. Everything else arrives quietly in the notification centre, which is the point: eight of the eleven never interrupt.
+
 `seed-inbox-delta.json` is the "next morning" batch for the delta path (plan step 7): merged on top of the base inbox by `mergeFixtures`, it must update existing loops rather than create duplicates.
 
 | Delta message | Expected outcome |

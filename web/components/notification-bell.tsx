@@ -19,10 +19,12 @@ const KIND: Record<Notice['kind'], { label: string; state: string }> = {
  * The notification centre (SPEC §8H). It says what changed, never how much mail arrived, and every
  * line opens the responsibility it is about.
  *
- * Two deliberate quiet choices. The browser notification fires only while the tab is hidden: if the
- * page is in front of you, it already shows the change, and a second copy is noise. And permission
- * is asked for from a button inside the panel, never on load, so the first thing a new visitor sees
- * is the product rather than a permission prompt.
+ * Three deliberate quiet choices. The browser notification fires only while the tab is hidden: if
+ * the page is in front of you, it already shows the change, and a second copy is noise. It fires
+ * only for notices the Risk Judge flagged as worth interrupting for (SPEC §1), so the panel stays
+ * the complete record while the shoulder tap stays rare. And permission is asked for from a button
+ * inside the panel, never on load, so the first thing a new visitor sees is the product rather than
+ * a permission prompt.
  */
 export function NotificationBell({
   notices,
@@ -53,7 +55,9 @@ export function NotificationBell({
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     if (!document.hidden) return
 
-    const fresh = notices.filter((notice) => notice.at > previous && notice.unread)
+    const fresh = notices.filter(
+      (notice) => notice.at > previous && notice.unread && notice.interrupts,
+    )
     if (fresh.length === 0) return
     const [first] = fresh
     const notification = new Notification(

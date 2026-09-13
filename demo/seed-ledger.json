@@ -11,6 +11,7 @@
       "actionType": "pay",
       "riskLevel": "high",
       "priority": "critical",
+      "interruptUser": true,
       "confidence": 0.86,
       "sourceRefs": [
         {
@@ -76,6 +77,7 @@
       "actionType": "reply",
       "riskLevel": "medium",
       "priority": "high",
+      "interruptUser": true,
       "confidence": 0.9,
       "sourceRefs": [
         {
@@ -283,6 +285,7 @@
       "actionType": "sign",
       "riskLevel": "medium",
       "priority": "high",
+      "interruptUser": true,
       "confidence": 0.88,
       "sourceRefs": [
         {

@@ -187,6 +187,7 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       consequence: judgment.consequence,
       riskLevel: judgment.riskTier,
       priority: judgment.priority,
+      interruptUser: judgment.interruptUser,
       confidence: Math.min(extracted.confidence, investigation.confidence),
       nextAction: judgment.nextAction,
       waitingOn: investigation.waitingOn,
@@ -259,6 +260,7 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       status,
       priority: loop.priority,
       riskLevel: loop.riskLevel,
+      interruptUser: loop.interruptUser,
       actions: actionCount,
       ms: elapsed(threadStartedAt),
     })

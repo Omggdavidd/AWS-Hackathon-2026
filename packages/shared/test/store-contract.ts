@@ -15,6 +15,7 @@ export function loop(overrides: Partial<OpenLoop> = {}): OpenLoop {
     actionType: 'pay',
     riskLevel: 'high',
     priority: 'critical',
+    interruptUser: false,
     confidence: 0.86,
     sourceRefs: [{ sourceType: 'email', sourceId: 'msg-001', threadId: 'thr-deposit' }],
     createdAt: now,
