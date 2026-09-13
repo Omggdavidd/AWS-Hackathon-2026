@@ -54,7 +54,7 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 
 ## Next up
 
-Every must-ship is in and the front-end revamp is complete. Before the video: reset the live table (Settings, or #29's script) and scan it once so the loops carry areas and interrupt flags. Then #16 once its dedup bug is fixed, then stretch (#20, #21, #31). Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
+Every must-ship is in and the front-end revamp is complete. Before the video: reset the live table (Settings, or #29's script) and scan it once so the loops carry areas and interrupt flags. Then stretch (#20, #21, #31). Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
 
 ## Known issues
 

@@ -2,7 +2,7 @@ import { invokeScan, scanConfigured } from '@/lib/agent'
 import { USER_ID } from '@/lib/ledger'
 
 export const dynamic = 'force-dynamic'
-/** A full scan of the demo inbox takes about four minutes on the runtime. */
+/** A full scan of the demo inbox takes about 95 to 105 seconds on the runtime. */
 export const maxDuration = 300
 
 /** Proxies the runtime's SSE progress stream to the browser (SPEC §8A "first-use scan"). */

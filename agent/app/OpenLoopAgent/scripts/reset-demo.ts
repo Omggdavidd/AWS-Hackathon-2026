@@ -10,7 +10,7 @@ import { LocalLedgerStore } from '@openloop/shared'
 
 /**
  * Put the demo back in a known state: delete the demo user's rows from the ledger table, then rescan
- * the base inbox into it through the deployed runtime (about 4 minutes). Deletes nothing unless --table
+ * the base inbox into it through the deployed runtime (about 95 to 105 seconds). Deletes nothing unless --table
  * names the target table exactly and --yes confirms.
  *   pnpm reset-demo --dry-run                                     # count what would go, delete nothing
  *   pnpm reset-demo --table openloop-ledger --yes                 # delete, then scan through the deployed runtime
@@ -140,7 +140,7 @@ console.log(
 )
 if (!scanAfter) process.exit(0)
 
-console.log(`▸ scanning the base inbox on the runtime into ${table}, about 4 minutes…`)
+console.log(`▸ scanning the base inbox on the runtime into ${table}, about 95 to 105 seconds…`)
 const started = Date.now()
 const client = new BedrockAgentCoreClient({ region })
 const res = await client.send(

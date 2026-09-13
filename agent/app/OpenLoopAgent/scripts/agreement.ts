@@ -8,7 +8,8 @@ import { runScan } from '../src/scan'
 
 /**
  * Calibration harness: scan the demo inbox several times with the real model and compare each
- * thread's status with demo/seed-ledger.json. Needs AWS credentials; a run costs about 4 minutes.
+ * thread's status with demo/seed-ledger.json. Needs AWS credentials; each scan costs about 95 to 105
+ * seconds, so the default three runs take about five minutes.
  *   pnpm --filter @openloop/agent agreement                 # 3 runs
  *   OPENLOOP_AGREEMENT_RUNS=5 pnpm --filter @openloop/agent agreement
  *   pnpm --filter @openloop/agent agreement -- --verbose    # print every loop as the scan produces it

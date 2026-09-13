@@ -26,7 +26,7 @@ pnpm --filter @openloop/agent scan -- --catch-up  # what changed since the last 
 pnpm --filter @openloop/agent agreement         # 3 real scans, per-thread status against demo/seed-ledger.json (OPENLOOP_AGREEMENT_RUNS overrides)
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm reset-demo --dry-run                       # count the rows a reset would delete; deletes nothing
-pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~4 min)
+pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~95 to 105s)
 pnpm reset-demo --table openloop-ledger --yes --no-scan   # delete only, no runtime call
 pnpm reset-demo --local --yes                   # reseed .openloop/ledger.json from demo/seed-ledger.json instead
 pnpm --filter @openloop/agent dev               # runtime server on :8080 (same as agentcore dev, without the inspector)
