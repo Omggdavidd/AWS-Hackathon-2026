@@ -6,7 +6,6 @@ import { ChangeBanner } from '@/components/change-banner'
 import { DecisionStrip } from '@/components/decision-strip'
 import { Headline } from '@/components/headline'
 import { LoopDetail } from '@/components/loop-detail'
-import { LoopRing } from '@/components/loop-mark'
 import { TodayList } from '@/components/today-list'
 import { Tour } from '@/components/tour'
 import { Welcome } from '@/components/welcome'
@@ -46,7 +45,6 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
   const checked = lastScan ? formatDateTime(lastScan.at) : undefined
   const now = new Date()
   const groups = groupByStatus(loops)
-  const resolved = groups.get('RESOLVED')?.length ?? 0
   // Rendered only when something newer than the last dismissal happened, so there is no flash.
   const changed = summarizeChanges(audit, loops, now)
   const seen = jar.get('openloops-seen')?.value
@@ -57,12 +55,7 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
       {tour && <Tour />}
       <section className="today-main" aria-label="Today">
         {banner && <ChangeBanner sentences={banner.sentences} latestAt={banner.latestAt} />}
-        <Headline
-          groups={groups}
-          name={USER_NAME}
-          now={now}
-          aside={<LoopRing closed={resolved} total={loops.length} />}
-        />
+        <Headline groups={groups} name={USER_NAME} now={now} />
         <AgentPanel configured={scanConfigured} checked={checked} name={agentName} />
         <DecisionStrip decisions={decisions} />
         <p className="view-hint">

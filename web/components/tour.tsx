@@ -10,7 +10,7 @@ const STEPS: Step[] = [
   {
     target: 'headline',
     title: 'What needs you, first',
-    text: 'The headline counts what is your move, what is waiting on others and what is only being watched. Each line jumps to its part of the list.',
+    text: 'Your loops as one bar: a segment per state, widest where there are most. What needs you comes first. Click a segment to jump to its part of the list.',
   },
   {
     target: 'agent',

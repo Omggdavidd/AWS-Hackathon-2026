@@ -1022,27 +1022,20 @@ summary {
 }
 
 @media (max-width: 767px) {
-  .hero {
-    padding: 0 0 22px;
-  }
-  .hero-greeting {
-    font-size: 16px;
-    margin-top: 10px;
-  }
-  .hero-summary {
-    font-size: clamp(28px, 8.5vw, 34px);
+  .daybar {
+    padding: 0 0 20px;
   }
   .hero-date {
     flex-wrap: wrap;
   }
-  .loop-ring {
-    padding-left: 0;
-    border-left: 0;
-    gap: 8px;
+  .daybar-seg {
+    min-width: 7rem;
   }
-  .loop-ring svg {
-    width: 56px;
-    height: 56px;
+  .daybar-num {
+    font-size: 28px;
+  }
+  .daybar-seg[data-state="needs-you"] .daybar-num {
+    font-size: 36px;
   }
   .view-hint {
     display: none;
@@ -1147,16 +1140,6 @@ summary {
   --kind-color: var(--waiting);
 }
 
-.hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  padding: 6px 0 26px;
-}
-.hero-copy {
-  min-width: 0;
-}
 .hero-date {
   display: flex;
   align-items: baseline;
@@ -1165,49 +1148,120 @@ summary {
   font-size: 13px;
 }
 .hero-greeting {
-  margin-top: 14px;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 500;
   color: var(--muted);
   letter-spacing: -0.01em;
 }
-/* The headline is what needs you, not the greeting: one fragment per line, the count in its
-   state color. Lines rise in once on load, staggered by --line; the ring draws alongside. */
-.hero-summary {
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The day bar: the loops by state, one segment each, widest where there are most */
+.daybar {
+  padding: 6px 0 24px;
+}
+.daybar-top {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  margin-top: 6px;
-  font-size: clamp(30px, 2.6vw, 40px);
-  line-height: 1.12;
-  font-weight: 650;
-  letter-spacing: -0.03em;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
 }
-.hero-line {
-  animation: hero-rise 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: calc(var(--line, 0) * 90ms + 60ms);
-  color: var(--foreground);
-  text-decoration: none;
-  transition: color 160ms;
-}
-.hero-line:not(:first-child) {
+.daybar-empty {
+  margin-top: 18px;
+  font-size: 15px;
   color: var(--muted);
 }
-a.hero-line:hover {
-  color: var(--state-color, var(--accent));
+.daybar-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
 }
-.hero-count {
+.daybar-seg {
+  flex: var(--n, 1) 1 0;
+  min-width: 8.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--foreground);
+  text-decoration: none;
+}
+.daybar-seg::before {
+  content: "";
+  display: block;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--state-color);
+  transform-origin: left center;
+  animation: seg-grow 720ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+  transition: filter 140ms;
+}
+.daybar-seg[data-state="waiting"]::before,
+.daybar-seg[data-state="watching"]::before,
+.daybar-seg[data-state="uncertain"]::before {
+  background: color-mix(in srgb, var(--state-color) 55%, var(--card));
+}
+.daybar-seg[data-state="resolved"]::before {
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--state-color) 45%, var(--card)) 0 6px,
+    color-mix(in srgb, var(--state-color) 18%, var(--card)) 6px 12px
+  );
+}
+.daybar-seg:hover::before {
+  filter: brightness(0.92);
+}
+.daybar-num {
+  display: flex;
+  align-items: flex-end;
+  height: 48px;
+  font-size: 34px;
   font-weight: 700;
-  color: var(--state-color, var(--foreground));
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--state-color);
   font-variant-numeric: tabular-nums;
 }
-@keyframes hero-rise {
+.daybar-seg[data-state="needs-you"] .daybar-num {
+  font-size: 46px;
+}
+.daybar-seg[data-state="resolved"] .daybar-num {
+  color: var(--muted);
+}
+.daybar-word {
+  margin-top: -4px;
+  font-size: 13.5px;
+  color: var(--muted);
+  transition: color 140ms;
+}
+.daybar-seg[data-state="needs-you"] .daybar-word {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+.daybar-seg:hover .daybar-word {
+  color: var(--foreground);
+}
+.daybar-of {
+  font-size: inherit;
+}
+@keyframes seg-grow {
   from {
-    opacity: 0;
-    transform: translateY(10px);
+    transform: scaleX(0);
   }
 }
+
 .loop-ring {
   flex: 0 0 auto;
   display: flex;
@@ -1953,9 +2007,6 @@ a.hero-line:hover {
   }
   .today[data-open] .agent-actions button {
     padding-inline: 8px;
-  }
-  .today[data-open] .loop-ring {
-    display: none;
   }
 }
 @media (max-width: 1099px) {
