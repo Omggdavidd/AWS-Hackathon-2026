@@ -13,7 +13,7 @@ Team entry for the AWS **Agents for Humans** hackathon, Everyday Agents track.
 | **Architecture** | [diagram](docs/architecture/openloop-architecture.png) · [system description](docs/architecture.md) |
 | **License** | [MIT](LICENSE) |
 
-![The Open Loops dashboard: one summary line, then each responsibility as a row with who it is waiting on and its deadline, grouped by state.](docs/screenshots/dashboard-desktop.png)
+![Today in Open Loops: the day as a bar of loops by state, the agent panel with its four controls, what waits on a decision, and the responsibilities grouped by when they matter.](docs/screenshots/dashboard-desktop.png)
 
 ## What it does
 
