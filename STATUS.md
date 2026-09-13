@@ -27,7 +27,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 |---|---|
 | Omggdavidd (hard + front end) | nothing open; #19 shipped |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration, #31 command bar (stretch) |
-| tdare514 (medium) | #99 interrupt gate |
+| tdare514 (medium) | nothing open; #99 shipped |
 | ab00bae (medium-easy) | nothing open |
 | AyomideAw (easiest) | nothing open |
 | Omggdavidd (stretch, after #19) | #20 live Gmail, #21 Google sinks |
@@ -43,6 +43,7 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 - 2026-09-13 Dashboard reimagined as a responsibility whiteboard with saved arrangements and accessible controls; hub headline, docked agent panel and a professional finish (#83); overview direction after product research: List by time as home, Board and Calendar as views (#88).
 
 - 2026-09-13 Web app deployed to Vercel at https://openloop-neon.vercel.app with the least-privilege IAM user `openloop-web` (#19).
+- 2026-09-13 Interrupt gate: the Risk Judge's `interruptUser` decision reaches the ledger and is the only thing that raises a browser notification, so eight of eleven demo loops arrive quietly (#99, tdare514).
 - 2026-09-13 Demo script for the five-minute video, written against the app as built and walked twice against the running app (#22, ab00bae, taken over from AyomideAw).
 
 ## Blocked
