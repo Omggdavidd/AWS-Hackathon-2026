@@ -29,6 +29,18 @@ export default async function DecisionsPage({ searchParams }: PageProps<'/decisi
               : `${n} action${n === 1 ? '' : 's'} the agent will not take without you.`}
           </p>
         </header>
+        {n === 0 && (
+          <div className="empty-state">
+            <p className="empty-title">Nothing waits on you.</p>
+            <p>
+              When the agent wants to send, pay, book or sign something, it stops here first and
+              shows you exactly what it would do.
+            </p>
+            <Link href="/" className="empty-link">
+              Back to Today
+            </Link>
+          </div>
+        )}
         {n > 0 && (
           <ol className="decision-list">
             {decisions.map(({ action, loop }) => {
