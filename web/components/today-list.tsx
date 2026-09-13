@@ -1,6 +1,6 @@
 import type { OpenLoop } from '@openloop/shared'
 import Link from 'next/link'
-import { AreaIcon } from '@/components/loop-mark'
+import { ActionIcon, AreaIcon } from '@/components/loop-mark'
 import { StatusChip } from '@/components/status-chip'
 import {
   ACTION_LABEL,
@@ -124,6 +124,7 @@ function Row({
   const amount = closed ? undefined : formatMoney(loop.amount)
   const source = loop.sourceRefs.find((ref) => hasSourcePage(ref.sourceType))
   const what = [verb, amount].filter(Boolean).join(' ')
+  const verbIcon = !closed && owed ? loop.actionType : undefined
   return (
     <li
       className="tl-row"
@@ -134,7 +135,7 @@ function Row({
       aria-current={selected ? 'true' : undefined}
       data-tour={first ? 'row' : undefined}
     >
-      <span className="tl-area" title={AREA_LABEL[loop.area]}>
+      <span className="tl-area" data-area={loop.area} title={AREA_LABEL[loop.area]}>
         <AreaIcon area={loop.area} />
       </span>
       <div className="tl-main">
@@ -143,7 +144,12 @@ function Row({
         </Link>
         <span className="tl-meta">
           {who && <span>{who}</span>}
-          {what && <em>{what}</em>}
+          {what && (
+            <em>
+              {verbIcon && <ActionIcon action={verbIcon} className="tl-verb-icon" />}
+              {what}
+            </em>
+          )}
         </span>
       </div>
       <span className="tl-due">{due ?? ''}</span>

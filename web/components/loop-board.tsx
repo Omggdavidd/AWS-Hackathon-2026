@@ -32,7 +32,7 @@ import {
   groupByStatus,
 } from '@/lib/format'
 import { LiveClock } from './live-clock'
-import { LoopMark, StateIcon } from './loop-mark'
+import { AreaIcon, LoopMark, StateIcon } from './loop-mark'
 import './loop-board.css'
 
 type Mode = 'state' | 'category' | 'area'
@@ -155,7 +155,7 @@ const AREA_GROUPS: Group[] = (Object.keys(AREA_HINT) as LoopArea[]).map((area, i
   hint: AREA_HINT[area],
   empty: '',
   position: { x: 40 + (i % 4) * 335, y: 215 + Math.floor(i / 4) * 300 },
-  tone: 'category',
+  tone: `area-${area}`,
   member: (loop) => loop.area === area,
   always: false,
 }))
@@ -704,7 +704,14 @@ function BoardCard({ loop, now, showState }: { loop: OpenLoop; now: string; show
         )}
         {loop.title}
       </span>
-      {source && <span className="board-card-source">{source}</span>}
+      <span className="board-card-source">
+        {loop.area !== 'other' && (
+          <span className="board-card-area" data-area={loop.area} title={AREA_LABEL[loop.area]}>
+            <AreaIcon area={loop.area} />
+          </span>
+        )}
+        {source}
+      </span>
       {(due || (!closed && loop.amount)) && (
         <span className="board-card-meta">
           {due && (

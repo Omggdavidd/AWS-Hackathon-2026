@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 import { LoopMark, StateIcon } from './loop-mark'
 
 type Item = { id: string; href: string; label: string; icon: string; count?: number }
@@ -29,9 +30,10 @@ function isActive(item: Item, pathname: string): boolean {
  */
 export function AppRail({ pending, initial }: { pending: number; initial: string }) {
   const pathname = usePathname()
+  const mark = useTilt()
   return (
     <nav className="rail" aria-label="Primary">
-      <Link href="/" className="rail-mark" aria-label="Open Loops, today">
+      <Link href="/" className="rail-mark" aria-label="Open Loops, today" ref={mark}>
         <LoopMark />
       </Link>
       <ul data-tour="views">
@@ -88,4 +90,46 @@ export function AppTabs({ pending }: { pending: number }) {
         })}
     </nav>
   )
+}
+
+/** How far the mark leans, in degrees, when the pointer is at the far edge of the window. */
+const TILT_DEG = 14
+
+/**
+ * The mark leans a little toward the pointer, the one ambient touch the shell allows itself.
+ * Off under reduced motion and on touch screens, where there is no pointer to lean toward.
+ */
+function useTilt() {
+  const ref = useRef<HTMLAnchorElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (
+      matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      !matchMedia('(hover: hover)').matches
+    )
+      return
+    let frame = 0
+    const onMove = (event: PointerEvent) => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const r = el.getBoundingClientRect()
+        const dx = (event.clientX - (r.left + r.width / 2)) / window.innerWidth
+        const dy = (event.clientY - (r.top + r.height / 2)) / window.innerHeight
+        el.style.transform = `perspective(240px) rotateX(${(-dy * TILT_DEG).toFixed(2)}deg) rotateY(${(dx * TILT_DEG).toFixed(2)}deg)`
+      })
+    }
+    const onLeave = () => {
+      cancelAnimationFrame(frame)
+      el.style.transform = ''
+    }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    document.addEventListener('pointerleave', onLeave)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerleave', onLeave)
+    }
+  }, [])
+  return ref
 }

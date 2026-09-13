@@ -1,5 +1,6 @@
 import type { OpenLoop } from '@openloop/shared'
 import Link from 'next/link'
+import { AreaIcon } from '@/components/loop-mark'
 import { DEMO_TIME_ZONE, dayKey, formatDate } from '@/lib/format'
 
 const STATE_ID: Record<OpenLoop['status'], string> = {
@@ -88,6 +89,11 @@ export function CalendarView({ loops, now }: { loops: OpenLoop[]; now: Date }) {
                         data-state={STATE_ID[loop.status]}
                         title={loop.title}
                       >
+                        {loop.area !== 'other' && (
+                          <span className="cal-area" data-area={loop.area}>
+                            <AreaIcon area={loop.area} />
+                          </span>
+                        )}
                         {loop.title}
                       </Link>
                     ))}
