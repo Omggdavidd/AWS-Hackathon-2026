@@ -8,8 +8,8 @@ const FOLLOW_MS = 180
 
 /**
  * Keyboard triage for the list, the way Linear and Todoist do it: arrow keys or J and K move
- * between rows and the pane follows the focused row, Enter opens the loop, D marks it done.
- * Renders nothing; only listens.
+ * between rows and the pane follows the focused row, Enter opens the loop. Nothing on the list is
+ * destructive, so no key closes a loop. Renders nothing; only listens.
  */
 export function ListKeys() {
   const router = useRouter()
@@ -48,12 +48,6 @@ export function ListKeys() {
           if (current >= 0 && target?.classList.contains('tl-row')) {
             event.preventDefault()
             all[current].querySelector<HTMLAnchorElement>('.tl-title')?.click()
-          }
-          break
-        case 'd':
-          if (current >= 0) {
-            event.preventDefault()
-            all[current].querySelector<HTMLFormElement>('.tl-done')?.requestSubmit()
           }
           break
         default:

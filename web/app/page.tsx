@@ -48,7 +48,7 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
         <Headline groups={groups} name={USER_NAME} now={now} />
         <AgentPanel configured={scanConfigured} checked={checked} />
         <p className="view-hint">
-          Arrow keys move, Enter opens, <kbd>D</kbd> marks done.
+          Arrow keys move, <kbd>Enter</kbd> opens.
         </p>
         <TodayList loops={loops} now={now} selected={selected} />
       </section>

@@ -99,7 +99,7 @@ Show the drafted email inside the insurance loop, then the deposit's **Approve /
 >
 > Not "you have six new emails". What changed, and what it means.
 
-Two places show it, both added since the spec was written: the quiet line across the top of the overview, and the bell in the header with a count on it (#101). The line is the one to narrate; the bell is there if someone asks where the history lives.
+Two places show it, both added since the spec was written: the "Since you last looked" card in the Today pane before a loop is chosen, and the bell in the header with a count on it (#101). The card is the one to narrate; the bell is there if someone asks where the history lives.
 
 **This is the scene most likely to break the take.** The delta run is a real model call. Record the click, stop, let it finish, and resume on the result — or pre-run it and show the finished state. Do not sit watching a progress bar.
 

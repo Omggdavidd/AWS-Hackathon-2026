@@ -25,7 +25,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 
 | Owner | Issues, hardest first within each row |
 |---|---|
-| Omggdavidd (hard + front end) | #106 rows and Group by, #107 decisions, #108 welcome and tour, then #109 (tiers 2 and 3) |
+| Omggdavidd (hard + front end) | #107 decisions, #108 welcome and tour, then #109 (tiers 2 and 3) |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration, #31 command bar (stretch) |
 | tdare514 (medium) | PR #111 re-judge on the delta path |
 | ab00bae (medium-easy) | nothing open |
