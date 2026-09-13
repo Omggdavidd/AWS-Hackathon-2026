@@ -27,7 +27,7 @@ So: **identify rows by what they are, not by the string in this script, and read
 Check before you hit record:
 
 - [ ] The agent panel says *"Your agent"* with all four buttons live, not greyed. On the deployed URL this is already true; locally it needs `web/.env.local`.
-- [ ] The ledger has been reset and freshly scanned, not left mid-demo. The headline should read **6 things need you. 1 is waiting on others. 3 on your radar.** with **1 / 11 loops closed**. (As of 2026-09-13 the deployed ledger is mid-demo — 3 need you, 5 of 12 closed, a delta already run — so it *must* be reset before a take. That is #29.)
+- [ ] The ledger has been reset and freshly scanned, not left mid-demo. The bar under the greeting should read **6 need you, 1 waiting on others, 3 on your radar, 1 of 11 closed**. (As of 2026-09-13 the deployed ledger is mid-demo — 3 need you, 5 of 12 closed, a delta already run — so it *must* be reset before a take. That is #29.)
 - [ ] Decide whether the take opens on the welcome screen. A fresh browser profile shows it (name the agent, then the five-stop tour); a profile that has visited before goes straight to Today. Either is fine; do not let the tour run mid-scene.
 - [ ] Light theme, browser at 1440 wide, bookmarks bar hidden, notifications silenced.
 - [ ] A second browser tab already open on `docs/architecture/openloop-architecture.png` and one on the CloudWatch log group, for scene 7.
@@ -62,7 +62,7 @@ Use our own fictional message, not a real inbox. Nothing personal on camera.
 
 > Open Loops read that inbox and a calendar and produced this. Not a summary of messages — a ledger of responsibilities, grouped by when they matter. Six things need me. One is waiting on somebody else. Three I am only watching. Two have already slipped past their date. This is the whole product in one screen: your life has open loops, and this is the list of them.
 
-Let the headline land. Do not scroll yet.
+Let the bar land. Do not scroll yet.
 
 ### 3 · The forgotten one — 1:05 to 1:55 — 95 words
 
