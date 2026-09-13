@@ -71,7 +71,9 @@ const stubs: Specialists = {
     return { headline: 'stub', items: [], nothingElse: true }
   },
   async judge({ loop }) {
-    const high = loop.actionType === 'pay'
+    // Status-aware, like the real prompt: what a responsibility costs you depends on whose move it
+    // is. That makes a re-judgment on the delta path visible in the record rather than a no-op.
+    const high = loop.actionType === 'pay' && loop.status !== 'RESOLVED'
     return {
       riskTier: high ? 'high' : 'low',
       priority: high ? 'critical' : 'medium',
@@ -161,6 +163,12 @@ describe('runScan', () => {
       'msg-014',
     ])
 
+    // The transition re-opened the question the Risk Judge answered at creation: the deposit was
+    // critical and worth interrupting for while it was the user's move, and is neither now.
+    expect(deposit?.priority).toBe('medium')
+    expect(deposit?.interruptUser).toBe(false)
+    expect(deposit?.riskLevel).toBe('low')
+
     const issue = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-issue1'))
     expect(issue?.status).toBe('RESOLVED')
     const flight = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-flight'))
@@ -181,6 +189,70 @@ describe('runScan', () => {
       now: later,
     })
     expect(third).toMatchObject({ created: 0, updated: 0, skipped: 13 })
+  })
+
+  it('re-judges a loop that becomes the user\u2019s move, so it can interrupt', async () => {
+    const base = (await FixtureSource.load(seed)).fixture
+    const delta = (await FixtureSource.load(deltaSeed)).fixture
+    const store = new LocalLedgerStore()
+    await runScan({
+      source: FixtureSource.fromData(base),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+    })
+
+    const before = (await store.listLoops('u')).find((l) =>
+      l.sourceRefs.some((r) => r.threadId === 'thr-issue1'),
+    )
+    // Somebody else owed the next move, so nothing about it was worth a tap on the shoulder.
+    expect(before).toMatchObject({ status: 'WAITING', priority: 'medium', interruptUser: false })
+
+    // The other party now asks the user for something: Waiting -> Needs You.
+    const asking: Specialists = {
+      ...stubs,
+      async update({ loop, newMessages }) {
+        return {
+          evidence: newMessages.map((m) => ({
+            sourceRef: { sourceType: 'email', sourceId: m.id, threadId: m.threadId },
+            observedAt: m.date,
+            excerpt: m.snippet,
+            supports: 'UPDATED',
+            confidence: 0.9,
+          })),
+          proposedStatus: loop.status === 'WAITING' ? 'NEEDS_YOU' : loop.status,
+          confidence: 0.9,
+          rationale: 'stub: they came back asking for something',
+        }
+      },
+      async judge({ loop }) {
+        const owed = loop.status === 'NEEDS_YOU'
+        return {
+          riskTier: 'medium',
+          priority: owed ? 'high' : 'low',
+          consequence: 'stub consequence',
+          nextAction: 'stub next action',
+          proposedActions: [],
+          interruptUser: owed,
+          rationale: 'stub',
+        }
+      },
+    }
+
+    await runScan({
+      source: FixtureSource.fromDataWithDelta(base, delta),
+      store,
+      userId: 'u',
+      specialists: asking,
+      now: '2026-09-11T13:00:00.000Z',
+    })
+
+    const after = (await store.listLoops('u')).find((l) =>
+      l.sourceRefs.some((r) => r.threadId === 'thr-issue1'),
+    )
+    expect(after).toMatchObject({ status: 'NEEDS_YOU', priority: 'high', interruptUser: true })
+    expect(after?.consequence).toBe('stub consequence')
   })
 
   it('is idempotent: a second scan skips threads that already produced a loop', async () => {

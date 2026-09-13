@@ -5,6 +5,7 @@ import {
   type EmailMessage,
   type Evidence,
   type IngestionSource,
+  type InvestigatorOutput,
   type LedgerStore,
   OpenLoop,
   type ProposedAction,
@@ -117,6 +118,9 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
           loopId: changed.loop.id,
           from: changed.from,
           to: changed.to,
+          priority: changed.loop.priority,
+          riskLevel: changed.loop.riskLevel,
+          interruptUser: changed.loop.interruptUser,
           ms: elapsed(threadStartedAt),
         })
       } else {
@@ -333,6 +337,37 @@ async function updateLoop(input: {
     next = applyTransition(next, to, now)
     next.owner =
       to === 'WAITING' ? 'other' : to === 'WATCHING' || to === 'RESOLVED' ? 'nobody' : 'user'
+
+    // What a responsibility costs you depends on the state it is in, so a state change re-opens the
+    // question the Risk Judge answered at creation. Without this the consequence, priority and
+    // interrupt decision stay frozen at the first message: a loop that was Waiting on someone and
+    // now asks something of the user would keep the low priority it earned while it was somebody
+    // else's move, and would never interrupt. Only on a transition, never on evidence alone — this
+    // is a model call, and new mail in a tracked thread is far more often confirmation than change.
+    const judgment = await timed(
+      log,
+      { evt: 'role', role: 'judge', ...(threadId ? { threadId } : {}) },
+      () =>
+        specialists.judge({
+          loop: {
+            title: next.title,
+            category: next.category,
+            actionType: next.actionType,
+            status: to,
+            ...(next.dueAt ? { dueAt: next.dueAt } : {}),
+            ...(next.amount ? { amount: next.amount } : {}),
+            ...(next.requestedBy ? { requestedBy: next.requestedBy } : {}),
+            ...(next.waitingOn ? { waitingOn: next.waitingOn } : {}),
+          },
+          evidence: [...existingEvidence.map(asJudgeEvidence), ...result.evidence],
+          now,
+        }),
+    )
+    next.consequence = judgment.consequence
+    next.riskLevel = judgment.riskTier
+    next.priority = judgment.priority
+    next.interruptUser = judgment.interruptUser
+    next.nextAction = judgment.nextAction
   }
   await store.putLoop(next)
   await store.appendAudit(
@@ -347,6 +382,24 @@ async function updateLoop(input: {
         },
   )
   return transitioned ? { loop: next, from, to, reason: result.rationale } : undefined
+}
+
+/**
+ * Stored evidence in the shape the Risk Judge takes. The judge reads model output, which nests the
+ * source into a `sourceRef`; a stored record spreads those fields across the row.
+ */
+function asJudgeEvidence(e: Evidence): InvestigatorOutput['evidence'][number] {
+  return {
+    sourceRef: {
+      sourceType: e.sourceType,
+      sourceId: e.sourceId,
+      ...(e.threadId ? { threadId: e.threadId } : {}),
+    },
+    observedAt: e.observedAt,
+    excerpt: e.excerpt,
+    supports: e.supports,
+    confidence: e.confidence,
+  }
 }
 
 function groupByThread(messages: EmailMessage[]): Map<string, EmailMessage[]> {
