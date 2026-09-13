@@ -78,6 +78,7 @@ export async function approveAction(actionId: string): Promise<void> {
     }
   }
   revalidatePath('/')
+  revalidatePath('/decisions')
   revalidatePath(`/loops/${action.loopId}`)
   revalidatePath('/activity')
 }
@@ -98,6 +99,8 @@ export async function cancelAction(actionId: string): Promise<void> {
     actor: 'user',
     reason: `You declined: ${action.summary}`,
   })
+  revalidatePath('/')
+  revalidatePath('/decisions')
   revalidatePath(`/loops/${action.loopId}`)
   revalidatePath('/activity')
 }

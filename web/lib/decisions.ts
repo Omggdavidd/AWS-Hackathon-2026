@@ -24,3 +24,49 @@ export async function pendingDecisions(
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .map((action) => ({ action, loop: byId.get(action.loopId) }))
 }
+
+export type Proposal =
+  | { kind: 'email'; to: string; subject: string; body: string }
+  | { kind: 'payment'; amount?: string; portal?: string }
+  | { kind: 'choice'; options: string[]; free: string[] }
+  | { kind: 'fields'; fields: { label: string; value: string }[] }
+
+const str = (v: unknown): string | undefined => (typeof v === 'string' && v ? v : undefined)
+const list = (v: unknown): string[] | undefined =>
+  Array.isArray(v) && v.every((x) => typeof x === 'string') ? (v as string[]) : undefined
+
+/**
+ * What the agent is asking permission for, in the shape it will take: the email it would send,
+ * the payment it would make, the slots it would choose between. Anything it does not recognise is
+ * shown as labelled fields rather than hidden, because a person should see everything they
+ * authorise (SPEC §8B).
+ */
+export function describeProposal(action: ProposedAction): Proposal | undefined {
+  const p = action.payload
+  if (action.type === 'draft_email' || action.type === 'send_email') {
+    const to = str(p.to)
+    const subject = str(p.subject)
+    const body = str(p.body)
+    if (to && subject && body) return { kind: 'email', to, subject, body }
+  }
+  if (action.type === 'pay') {
+    const value = typeof p.amount === 'number' ? p.amount : undefined
+    const currency = str(p.currency) ?? 'USD'
+    const amount =
+      value === undefined
+        ? undefined
+        : new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value)
+    return { kind: 'payment', amount, portal: str(p.portal) }
+  }
+  if (action.type === 'book_appointment') {
+    const options = list(p.candidates)
+    if (options) return { kind: 'choice', options, free: list(p.conflictFree) ?? [] }
+  }
+  const fields = Object.entries(p)
+    .filter(([key]) => key !== 'effect')
+    .map(([key, value]) => ({
+      label: key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()),
+      value: typeof value === 'string' ? value : JSON.stringify(value),
+    }))
+  return fields.length > 0 ? { kind: 'fields', fields } : undefined
+}
