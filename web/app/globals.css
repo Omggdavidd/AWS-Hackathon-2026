@@ -1365,17 +1365,17 @@ summary {
 /* Agent panel: the four operations and one place for their results */
 .agent-panel {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--card);
+  box-shadow: 0 1px 2px rgb(16 24 32 / 4%);
   overflow: hidden;
 }
 .agent-head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 20px;
-  padding: 14px 16px 14px 18px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 18px 22px 20px;
 }
 .agent-identity {
   display: flex;
@@ -1384,20 +1384,21 @@ summary {
   min-width: 0;
 }
 .agent-identity h2 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.3;
+  letter-spacing: -0.01em;
 }
 .agent-identity p {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 .agent-pulse {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
   flex-shrink: 0;
 }
 .agent-panel[data-busy] .agent-pulse {
@@ -1405,48 +1406,73 @@ summary {
 }
 @keyframes agent-pulse {
   50% {
-    box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 10%, transparent);
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 10%, transparent);
   }
 }
 .agent-actions {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 .agent-op {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 9px;
   min-width: 0;
 }
 .agent-op-hint {
-  font-size: 12px;
-  line-height: 1.4;
+  padding-inline: 2px;
+  font-size: 12.5px;
+  line-height: 1.45;
   color: var(--muted);
 }
 .agent-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  min-height: 38px;
+  min-height: 42px;
   padding-inline: 12px;
   font-size: 13.5px;
-  font-weight: 500;
-  border-radius: 8px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--card);
   color: var(--foreground);
+  box-shadow: 0 1px 2px rgb(16 24 32 / 5%);
   transition:
     background 140ms,
     border-color 140ms,
-    box-shadow 140ms;
+    box-shadow 160ms,
+    transform 160ms;
+}
+.agent-op-icon {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.agent-op-icon > svg {
+  width: 100%;
+  height: 100%;
 }
 .agent-actions button:not(:disabled):hover {
-  background: var(--card);
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  box-shadow: 0 2px 6px #12161914;
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--accent) 70%, transparent);
+  transform: translateY(-1px);
 }
 .agent-actions button[data-primary] {
   background: var(--accent);
   border-color: var(--accent);
+  color: var(--on-accent);
+}
+.agent-actions button[data-primary] .agent-op-icon {
   color: var(--on-accent);
 }
 .agent-actions button[data-primary]:not(:disabled):hover {
@@ -1455,11 +1481,17 @@ summary {
 .agent-actions button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 .agent-actions button[aria-busy] {
   opacity: 1;
   cursor: progress;
   border-color: var(--accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-actions button {
+    transition: none;
+  }
 }
 .agent-result {
   border-top: 1px solid var(--border);
@@ -1670,12 +1702,11 @@ summary {
     padding: 22px 20px 110px;
   }
   .agent-head {
-    padding: 14px;
+    padding: 16px;
   }
   .agent-actions {
-    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
+    gap: 14px;
   }
   .agent-actions button {
     min-height: 40px;
