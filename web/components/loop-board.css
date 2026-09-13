@@ -356,6 +356,49 @@ body:has(.mindboard) .bottom-tabs {
 [data-state="category"] {
   --state-color: var(--accent);
 }
+[data-state="area-school"] {
+  --state-color: var(--area-school);
+}
+[data-state="area-work"] {
+  --state-color: var(--area-work);
+}
+[data-state="area-money"] {
+  --state-color: var(--area-money);
+}
+[data-state="area-health"] {
+  --state-color: var(--area-health);
+}
+[data-state="area-home"] {
+  --state-color: var(--area-home);
+}
+[data-state="area-travel"] {
+  --state-color: var(--area-travel);
+}
+[data-state="area-community"] {
+  --state-color: var(--area-community);
+}
+[data-state="area-other"] {
+  --state-color: var(--area-other);
+}
+.board-card-area {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: -3px;
+  color: var(--area-color, var(--muted));
+}
+.board-card-area > svg {
+  width: 13px;
+  height: 13px;
+}
+.board-group[data-dragging="true"] {
+  box-shadow:
+    0 24px 40px -18px #20312b66,
+    0 2px 4px #20312b14;
+  transform: scale(1.012);
+}
 
 /* Resize by the bottom edge */
 .board-resize {

@@ -20,6 +20,14 @@
   --watching: #366aa2;
   --resolved: #266945;
   --resolved-soft: #f3faee;
+  --area-school: #5458d4;
+  --area-work: #2f6f9f;
+  --area-money: #8a6a12;
+  --area-health: #c4553f;
+  --area-home: #8a5a3a;
+  --area-travel: #1f8aa8;
+  --area-community: #9c3f8e;
+  --area-other: #6b7a88;
 }
 
 @theme inline {
@@ -47,6 +55,14 @@
   --watching: #a6ceff;
   --resolved: #b3e786;
   --resolved-soft: #192d32;
+  --area-school: #a9abff;
+  --area-work: #8fc3ea;
+  --area-money: #e6c66a;
+  --area-health: #ffa08c;
+  --area-home: #d9a98a;
+  --area-travel: #7fd4ec;
+  --area-community: #e59adb;
+  --area-other: #a4b3c8;
   --surface: #121f34;
   --on-accent: #102c32;
 }
@@ -78,6 +94,21 @@ summary {
   background: var(--accent-soft);
   color: var(--accent);
 }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: multiply;
+}
+:root[data-theme="dark"] body::before {
+  mix-blend-mode: screen;
+  opacity: 0.035;
+}
 .skip-link {
   position: fixed;
   left: 16px;
@@ -94,6 +125,8 @@ summary {
 
 /* Shell: a rail of destinations, a thin top bar, and the page */
 .app-shell {
+  position: relative;
+  z-index: 1;
   display: flex;
   min-height: 100vh;
 }
@@ -118,6 +151,8 @@ summary {
   height: 44px;
   margin-bottom: 10px;
   border-radius: 12px;
+  transition: transform 120ms linear;
+  will-change: transform;
 }
 .rail-mark:hover {
   background: var(--card);
@@ -799,13 +834,24 @@ summary {
 }
 .tl-row {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 8.5rem auto;
+  grid-template-columns: 30px minmax(0, 1fr) 8.5rem auto;
   align-items: center;
   gap: 14px;
-  padding: 12px 14px 12px 16px;
+  padding: 12px 14px 12px 14px;
   border-top: 1px solid var(--border);
   outline: none;
-  transition: background 120ms;
+  transition:
+    background 120ms,
+    box-shadow 160ms,
+    transform 160ms;
+}
+.tl-row:hover {
+  position: relative;
+  z-index: 1;
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 20px -14px rgb(16 24 32 / 35%),
+    inset 3px 0 0 transparent;
 }
 .tl-row:first-child {
   border-top: 0;
@@ -820,6 +866,12 @@ summary {
 .tl-row[data-soon] {
   box-shadow: inset 3px 0 0 var(--state-color);
 }
+.tl-row[data-selected]:hover,
+.tl-row[data-soon]:hover {
+  box-shadow:
+    0 8px 20px -14px rgb(16 24 32 / 35%),
+    inset 3px 0 0 var(--state-color);
+}
 .tl-row[data-selected] {
   background: color-mix(in srgb, var(--state-color) 7%, var(--card));
 }
@@ -829,11 +881,39 @@ summary {
 .tl-area {
   display: grid;
   place-items: center;
-  color: var(--muted);
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--area-color, var(--muted));
+  background: color-mix(in srgb, var(--area-color, var(--muted)) 12%, var(--card));
 }
 .tl-area svg {
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
+}
+[data-area="school"] {
+  --area-color: var(--area-school);
+}
+[data-area="work"] {
+  --area-color: var(--area-work);
+}
+[data-area="money"] {
+  --area-color: var(--area-money);
+}
+[data-area="health"] {
+  --area-color: var(--area-health);
+}
+[data-area="home"] {
+  --area-color: var(--area-home);
+}
+[data-area="travel"] {
+  --area-color: var(--area-travel);
+}
+[data-area="community"] {
+  --area-color: var(--area-community);
+}
+[data-area="other"] {
+  --area-color: var(--area-other);
 }
 .tl-main {
   min-width: 0;
@@ -863,8 +943,14 @@ summary {
   color: var(--muted);
 }
 .tl-meta em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-style: normal;
   color: var(--foreground);
+}
+.tl-verb-icon {
+  color: var(--muted);
 }
 .tl-due {
   justify-self: end;
@@ -971,6 +1057,19 @@ summary {
   color: var(--accent);
   font-weight: 600;
 }
+.cal-area {
+  display: inline-grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  vertical-align: -2px;
+  color: var(--area-color, var(--muted));
+}
+.cal-area > svg {
+  width: 11px;
+  height: 11px;
+}
 .cal-item {
   display: block;
   margin-top: 4px;
@@ -1041,8 +1140,11 @@ summary {
     display: none;
   }
   .tl-row {
-    grid-template-columns: 20px minmax(0, 1fr);
+    grid-template-columns: 30px minmax(0, 1fr);
     gap: 4px 10px;
+  }
+  .tl-row:hover {
+    transform: none;
   }
   .tl-due {
     grid-column: 2;

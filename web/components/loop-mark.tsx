@@ -120,3 +120,38 @@ export function AreaIcon({ area }: { area: string }) {
     </svg>
   )
 }
+
+const ACTION_PATH: Record<string, string> = {
+  pay: 'M12 3v18 M16 7H10a2.5 2.5 0 0 0 0 5h4a2.5 2.5 0 0 1 0 5H8',
+  reply: 'M9 17l-5-5 5-5 M4 12h11a5 5 0 0 1 5 5v2',
+  submit: 'M12 19V6 M6 12l6-6 6 6 M5 21h14',
+  sign: 'M4 20h16 M14.5 4.5l5 5L9 20H4v-5z',
+  choose: 'M4 6h16 M4 12h16 M4 18h16 M8 6h.01',
+  review: 'M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4',
+  confirm: 'M5 12l5 5L20 7',
+  attend: 'M4 5h16v15H4z M4 10h16 M8 3v4 M16 3v4',
+  book: 'M4 5h16v15H4z M4 10h16 M8 3v4 M16 3v4 M12 13v4 M10 15h4',
+  return: 'M9 14l-4-4 4-4 M5 10h10a5 5 0 0 1 0 10h-3',
+}
+
+/** The kind of move a loop asks for, beside its verb on a row. */
+export function ActionIcon({ action, className }: { action: string; className?: string }) {
+  const d = ACTION_PATH[action]
+  if (!d) return null
+  return (
+    <svg
+      className={className}
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={d} />
+    </svg>
+  )
+}
