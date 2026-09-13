@@ -2,10 +2,12 @@ import type { Metadata } from 'next'
 import { Geist_Mono, Inter } from 'next/font/google'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
-import { BottomTabs, WorkspaceNav } from '@/components/bottom-tabs'
+import { AppRail, AppTabs } from '@/components/app-rail'
 import { LoopMark } from '@/components/loop-mark'
 import { NotificationBell } from '@/components/notification-bell'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { pendingDecisions } from '@/lib/decisions'
+import { formatDateTime } from '@/lib/format'
 import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
 import { buildNotices } from '@/lib/notifications'
 import './globals.css'
@@ -25,6 +27,11 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * The shell: a rail of destinations on the left, a thin top bar with the agent's status, the bell
+ * and the theme, and the page. Phones swap the rail for bottom tabs. State counts live in the
+ * headline and on the rows, not in the navigation.
+ */
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const jar = await cookies()
   const theme = jar.get('openloops-theme')?.value === 'dark' ? 'dark' : 'light'
@@ -33,20 +40,11 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
     store.listLoops(USER_ID),
     store.listAudit(USER_ID, { limit: 60 }),
   ])
-  const feed = buildNotices(audit, loops, jar.get('openloops-seen')?.value)
-  const counts = {
-    needsYou: loops.filter((l) => l.status === 'NEEDS_YOU').length,
-    waiting: loops.filter((l) => l.status === 'WAITING').length,
-    watching: loops.filter((l) => l.status === 'WATCHING').length,
-    resolved: loops.filter((l) => l.status === 'RESOLVED').length,
-    uncertain: loops.filter((l) => l.status === 'UNCERTAIN').length,
-  }
-  const wordmark = (
-    <Link href="/" className="wordmark">
-      <LoopMark />
-      <span>Open Loops</span>
-    </Link>
-  )
+  const [feed, decisions] = await Promise.all([
+    buildNotices(audit, loops, jar.get('openloops-seen')?.value),
+    pendingDecisions(store, USER_ID, loops),
+  ])
+  const lastScan = audit.find((event) => event.kind === 'scan_completed')
   return (
     <html
       lang="en"
@@ -58,21 +56,22 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
           Skip to content
         </a>
         <div className="app-shell">
-          <aside className="sidebar">
-            {wordmark}
-            <WorkspaceNav counts={counts} />
-            <div className="profile">
-              <span className="avatar">{USER_NAME[0]}</span>
-              <div>
-                <p>{USER_NAME}</p>
-                <span>Personal workspace</span>
-              </div>
-            </div>
-          </aside>
-          <div className="workspace-content">
-            <header className="workspace-header">
-              <div className="mobile-wordmark">{wordmark}</div>
-              <span className="workspace-label">Personal workspace</span>
+          <AppRail pending={decisions.length} initial={USER_NAME} />
+          <div className="workspace">
+            <header className="topbar">
+              <Link href="/" className="wordmark topbar-wordmark">
+                <LoopMark />
+                <span>Open Loops</span>
+              </Link>
+              <p className="agent-status" data-tour="agent-status">
+                <span className="agent-pulse" aria-hidden="true" />
+                <span>
+                  Your agent
+                  <small>
+                    {lastScan ? ` checked ${formatDateTime(lastScan.at)}` : ' has not checked yet'}
+                  </small>
+                </span>
+              </p>
               <div className="header-actions">
                 <NotificationBell
                   notices={feed.notices}
@@ -87,7 +86,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
             </main>
           </div>
         </div>
-        <BottomTabs counts={counts} />
+        <AppTabs pending={decisions.length} />
       </body>
     </html>
   )

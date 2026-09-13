@@ -63,6 +63,8 @@ export function StateIcon({ name }: { name: string }) {
     activity: 'M3 12h4l3-8 4 16 3-8h4',
     list: 'M4 7h16 M4 12h16 M4 17h16',
     calendar: 'M4 5h16v15H4z M4 10h16 M8 3v4 M16 3v4',
+    decisions: 'M3 13V5h18v8 M3 13h5l2 3h4l2-3h5v6H3z',
+    about: 'M12 11v5 M12 8h.01',
   }
   return (
     <svg
@@ -76,7 +78,7 @@ export function StateIcon({ name }: { name: string }) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {['needs-you', 'waiting', 'resolved', 'uncertain'].includes(name) && (
+      {['needs-you', 'waiting', 'resolved', 'uncertain', 'about'].includes(name) && (
         <circle cx="12" cy="12" r="9" />
       )}
       <path d={paths[name] ?? paths.overview} />

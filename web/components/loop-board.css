@@ -1,27 +1,9 @@
-/* The home route is a workspace: the canvas fills the screen below the header. */
+/* The board is a workspace: the canvas fills the screen below the top bar. */
 body:has(.mindboard) {
   overflow: hidden;
 }
-.app-shell:has(.mindboard) {
-  max-width: none;
-  min-height: 0;
-}
-.app-shell:has(.mindboard) .sidebar,
-body:has(.mindboard) .bottom-tabs,
-.app-shell:has(.mindboard) .workspace-label {
+body:has(.mindboard) .bottom-tabs {
   display: none;
-}
-.app-shell:has(.mindboard) .mobile-wordmark {
-  display: block;
-}
-.app-shell:has(.mindboard) .workspace-header {
-  height: 65px;
-  min-height: 65px;
-  padding: 12px 28px;
-}
-.app-shell:has(.mindboard) .wordmark {
-  font-size: 20px;
-  padding: 0;
 }
 .app-shell:has(.mindboard) .main-content {
   padding: 0;
@@ -76,46 +58,6 @@ body:has(.mindboard) .bottom-tabs,
   gap: 18px;
   font-size: 13px;
   padding-bottom: 3px;
-}
-.board-view-switch {
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 9px;
-  padding: 3px;
-  gap: 3px;
-}
-.board-view-switch a {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--muted);
-  border-radius: 7px;
-}
-.board-view-switch svg {
-  width: 16px;
-  height: 16px;
-}
-.board-view-switch a[aria-current="page"] {
-  background: var(--card);
-  color: var(--foreground);
-  box-shadow: 0 1px 4px #102c3212;
-}
-.board-activity {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted);
-}
-.board-activity:hover {
-  color: var(--foreground);
-}
-.board-activity svg {
-  width: 16px;
 }
 .board-state-nav {
   display: flex;
@@ -641,21 +583,6 @@ body:has(.mindboard) .bottom-tabs,
   }
   .board-top-actions {
     gap: 8px;
-  }
-  .board-activity {
-    padding: 5px;
-  }
-  .board-activity svg {
-    width: 15px;
-    height: 15px;
-  }
-  .board-view-switch a {
-    padding: 6px 8px;
-    font-size: 11px;
-    gap: 4px;
-  }
-  .board-view-switch svg {
-    display: none;
   }
   .board-state-nav {
     padding: 4px 12px 10px;

@@ -51,7 +51,7 @@ Use our own fictional message, not a real inbox. Nothing personal on camera.
 
 ### 2 · What the agent produced — 0:30 to 1:05 — 68 words
 
-**Screen.** Click **Overview** in the sidebar.
+**Screen.** Click **Today** in the rail.
 
 > Open Loops read that inbox and a calendar and produced this. Not a summary of messages — a ledger of responsibilities, grouped by when they matter. Six things need me. One is waiting on somebody else. Three I am only watching. Two have already slipped past their date. This is the whole product in one screen: your life has open loops, and this is the list of them.
 
@@ -59,7 +59,7 @@ Let the headline land. Do not scroll yet.
 
 ### 3 · The forgotten one — 1:05 to 1:55 — 95 words
 
-**Screen.** Click the row **Pay registration deposit**.
+**Screen.** Click the row **Pay registration deposit**. It opens in the pane beside the list.
 
 > Here is the one from the email. Due tomorrow, two hundred dollars, from the Bursar's office. Here is what it wants me to do, and here is what happens if I do not: my course registration may be released.
 >
@@ -69,7 +69,7 @@ Point at the **What I found** quote, then the **History** line reading *"searche
 
 ### 4 · The one that closed itself — 1:55 to 2:35 — 73 words
 
-**Screen.** Back to **Overview**, scroll to **Resolved**, open **Pay housing application fee**.
+**Screen.** Scroll the list to **Resolved** and click **Pay housing application fee**; the pane follows.
 
 > Same inbox, different ending. Another university payment, also requested weeks ago. This one is closed, and I never touched it. A later email said the payment was received, the agent found it, matched it to the request, and closed the loop on its own.
 >
@@ -77,7 +77,7 @@ Point at the **What I found** quote, then the **History** line reading *"searche
 
 ### 5 · What it will and will not do alone — 2:35 to 3:20 — 83 words
 
-**Screen.** Back to **Overview**. Click **Handle what you can** in the agent panel. When the result appears, open **Send proof of renter's insurance**, then open **Pay registration deposit**.
+**Screen.** Click **Handle what you can** in the agent panel above the list. When the result appears, open **Send proof of renter's insurance**, then open **Pay registration deposit**.
 
 > Now I will let it work. It drafts the reply to the property manager, it books the calendar time, it sets the reminders — everything low risk, without asking.
 >

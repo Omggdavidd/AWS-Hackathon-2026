@@ -33,10 +33,19 @@ const EMPTY: Partial<Record<TimeBucket, string>> = {
 
 /**
  * The overview as every product in this category opens: a list grouped by time, with the state as
- * the marker on each row and the action one hover away. Buckets with nothing in them are shown
- * only where their emptiness is itself the news (overdue, today, this week).
+ * the marker on each row and the action one hover away. A title opens the loop in the pane beside
+ * the list (a sheet on a phone). Buckets with nothing in them are shown only where their emptiness
+ * is itself the news (overdue, today, this week).
  */
-export function TodayList({ loops, now }: { loops: OpenLoop[]; now: Date }) {
+export function TodayList({
+  loops,
+  now,
+  selected,
+}: {
+  loops: OpenLoop[]
+  now: Date
+  selected?: string
+}) {
   const groups = groupByTime(loops, now)
   return (
     <div className="today-list">
@@ -55,7 +64,7 @@ export function TodayList({ loops, now }: { loops: OpenLoop[]; now: Date }) {
             ) : (
               <ol className="tl-rows">
                 {items.map((loop) => (
-                  <Row key={loop.id} loop={loop} now={now} />
+                  <Row key={loop.id} loop={loop} now={now} selected={loop.id === selected} />
                 ))}
               </ol>
             )}
@@ -75,7 +84,7 @@ export function TodayList({ loops, now }: { loops: OpenLoop[]; now: Date }) {
   )
 }
 
-function Row({ loop, now }: { loop: OpenLoop; now: Date }) {
+function Row({ loop, now, selected }: { loop: OpenLoop; now: Date; selected: boolean }) {
   const owed = loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
   const closed = loop.status === 'RESOLVED'
   const due = closed
@@ -97,12 +106,19 @@ function Row({ loop, now }: { loop: OpenLoop; now: Date }) {
   const amount = closed ? undefined : formatMoney(loop.amount)
   const source = loop.sourceRefs.find((ref) => hasSourcePage(ref.sourceType))
   return (
-    <li className="tl-row" data-state={STATE_ID[loop.status]} data-soon={soon || undefined}>
+    <li
+      className="tl-row"
+      data-state={STATE_ID[loop.status]}
+      data-soon={soon || undefined}
+      data-loop-id={loop.id}
+      data-selected={selected || undefined}
+      aria-current={selected ? 'true' : undefined}
+    >
       <span className="tl-state" title={loop.status.replace('_', ' ').toLowerCase()}>
         <StateIcon name={STATE_ID[loop.status]} />
       </span>
       <div className="tl-main">
-        <Link href={`/loops/${loop.id}`} className="tl-title">
+        <Link href={`/?loop=${loop.id}`} className="tl-title" scroll={false}>
           {loop.title}
         </Link>
         <span className="tl-meta">

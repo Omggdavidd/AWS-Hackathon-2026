@@ -1,13 +1,20 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+
+/** How long the focus rests on a row before the pane follows it, so holding an arrow key is not a request per row. */
+const FOLLOW_MS = 180
 
 /**
  * Keyboard triage for the list, the way Linear and Todoist do it: arrow keys or J and K move
- * between rows, Enter opens the loop, D marks it done. Renders nothing; only listens.
+ * between rows and the pane follows the focused row, Enter opens the loop, D marks it done.
+ * Renders nothing; only listens.
  */
 export function ListKeys() {
+  const router = useRouter()
   useEffect(() => {
+    let follow: ReturnType<typeof setTimeout> | undefined
     const rows = () => [...document.querySelectorAll<HTMLElement>('.tl-row')]
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
@@ -21,6 +28,10 @@ export function ListKeys() {
         row.tabIndex = -1
         row.focus({ preventScroll: false })
         row.scrollIntoView({ block: 'nearest' })
+        const id = row.dataset.loopId
+        if (!id) return
+        clearTimeout(follow)
+        follow = setTimeout(() => router.replace(`/?loop=${id}`, { scroll: false }), FOLLOW_MS)
       }
       switch (event.key) {
         case 'ArrowDown':
@@ -49,7 +60,10 @@ export function ListKeys() {
       }
     }
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [])
+    return () => {
+      clearTimeout(follow)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [router])
   return null
 }
