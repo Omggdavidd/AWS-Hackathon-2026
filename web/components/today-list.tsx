@@ -57,6 +57,10 @@ export function TodayList({
       {TIME_ORDER.map((bucket) => {
         const items = groups.get(bucket) ?? []
         if (items.length === 0 && !EMPTY[bucket]) return null
+        const offset = TIME_ORDER.slice(0, TIME_ORDER.indexOf(bucket)).reduce(
+          (n, b) => n + (groups.get(b)?.length ?? 0),
+          0,
+        )
         const section = (
           <>
             <h2 className="tl-heading" data-bucket={bucket}>
@@ -76,6 +80,7 @@ export function TodayList({
                     first={
                       i === 0 && bucket === TIME_ORDER.find((b) => (groups.get(b)?.length ?? 0) > 0)
                     }
+                    index={offset + i}
                   />
                 ))}
               </ol>
@@ -101,11 +106,13 @@ function Row({
   now,
   selected,
   first,
+  index,
 }: {
   loop: OpenLoop
   now: Date
   selected: boolean
   first: boolean
+  index: number
 }) {
   const owed = loop.status === 'NEEDS_YOU' || loop.status === 'UNCERTAIN'
   const closed = loop.status === 'RESOLVED'
@@ -143,6 +150,7 @@ function Row({
       data-selected={selected ? '' : undefined}
       data-tour={first ? 'row' : undefined}
       aria-current={selected ? 'true' : undefined}
+      index={index}
     >
       <span className="tl-area" data-area={loop.area} title={AREA_LABEL[loop.area]}>
         <AreaIcon area={loop.area} />

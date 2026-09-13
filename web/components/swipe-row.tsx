@@ -2,7 +2,7 @@
 
 import type { LoopStatus } from '@openloop/shared'
 import Link from 'next/link'
-import { type PointerEvent as ReactPointerEvent, useRef, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
 import { markDone, remindTomorrow } from '@/app/actions'
 import { announceUndo, type Move } from '@/lib/undo-store'
 
@@ -11,6 +11,9 @@ const THRESHOLD = 96
 /** The farthest a row is allowed to travel. */
 const LIMIT = 150
 const WORD: Record<Move, string> = { done: 'Done', snooze: 'Snooze' }
+
+/** Loop ids this tab has already shown; a row animates in only the first time, so a scan's new loops land and the rest stay put. */
+const seen = new Set<string>()
 
 /**
  * A list row that can be swiped: right for Done, left for Snooze, on a touch screen or a
@@ -26,6 +29,7 @@ export function SwipeRow({
   openHref,
   sourceHref,
   className,
+  index = 0,
   children,
   ...rest
 }: {
@@ -35,6 +39,8 @@ export function SwipeRow({
   openHref: string
   sourceHref?: string
   className: string
+  /** Position in the list, for the stagger when several rows land together. */
+  index?: number
   children: React.ReactNode
 } & Record<`data-${string}`, string | undefined> & { 'aria-current'?: 'true' }) {
   const row = useRef<HTMLLIElement>(null)
@@ -42,6 +48,10 @@ export function SwipeRow({
   const wheel = useRef({ x: 0, timer: undefined as ReturnType<typeof setTimeout> | undefined })
   const [dx, setDx] = useState(0)
   const [busy, setBusy] = useState<Move>()
+  const [fresh] = useState(() => !seen.has(loopId))
+  useEffect(() => {
+    seen.add(loopId)
+  }, [loopId])
 
   async function commit(move: Move) {
     if (busy || closed) return
@@ -103,6 +113,8 @@ export function SwipeRow({
       data-reveal={reveal}
       data-armed={armed || undefined}
       data-busy={busy || undefined}
+      data-fresh={fresh || undefined}
+      style={fresh ? ({ '--i': Math.min(index, 12) } as React.CSSProperties) : undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -118,7 +130,16 @@ export function SwipeRow({
           {WORD.snooze}
         </span>
       </span>
-      <div className="swipe-face" style={dx ? { transform: `translateX(${dx}px)` } : undefined}>
+      <div
+        className="swipe-face"
+        style={
+          busy
+            ? { transform: `translateX(${busy === 'done' ? '110%' : '-110%'})` }
+            : dx
+              ? { transform: `translateX(${dx}px)` }
+              : undefined
+        }
+      >
         {children}
         <div className="tl-actions">
           <Link href={openHref} className="tl-action">
