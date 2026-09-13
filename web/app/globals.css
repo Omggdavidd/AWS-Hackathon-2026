@@ -849,6 +849,7 @@ body::before {
   border-top: 0;
 }
 .swipe-face {
+  --row-bg: var(--card);
   position: relative;
   z-index: 1;
   display: grid;
@@ -856,7 +857,7 @@ body::before {
   align-items: center;
   gap: 14px;
   padding: 12px 14px 12px 14px;
-  background: var(--card);
+  background: var(--row-bg);
   transition:
     background 120ms,
     transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -907,7 +908,7 @@ body::before {
 .tl-row:hover .swipe-face,
 .tl-row:focus-within .swipe-face,
 .tl-row:focus .swipe-face {
-  background: color-mix(in srgb, var(--state-color) 5%, var(--card));
+  --row-bg: color-mix(in srgb, var(--state-color) 5%, var(--card));
 }
 .tl-row:hover {
   z-index: 2;
@@ -922,7 +923,7 @@ body::before {
   box-shadow: inset 3px 0 0 var(--state-color);
 }
 .tl-row[data-selected] .swipe-face {
-  background: color-mix(in srgb, var(--state-color) 7%, var(--card));
+  --row-bg: color-mix(in srgb, var(--state-color) 7%, var(--card));
 }
 .tl-row[data-selected]:hover,
 .tl-row[data-soon]:hover {
@@ -1031,9 +1032,16 @@ body::before {
   align-items: center;
   justify-content: flex-end;
   gap: 4px;
+  padding-left: 36px;
+  background: linear-gradient(90deg, transparent, var(--row-bg) 28px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms;
+}
+.tl-row:hover .tl-due,
+.tl-row:focus-within .tl-due,
+.tl-row:focus .tl-due {
+  opacity: 0;
 }
 .tl-row:hover .tl-actions,
 .tl-row:focus-within .tl-actions,
@@ -1090,8 +1098,9 @@ body::before {
 }
 .tl-action {
   min-height: 30px;
-  padding: 0 10px;
+  padding: 0 9px;
   font-size: 12.5px;
+  white-space: nowrap;
   font-weight: 500;
   border-radius: 6px;
   border: 1px solid var(--border);
@@ -1257,9 +1266,14 @@ body::before {
     position: static;
     grid-column: 2;
     margin-top: 4px;
+    padding-left: 0;
+    background: none;
     opacity: 1;
     pointer-events: auto;
     justify-content: flex-start;
+  }
+  .tl-row:hover .tl-due {
+    opacity: 1;
   }
   .tl-chip {
     display: none;
