@@ -116,6 +116,7 @@ export function NotificationBell({
       <button
         type="button"
         className="notice-bell"
+        data-tour="bell"
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications, nothing new'}

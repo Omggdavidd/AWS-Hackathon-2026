@@ -2326,3 +2326,211 @@ a.hero-line:hover {
   font-size: 15px;
   font-weight: 500;
 }
+
+/* Welcome: the first screen, before anything is named */
+body:has(.welcome) .rail,
+body:has(.welcome) .topbar,
+body:has(.welcome) .bottom-tabs {
+  display: none;
+}
+:where(.app-shell:has(.welcome)) .main-content {
+  padding: 0;
+}
+.welcome {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(
+      ellipse at 20% 0%,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 100% 100%,
+      color-mix(in srgb, var(--attention) 8%, transparent),
+      transparent 50%
+    ),
+    var(--background);
+}
+.welcome-card {
+  width: 100%;
+  max-width: 560px;
+  padding: 40px 44px 36px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 30px 60px -40px rgb(0 0 0 / 35%);
+}
+.welcome-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--muted);
+}
+.welcome-card h1 {
+  margin-top: 26px;
+  font-size: clamp(28px, 3.4vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.welcome-lede {
+  margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.welcome-states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 18px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.welcome-states li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--state-color);
+}
+.welcome-states svg {
+  width: 16px;
+  height: 16px;
+}
+.welcome-form {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.welcome-form label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+.welcome-hint {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.welcome-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.welcome-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 16px;
+}
+.welcome-row input:focus-visible {
+  border-color: var(--accent);
+}
+.welcome-row button {
+  min-height: 42px;
+  padding-inline: 18px;
+  font-size: 15px;
+}
+
+/* Tour: five stops over the real page */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+.tour-ring {
+  position: fixed;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 0 9999px color-mix(in srgb, var(--foreground) 45%, transparent);
+  pointer-events: none;
+  transition:
+    top 220ms,
+    left 220ms,
+    width 220ms,
+    height 220ms;
+}
+.tour-card {
+  position: fixed;
+  width: min(340px, calc(100vw - 24px));
+  padding: 18px 20px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 16px 40px -16px rgb(0 0 0 / 40%);
+  transition:
+    top 220ms,
+    left 220ms;
+}
+.tour-step {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.tour-card h2 {
+  margin-top: 6px;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.tour-card p + p,
+.tour-card h2 + p {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.tour-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+}
+.tour-nav {
+  display: flex;
+  gap: 6px;
+}
+.tour-skip,
+.tour-back {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.tour-skip:hover,
+.tour-back:hover {
+  color: var(--foreground);
+  background: var(--surface);
+}
+.tour-next {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 500;
+  background: var(--foreground);
+  color: var(--background);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring,
+  .tour-card {
+    transition: none;
+  }
+}

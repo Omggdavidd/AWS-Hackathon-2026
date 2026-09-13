@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { StateIcon } from '@/components/loop-mark'
 
 const TEAM = [
@@ -71,6 +72,13 @@ export default function AboutPage() {
             </li>
           ))}
         </ul>
+        <p>
+          New here?{' '}
+          <Link href="/?tour=1" className="about-link">
+            Replay the tour
+          </Link>
+          .
+        </p>
         <p>
           Source, architecture and decisions:{' '}
           <a href="https://github.com/Omggdavidd/AWS-Hackathon-2026" className="about-link">
