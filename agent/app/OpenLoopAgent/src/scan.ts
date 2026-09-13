@@ -78,9 +78,16 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
   const commit = mutex()
   const loopLock = keyedMutex()
 
-  async function findExisting(sourceIds: string[]): Promise<OpenLoop | undefined> {
+  async function findExisting(
+    threadId: string,
+    sourceIds: string[],
+  ): Promise<OpenLoop | undefined> {
     const known = (
-      await Promise.all(sourceIds.map((id) => store.findLoopsBySource(userId, id)))
+      await Promise.all(
+        sourceIds.map(async (id) =>
+          (await store.findLoopsBySource(userId, id)).filter((l) => claims(l, threadId, id)),
+        ),
+      )
     ).flat()
     return known.find((l) => l.status !== 'RESOLVED') ?? known[0]
   }
@@ -160,7 +167,10 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     // enough to find the thread in the ledger (docs/architecture.md §4).
     log({ evt: 'thread_started', threadId, messages: thread.length })
 
-    const existing = await findExisting(thread.map((m) => m.id))
+    const existing = await findExisting(
+      threadId,
+      thread.map((m) => m.id),
+    )
     if (existing) return takeDeltaPath(existing, thread, threadId, threadStartedAt, record)
 
     const extracted = await timed(log, { evt: 'role', role: 'extract', threadId }, () =>
@@ -224,9 +234,11 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       waitingOn: investigation.waitingOn,
       sourceRefs: [...sourceIds].map((id) => {
         const m = messages.find((x) => x.id === id)
-        return m
+        if (!m) return { sourceType: 'calendar', sourceId: id }
+        // A quoted message keeps its id but not its thread: see `claims`.
+        return m.threadId === threadId
           ? { sourceType: 'email', sourceId: id, threadId: m.threadId }
-          : { sourceType: 'calendar', sourceId: id }
+          : { sourceType: 'email', sourceId: id }
       }),
       createdAt: now,
       updatedAt: now,
@@ -234,7 +246,7 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     })
 
     const claimed = await commit(async () => {
-      const duplicate = await findExisting([...sourceIds, ...thread.map((m) => m.id)])
+      const duplicate = await findExisting(threadId, [...sourceIds, ...thread.map((m) => m.id)])
       if (duplicate) return duplicate
       await store.putLoop(loop)
       return undefined
@@ -334,6 +346,20 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
   emit({ type: 'done', summary })
   log({ evt: 'scan_completed', ...summary, ms: elapsed(startedAt) })
   return summary
+}
+
+/**
+ * Whether a loop belongs to this thread, and so whether the thread updates it instead of opening one
+ * of its own. A shared source id is not enough: the Investigator reads the whole inbox and may quote
+ * mail from anywhere, and a quote must leave the quoted thread free to open its own loop. Ownership
+ * is a ref carrying this thread's id, or a match on the source the loop was opened from (its first
+ * ref) — which is how a receipt arriving in another thread still closes it.
+ */
+function claims(loop: OpenLoop, threadId: string, matchedSourceId: string): boolean {
+  return (
+    loop.sourceRefs.some((r) => r.threadId === threadId) ||
+    loop.sourceRefs[0]?.sourceId === matchedSourceId
+  )
 }
 
 /** Runs sections one after another: a section holding an `await` would otherwise interleave. */

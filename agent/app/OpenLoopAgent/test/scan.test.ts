@@ -1,5 +1,10 @@
 import { fileURLToPath } from 'node:url'
-import { FixtureSource, LocalLedgerStore, OpenLoop } from '@openloop/shared'
+import {
+  FixtureSource,
+  type InvestigatorOutput,
+  LocalLedgerStore,
+  OpenLoop,
+} from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
 import type { Specialists } from '../src/agents'
 import type { LogLine } from '../src/log'
@@ -86,6 +91,42 @@ const stubs: Specialists = {
       rationale: 'stub',
     }
   },
+}
+
+/** An Extractor that opens a loop for one thread and turns every other thread down. */
+function onlyThread(threadId: string): Specialists['extract'] {
+  return async ({ thread }) => {
+    const root = thread[0]
+    if (!root || root.threadId !== threadId) {
+      return { isResponsibility: false, confidence: 0.95, rationale: 'not a responsibility' }
+    }
+    return {
+      isResponsibility: true,
+      candidate: {
+        title: root.subject,
+        category: 'other',
+        area: 'other',
+        actionType: 'none',
+        sourceRef: { sourceType: 'email', sourceId: root.id, threadId: root.threadId },
+      },
+      confidence: 0.9,
+      rationale: 'stub',
+    }
+  }
+}
+
+function cite(
+  sourceId: string,
+  threadId: string,
+  supports: InvestigatorOutput['evidence'][number]['supports'],
+): InvestigatorOutput['evidence'][number] {
+  return {
+    sourceRef: { sourceType: 'email', sourceId, threadId },
+    observedAt: now,
+    excerpt: `stub excerpt for ${sourceId}`,
+    supports,
+    confidence: 0.9,
+  }
 }
 
 describe('runScan', () => {
@@ -189,6 +230,44 @@ describe('runScan', () => {
       now: later,
     })
     expect(third).toMatchObject({ created: 0, updated: 0, skipped: 13 })
+  })
+
+  it('lets a later thread resolve a loop it did not open', async () => {
+    const source = await FixtureSource.load(seed)
+    const store = new LocalLedgerStore()
+    const opening: Specialists = { ...stubs, extract: onlyThread('thr-deposit') }
+    await runScan({ source, store, userId: 'u', specialists: opening, now, concurrency: 3 })
+    expect(await store.listLoops('u')).toHaveLength(1)
+
+    // The receipt lands in another thread and its investigation points at the mail the loop was
+    // opened from, so it closes that loop instead of opening a second one (SPEC \u00a74).
+    const receipt: Specialists = {
+      ...stubs,
+      extract: onlyThread('thr-housing'),
+      async investigate({ thread }) {
+        return {
+          evidence: [
+            ...thread.map((m) => cite(m.id, m.threadId, 'RESOLVED')),
+            cite('msg-001', 'thr-deposit', 'RESOLVED'),
+          ],
+          proposedStatus: 'RESOLVED',
+          confidence: 0.9,
+          rationale: 'stub: the deposit was paid',
+        }
+      },
+    }
+    const later = '2026-09-11T13:00:00.000Z'
+    await runScan({ source, store, userId: 'u', specialists: receipt, now: later, concurrency: 3 })
+
+    const loops = await store.listLoops('u')
+    expect(loops).toHaveLength(1)
+    expect(loops[0]).toMatchObject({ status: 'RESOLVED', resolvedAt: later })
+    expect(loops[0]?.sourceRefs.map((r) => r.threadId)).toContain('thr-housing')
+    const evidence = await store.listEvidence(loops[0]?.id ?? '')
+    expect(evidence.filter((e) => e.threadId === 'thr-housing').map((e) => e.sourceId)).toEqual([
+      'msg-002',
+      'msg-003',
+    ])
   })
 
   it('re-judges a loop that becomes the user\u2019s move, so it can interrupt', async () => {
@@ -358,6 +437,40 @@ const crossCitingStubs: Specialists = {
   },
 }
 
+/** One investigation quotes a message from a thread it does not own; the quote is not a claim on it. */
+const quotingStubs: Specialists = {
+  ...stubs,
+  async extract({ thread }) {
+    const root = thread[0]
+    if (!root || (root.threadId !== 'thr-deposit' && root.threadId !== 'thr-housing')) {
+      return { isResponsibility: false, confidence: 0.95, rationale: 'not a responsibility' }
+    }
+    return {
+      isResponsibility: true,
+      candidate: {
+        title: root.subject,
+        category: 'other',
+        area: 'other',
+        actionType: 'none',
+        sourceRef: { sourceType: 'email', sourceId: root.id, threadId: root.threadId },
+      },
+      confidence: 0.9,
+      rationale: 'stub',
+    }
+  },
+  async investigate({ thread }) {
+    const root = thread[0]
+    const own = thread.map((m) => cite(m.id, m.threadId, 'OPEN'))
+    return {
+      evidence:
+        root?.threadId === 'thr-deposit' ? [...own, cite('msg-003', 'thr-housing', 'OPEN')] : own,
+      proposedStatus: 'NEEDS_YOU',
+      confidence: 0.9,
+      rationale: 'stub: the deposit quotes the housing thread',
+    }
+  },
+}
+
 describe('runScan under concurrency', () => {
   it('produces the same loops and statuses as the sequential path', async () => {
     const sequentialStore = new LocalLedgerStore()
@@ -405,6 +518,30 @@ describe('runScan under concurrency', () => {
     expect(refs).toContain('msg-001')
     expect(refs).toContain('msg-008')
     expect(summary.skipped).toBe(11)
+  })
+
+  it('still opens a loop for a thread another investigation only quoted', async () => {
+    const store = new LocalLedgerStore()
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: quotingStubs,
+      now,
+      concurrency: 10,
+    })
+
+    expect(summary.created).toBe(2)
+    expect(summary.skipped).toBe(10)
+    const loops = await store.listLoops('u')
+    expect(loops).toHaveLength(2)
+    const deposit = loops.find((l) => l.sourceRefs.some((r) => r.sourceId === 'msg-001'))
+    const housing = loops.find((l) => l.sourceRefs.some((r) => r.sourceId === 'msg-002'))
+    expect(housing?.sourceRefs.map((r) => r.threadId)).toContain('thr-housing')
+    // The quote is still evidence on the loop that made it, it just does not own the thread.
+    expect((await store.listEvidence(deposit?.id ?? '')).map((e) => e.sourceId)).toContain(
+      'msg-003',
+    )
   })
 
   it('keeps the events of one thread adjacent', async () => {
