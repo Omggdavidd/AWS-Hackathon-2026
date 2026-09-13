@@ -1409,13 +1409,25 @@ summary {
   }
 }
 .agent-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.agent-op {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
+  min-width: 0;
+}
+.agent-op-hint {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
 }
 .agent-actions button {
-  min-height: 36px;
-  padding-inline: 13px;
+  width: 100%;
+  min-height: 38px;
+  padding-inline: 12px;
   font-size: 13.5px;
   font-weight: 500;
   border-radius: 8px;
@@ -1997,16 +2009,8 @@ summary {
   .pane-inner .loop-page {
     max-width: none;
   }
-  .today[data-open] .agent-head {
-    flex-direction: column;
-    align-items: stretch;
-  }
   .today[data-open] .agent-actions {
-    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .today[data-open] .agent-actions button {
-    padding-inline: 8px;
   }
 }
 @media (max-width: 1099px) {
