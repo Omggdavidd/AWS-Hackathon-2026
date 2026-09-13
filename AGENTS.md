@@ -45,6 +45,7 @@ Layout is decided by ADR-0012. Each workspace gets its own README; a nested `AGE
 | Git branch / commit / PR / review workflow | `CONTRIBUTING.md` |
 | Context Sync Protocol (full text) | `docs/process/context-sync.md` |
 | Environment variables | `.env.example` next to the code that reads them |
+| Security posture, exposure, IAM scope | `docs/security.md` |
 | Setup beyond the README quick start | `docs/setup.md`, created only when the README section outgrows ~30 lines |
 
 Rules: a fact lives in exactly one place and other files link to it. Fix duplication when you see it. Delete stale text instead of annotating it as outdated. There is no changelog: git history and merged PRs are the record. Anything another developer or their agent needs to know must end up in one of these files, an ADR, a plan or a PR, never only in a chat.

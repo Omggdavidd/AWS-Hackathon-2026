@@ -46,6 +46,8 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 - 2026-09-13 Interrupt gate: the Risk Judge's `interruptUser` decision reaches the ledger and is the only thing that raises a browser notification, so eight of eleven demo loops arrive quietly (#99, tdare514).
 - 2026-09-13 Demo script for the five-minute video, written against the app as built and walked twice against the running app (#22, ab00bae, taken over from AyomideAw).
 
+- 2026-09-13 Security review of the deployed app and ledger: origin check on the three agent routes so an unauthenticated stranger cannot spend Bedrock tokens, response headers, and `docs/security.md` recording what is deliberately open (ab00bae).
+
 ## Blocked
 
 - Nothing external. AWS is ready: personal account, `openloop-dev` IAM user with AdministratorAccess, CLI configured on David's machine in `us-east-1`, Bedrock use-case form accepted, Claude Sonnet 4.6 answers. Google Cloud project not yet created (needed for the live-Gmail stretch, #20). The Vercel project exists.

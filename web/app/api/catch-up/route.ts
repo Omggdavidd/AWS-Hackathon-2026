@@ -1,11 +1,14 @@
 import { invokeCommand, scanConfigured } from '@/lib/agent'
 import { USER_ID } from '@/lib/ledger'
+import { isSameOrigin } from '@/lib/same-origin'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
 /** "Catch me up" (SPEC §8D): what changed since the user last asked, written from the ledger only. */
-export async function POST(): Promise<Response> {
+export async function POST(request: Request): Promise<Response> {
+  if (!isSameOrigin(request.headers, request.url))
+    return Response.json({ error: 'cross-origin' }, { status: 403 })
   if (!scanConfigured) return Response.json({ error: 'not configured' }, { status: 503 })
   try {
     return Response.json(await invokeCommand(USER_ID, { command: 'catch_up' }))
