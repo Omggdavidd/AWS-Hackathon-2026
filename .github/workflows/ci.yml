@@ -49,5 +49,10 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      # Catches what lint, typecheck and tests cannot: a route that fails to
+      # compile, a server/client boundary violation, a bad page export.
+      - run: pnpm --filter @openloop/web build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
 
   # Job names are referenced as required checks in the main branch ruleset; keep them stable.

@@ -12,7 +12,7 @@ Runnable locally: `pnpm --filter @openloop/web dev` renders the seeded ledger, a
 
 ## What works
 
-- Repository context system, CI (context check, secret scan, workspace checks), accepted architecture in ADRs 0003 to 0012, judge-facing `README.md` and the submission architecture diagram (`docs/architecture/`).
+- Repository context system, CI (context check, secret scan, workspace checks including a production build of the web app), accepted architecture in ADRs 0003 to 0012, judge-facing `README.md` and the submission architecture diagram (`docs/architecture/`).
 - `packages/shared`: schemas for OpenLoop, Evidence, ProposedAction, AuditEvent and the four agent outputs; state transitions; `LedgerStore` with `LocalLedgerStore` (memory or JSON file) and a shared contract suite; `IngestionSource` with `FixtureSource`.
 - `demo/seed-inbox.json` (15 messages, 3 events, 12 threads) and `demo/seed-ledger.json` (the 11 loops the agent should produce), both validated by tests.
 - `web/`: dashboard with a linked summary, readable title/source rows and aligned deadlines, compact closed-share ring, agent toolbar with first-scan progress, recent activity per responsibility and phone bottom tabs. White by default with a navy dark theme behind a persistent reveal toggle, highlighter strokes on the state headings, Inter for reading, and Resolved open on first load. Loop page in reading order: facts strip, what to do (next action, consequence, done button), evidence as quotes with source links, actions with the effects the agent produced, history with long reasoning folded; a live clock sits in the overview hero; approve/decline with pending state, "I already did this", activity feed, and a message page behind every source id let each claim be checked against the original mail or event. Runs on the local ledger seeded from the demo.
@@ -27,9 +27,9 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 |---|---|
 | Omggdavidd (hard + front end) | #19 Vercel deploy |
 | Ojulari123 (next hardest) | #14 failure paths, #16 scan speed, #29 demo reset script, #15 calibration |
-| tdare514 (medium) | nothing open; #30 shipped |
+| tdare514 (medium) | #38 CI builds web |
 | ab00bae (medium-easy) | #36 remind/ignore buttons, #39 notification banner |
-| AyomideAw (easiest) | #38 CI builds web, #22 demo script |
+| AyomideAw (easiest) | #22 demo script |
 | Unassigned, stretch only after must-ship | #20 live Gmail, #21 Google sinks, #31 command bar |
 
 One owner per issue and no issue waits on another. Every issue states why it matters for the submission.
