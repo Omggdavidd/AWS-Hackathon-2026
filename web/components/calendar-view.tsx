@@ -14,10 +14,20 @@ const WEEKS = 6
 
 /**
  * Deadlines on a grid: six weeks from the start of this week, one cell per day, each loop on the
- * day it is due. What falls after the grid, and what has no date, is listed underneath so nothing
- * disappears just because it is far off.
+ * day it is due. A day's number opens that day's agenda beside the grid. What falls after the
+ * grid, and what has no date, is listed underneath so nothing disappears just because it is far
+ * off.
  */
-export function CalendarView({ loops, now }: { loops: OpenLoop[]; now: Date }) {
+export function CalendarView({
+  loops,
+  now,
+  selected,
+}: {
+  loops: OpenLoop[]
+  now: Date
+  /** A day key, YYYY-MM-DD, whose agenda is open beside the grid. */
+  selected?: string
+}) {
   const today = dayKey(now)
   const [y, m, d] = today.split('-').map(Number)
   const first = new Date(Date.UTC(y, m - 1, d))
@@ -71,8 +81,14 @@ export function CalendarView({ loops, now }: { loops: OpenLoop[]; now: Date }) {
                     className="cal-day"
                     data-today={k === today || undefined}
                     data-past={k < today || undefined}
+                    data-selected={k === selected || undefined}
                   >
-                    <span className="cal-date">
+                    <Link
+                      href={`/calendar?day=${k}`}
+                      className="cal-date cal-date-link"
+                      scroll={false}
+                      aria-label={`Open ${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })}`}
+                    >
                       {firstOfMonth
                         ? date.toLocaleDateString('en-US', {
                             month: 'short',
@@ -80,7 +96,7 @@ export function CalendarView({ loops, now }: { loops: OpenLoop[]; now: Date }) {
                             timeZone: 'UTC',
                           })
                         : date.getUTCDate()}
-                    </span>
+                    </Link>
                     {items.map((loop) => (
                       <Link
                         key={loop.id}

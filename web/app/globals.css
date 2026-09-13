@@ -3466,3 +3466,74 @@ body:has(.welcome) .site-foot,
 .tl-empty-link {
   color: var(--accent);
 }
+
+/* Calendar agenda beside the grid */
+.cal-date-link {
+  display: inline-block;
+  border-radius: 6px;
+  padding: 1px 5px;
+  margin: -1px -5px;
+  text-decoration: none;
+  color: inherit;
+}
+.cal-date-link:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.cal-day[data-selected] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  border-radius: 6px;
+}
+.calendar-page .cal-grid {
+  table-layout: fixed;
+}
+.agenda-kicker {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.agenda h1 {
+  margin-top: 6px;
+  font-size: clamp(22px, 2.2vw, 28px);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.agenda-list {
+  margin-top: 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
+.agenda-item {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+}
+.agenda-item:first-child {
+  border-top: 0;
+}
+.agenda-main {
+  min-width: 0;
+}
+.agenda-title {
+  font-size: 15px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+.agenda-title:hover {
+  color: var(--accent);
+}
+.agenda-who {
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+@media (min-width: 1100px) {
+  .today[data-open].calendar-page {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  }
+}
