@@ -833,47 +833,99 @@ body::before {
   overflow: hidden;
 }
 .tl-row {
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  outline: none;
+  touch-action: pan-y;
+  transition:
+    box-shadow 160ms,
+    transform 160ms;
+}
+.tl-row:first-child {
+  border-top: 0;
+}
+.swipe-face {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr) 8.5rem auto;
   align-items: center;
   gap: 14px;
   padding: 12px 14px 12px 14px;
-  border-top: 1px solid var(--border);
-  outline: none;
+  background: var(--card);
   transition:
     background 120ms,
-    box-shadow 160ms,
-    transform 160ms;
+    transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.tl-row:hover {
-  position: relative;
-  z-index: 1;
-  transform: translateY(-1px);
-  box-shadow:
-    0 8px 20px -14px rgb(16 24 32 / 35%),
-    inset 3px 0 0 transparent;
+.tl-row[data-busy] .swipe-face {
+  opacity: 0.6;
 }
-.tl-row:first-child {
-  border-top: 0;
+.swipe-under {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-accent);
+  background: var(--surface);
+  transition: background 120ms;
+}
+.swipe-word {
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.tl-row[data-reveal="done"] .swipe-under {
+  background: color-mix(in srgb, var(--resolved) 55%, var(--card));
+}
+.tl-row[data-reveal="done"] .swipe-word[data-move="done"] {
+  opacity: 1;
+}
+.tl-row[data-reveal="snooze"] .swipe-under {
+  background: color-mix(in srgb, var(--waiting) 55%, var(--card));
+}
+.tl-row[data-reveal="snooze"] .swipe-word[data-move="snooze"] {
+  opacity: 1;
+}
+.tl-row[data-reveal="done"][data-armed] .swipe-under {
+  background: var(--resolved);
+}
+.tl-row[data-reveal="snooze"][data-armed] .swipe-under {
+  background: var(--waiting);
 }
 .tl-row:hover,
 .tl-row:focus-within,
 .tl-row:focus {
   background: color-mix(in srgb, var(--state-color) 5%, var(--card));
 }
+.tl-row:hover .swipe-face,
+.tl-row:focus-within .swipe-face,
+.tl-row:focus .swipe-face {
+  background: color-mix(in srgb, var(--state-color) 5%, var(--card));
+}
+.tl-row:hover {
+  z-index: 2;
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 20px -14px rgb(16 24 32 / 35%),
+    inset 3px 0 0 transparent;
+}
 .tl-row:focus,
 .tl-row[data-selected],
 .tl-row[data-soon] {
   box-shadow: inset 3px 0 0 var(--state-color);
+}
+.tl-row[data-selected] .swipe-face {
+  background: color-mix(in srgb, var(--state-color) 7%, var(--card));
 }
 .tl-row[data-selected]:hover,
 .tl-row[data-soon]:hover {
   box-shadow:
     0 8px 20px -14px rgb(16 24 32 / 35%),
     inset 3px 0 0 var(--state-color);
-}
-.tl-row[data-selected] {
-  background: color-mix(in srgb, var(--state-color) 7%, var(--card));
 }
 .tl-resolved .tl-row {
   opacity: 0.8;
@@ -964,15 +1016,14 @@ body::before {
   color: var(--attention);
   font-weight: 500;
 }
-.tl-end {
-  position: relative;
-  display: grid;
-  justify-items: end;
+.tl-chip {
+  display: inline-flex;
+  justify-content: flex-end;
   min-width: 6.5rem;
 }
 .tl-actions {
   position: absolute;
-  inset: 0;
+  inset: 0 14px 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -991,6 +1042,48 @@ body::before {
 .tl-row:focus-within .tl-chip,
 .tl-row:focus .tl-chip {
   opacity: 0;
+}
+.tl-action[data-move="done"]:not(:disabled):hover {
+  border-color: var(--resolved);
+  color: var(--resolved);
+}
+.tl-action[data-move="snooze"]:not(:disabled):hover {
+  border-color: var(--waiting);
+  color: var(--waiting);
+}
+.undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px 10px 16px;
+  border-radius: 10px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 14px;
+  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 40%);
+  transform: translateX(-50%);
+  animation: toast-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.undo-toast button {
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--background);
+  background: color-mix(in srgb, var(--background) 16%, transparent);
+}
+.undo-toast button:hover {
+  background: color-mix(in srgb, var(--background) 26%, transparent);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
 }
 .tl-action {
   min-height: 30px;
@@ -1139,12 +1232,17 @@ body::before {
   .view-hint {
     display: none;
   }
-  .tl-row {
+  .swipe-face {
     grid-template-columns: 30px minmax(0, 1fr);
     gap: 4px 10px;
   }
   .tl-row:hover {
     transform: none;
+  }
+  .undo-toast {
+    bottom: 96px;
+    width: calc(100vw - 32px);
+    justify-content: space-between;
   }
   .tl-due {
     grid-column: 2;
@@ -1152,13 +1250,10 @@ body::before {
     text-align: left;
     font-size: 12px;
   }
-  .tl-end {
-    grid-column: 2;
-    justify-items: start;
-    margin-top: 4px;
-  }
   .tl-actions {
     position: static;
+    grid-column: 2;
+    margin-top: 4px;
     opacity: 1;
     pointer-events: auto;
     justify-content: flex-start;
@@ -2818,7 +2913,7 @@ body:has(.welcome) .bottom-tabs {
 }
 
 /* Compact rows */
-:root[data-density="compact"] .tl-row {
+:root[data-density="compact"] .swipe-face {
   padding-block: 7px;
   gap: 10px;
 }

@@ -2,6 +2,8 @@ import type { OpenLoop } from '@openloop/shared'
 import Link from 'next/link'
 import { ActionIcon, AreaIcon } from '@/components/loop-mark'
 import { StatusChip } from '@/components/status-chip'
+import { SwipeRow } from '@/components/swipe-row'
+import { UndoToast } from '@/components/undo-toast'
 import {
   ACTION_LABEL,
   AREA_LABEL,
@@ -33,9 +35,10 @@ const EMPTY: Partial<Record<TimeBucket, string>> = {
 /**
  * The overview as every product in this category opens: a list grouped by time. Each row reads in
  * fixed columns: the area of life, the title and who it is from, when it is due, the state. A title
- * opens the loop in the pane beside the list (a sheet on a phone); nothing on a row closes or
- * approves anything, so a slip cannot do damage. Buckets with nothing in them are shown only where
- * their emptiness is itself the news (overdue, today, this week).
+ * opens the loop in the pane beside the list (a sheet on a phone). Done and Snooze are a swipe or
+ * a hover away, each with an Undo, so a slip is one click from repaired; Approve never is. Buckets
+ * with nothing in them are shown only where their emptiness is itself the news (overdue, today,
+ * this week).
  */
 export function TodayList({
   loops,
@@ -50,6 +53,7 @@ export function TodayList({
   return (
     <div className="today-list">
       <ListKeys />
+      <UndoToast />
       {TIME_ORDER.map((bucket) => {
         const items = groups.get(bucket) ?? []
         if (items.length === 0 && !EMPTY[bucket]) return null
@@ -126,14 +130,19 @@ function Row({
   const what = [verb, amount].filter(Boolean).join(' ')
   const verbIcon = !closed && owed ? loop.actionType : undefined
   return (
-    <li
+    <SwipeRow
+      loopId={loop.id}
+      status={loop.status}
+      closed={closed}
+      openHref={`/loops/${loop.id}`}
+      sourceHref={source ? messageHref(source.sourceId, loop.id) : undefined}
       className="tl-row"
       data-state={STATE_ID[loop.status]}
-      data-soon={soon || undefined}
+      data-soon={soon ? '' : undefined}
       data-loop-id={loop.id}
-      data-selected={selected || undefined}
-      aria-current={selected ? 'true' : undefined}
+      data-selected={selected ? '' : undefined}
       data-tour={first ? 'row' : undefined}
+      aria-current={selected ? 'true' : undefined}
     >
       <span className="tl-area" data-area={loop.area} title={AREA_LABEL[loop.area]}>
         <AreaIcon area={loop.area} />
@@ -153,21 +162,9 @@ function Row({
         </span>
       </div>
       <span className="tl-due">{due ?? ''}</span>
-      <div className="tl-end">
-        <span className="tl-chip">
-          <StatusChip status={loop.status} />
-        </span>
-        <div className="tl-actions">
-          <Link href={`/loops/${loop.id}`} className="tl-action">
-            Open
-          </Link>
-          {source && (
-            <Link href={messageHref(source.sourceId, loop.id)} className="tl-action">
-              Source
-            </Link>
-          )}
-        </div>
-      </div>
-    </li>
+      <span className="tl-chip">
+        <StatusChip status={loop.status} />
+      </span>
+    </SwipeRow>
   )
 }
