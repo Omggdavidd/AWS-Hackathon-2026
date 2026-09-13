@@ -1,11 +1,13 @@
 import type { OpenLoop } from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
 import {
+  confidenceSentence,
   daysUntil,
   formatDate,
   formatDue,
   groupByStatus,
   groupByTime,
+  humanize,
   sortLoops,
   summarize,
   summaryParts,
@@ -105,5 +107,27 @@ describe('groupByTime', () => {
   it('counts whole days across the demo zone midnight', () => {
     expect(daysUntil('2026-09-11T03:00:00Z', new Date('2026-09-10T12:00:00Z'))).toBe(0)
     expect(daysUntil('2026-09-11T05:00:00Z', new Date('2026-09-10T12:00:00Z'))).toBe(1)
+  })
+})
+
+describe('humanize', () => {
+  it('drops thread and message ids and keeps the sentence readable', () => {
+    expect(humanize('Reply to thread thr-insurance with the certificate attached')).toBe(
+      'Reply to the thread with the certificate attached',
+    )
+    expect(humanize('Reply to Maple Court PM (thr-insurance) by September 12')).toBe(
+      'Reply to Maple Court PM by September 12',
+    )
+    expect(humanize('Pay $200 at the Student Accounts portal')).toBe(
+      'Pay $200 at the Student Accounts portal',
+    )
+  })
+})
+
+describe('confidenceSentence', () => {
+  it('reads as a sentence with the figure at the end', () => {
+    expect(confidenceSentence(0.97, false)).toBe('Sure this is still open (97%)')
+    expect(confidenceSentence(0.7, true)).toBe('Fairly sure this is done (70%)')
+    expect(confidenceSentence(0.4, false)).toBe('Not sure this is still open (40%)')
   })
 })

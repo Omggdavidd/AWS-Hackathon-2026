@@ -6,7 +6,15 @@ import { ActionEffect } from '@/components/action-effect'
 import { StatusChip } from '@/components/status-chip'
 import { SubmitButton } from '@/components/submit-button'
 import { parseEffect, STATUS_TEXT, terminalReason } from '@/lib/effects'
-import { AREA_LABEL, formatDate, formatDue, formatMoney, formatPercent } from '@/lib/format'
+import {
+  AREA_LABEL,
+  confidenceSentence,
+  formatDate,
+  formatDue,
+  formatMoney,
+  formatPercent,
+  humanize,
+} from '@/lib/format'
 import { getStore, USER_ID } from '@/lib/ledger'
 import { hasSourcePage, messageHref, SOURCE_LABEL } from '@/lib/source'
 
@@ -65,12 +73,10 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
     ...(loop.remindAt && !resolved
       ? [{ label: 'Reminder', value: formatDate(loop.remindAt, now) }]
       : []),
-    {
-      label: 'Confidence',
-      value: `${formatPercent(loop.confidence)} ${resolved ? 'done' : 'still open'}`,
-    },
   ]
   const proposed = actions.filter((a) => a.status === 'PROPOSED')
+  const [lead, ...otherPending] = proposed
+  const settled = actions.filter((a) => a.status !== 'PROPOSED')
 
   return (
     <article className="loop-page" data-mode={mode}>
@@ -82,6 +88,7 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
       <header className="loop-header">
         <StatusChip status={loop.status} />
         <h1>{loop.title}</h1>
+        <p className="loop-confidence">{confidenceSentence(loop.confidence, resolved)}</p>
         <dl className="loop-facts">
           {facts.map((fact) => (
             <div key={fact.label} data-soon={fact.soon || undefined}>
@@ -93,7 +100,7 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
       </header>
 
       <section className="loop-section loop-next" aria-labelledby="next-heading">
-        <h2 id="next-heading">{resolved ? 'Closed' : 'What to do'}</h2>
+        <h2 id="next-heading">{resolved ? 'Closed' : 'Your move'}</h2>
         {resolved ? (
           <p className="next-action">
             {loop.resolvedAt
@@ -102,23 +109,43 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
           </p>
         ) : (
           <>
-            <p className="next-action">{loop.nextAction ?? 'No next step recorded yet.'}</p>
+            <p className="next-action">
+              {loop.nextAction ? humanize(loop.nextAction) : 'No next step recorded yet.'}
+            </p>
             {loop.consequence && (
               <p className="consequence">
                 <span className="consequence-label">If ignored</span>
-                {loop.consequence}
+                {humanize(loop.consequence)}
               </p>
             )}
-            {proposed.length > 0 && (
-              <p className="pending-note">
-                {proposed.length === 1
-                  ? 'The agent has one action waiting for your decision below.'
-                  : `The agent has ${proposed.length} actions waiting for your decision below.`}
-              </p>
+            {lead && (
+              <div className="loop-offer" data-risk={lead.riskTier}>
+                <div>
+                  <p className="loop-offer-kicker">
+                    {lead.requiresApproval || lead.riskTier === 'high'
+                      ? 'Your agent can do this, with your say-so'
+                      : 'Your agent can do this'}
+                  </p>
+                  <p className="loop-offer-summary">{lead.summary}</p>
+                  {otherPending.length > 0 && (
+                    <p className="loop-offer-more">
+                      and {otherPending.length} more waiting on the{' '}
+                      <Link href="/decisions" className="loop-offer-link">
+                        Decisions page
+                      </Link>
+                    </p>
+                  )}
+                </div>
+                <Link href={`/decisions?action=${lead.id}`} className="decision-review">
+                  Review
+                </Link>
+              </div>
             )}
             <div className="loop-buttons">
               <form action={markDone.bind(null, loop.id)}>
-                <SubmitButton pendingLabel="Saving…">I already did this</SubmitButton>
+                <SubmitButton pendingLabel="Saving…" subtle>
+                  I already did this
+                </SubmitButton>
               </form>
               <form action={remindTomorrow.bind(null, loop.id)}>
                 <SubmitButton pendingLabel="Saving…" subtle>
@@ -161,11 +188,11 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
         </p>
       </section>
 
-      {actions.length > 0 && (
+      {settled.length > 0 && (
         <section className="loop-section" aria-labelledby="actions-heading">
           <h2 id="actions-heading">What the agent did</h2>
           <ul className="action-list">
-            {actions.map((action) => {
+            {settled.map((action) => {
               const effect = parseEffect(action)
               const reason = terminalReason(action, audit)
               const pending = action.status === 'PROPOSED'

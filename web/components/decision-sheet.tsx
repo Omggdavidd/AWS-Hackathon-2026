@@ -3,7 +3,7 @@ import { ActionEffect } from '@/components/action-effect'
 import { DecisionButtons } from '@/components/decision-buttons'
 import { describeProposal, needsDecision } from '@/lib/decisions'
 import { parseEffect, STATUS_TEXT, terminalReason } from '@/lib/effects'
-import { formatDate, formatDue, formatMoney } from '@/lib/format'
+import { formatDate, formatDue, formatMoney, humanize } from '@/lib/format'
 import { getStore, USER_ID } from '@/lib/ledger'
 import { hasSourcePage, messageHref } from '@/lib/source'
 
@@ -44,7 +44,7 @@ export async function DecisionSheet({ actionId }: { actionId: string }) {
               {loop.title}
             </Link>
             {due ? `, ${due.charAt(0).toLowerCase()}${due.slice(1)}` : ''}
-            {loop.consequence ? `. If ignored: ${loop.consequence}` : ''}
+            {loop.consequence ? `. If ignored: ${humanize(loop.consequence)}` : ''}
           </p>
         )}
       </header>
