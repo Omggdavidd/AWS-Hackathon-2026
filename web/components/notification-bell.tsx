@@ -5,6 +5,16 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Notice } from '@/lib/notifications'
 
+/** The chip on each line: the kind in words, coloured by the state palette so the list scans by colour. */
+const KIND: Record<Notice['kind'], { label: string; state: string }> = {
+  new: { label: 'New', state: 'new' },
+  needs_you: { label: 'Needs you', state: 'needs-you' },
+  resolved: { label: 'Done', state: 'resolved' },
+  handled: { label: 'Handled', state: 'handled' },
+  waiting: { label: 'Waiting', state: 'waiting' },
+  watching: { label: 'Watching', state: 'watching' },
+}
+
 /**
  * The notification centre (SPEC §8H). It says what changed, never how much mail arrived, and every
  * line opens the responsibility it is about.
@@ -143,11 +153,15 @@ export function NotificationBell({
             <ul className="notice-list">
               {notices.map((notice) => (
                 <li key={notice.id} data-unread={notice.unread || undefined}>
-                  <Link href={`/loops/${notice.loopId}`} onClick={close}>
-                    <span className="notice-state" data-state={notice.kind} aria-hidden="true" />
-                    <span className="notice-text">
-                      <strong>{notice.title}</strong> {notice.text}
+                  <Link
+                    href={`/loops/${notice.loopId}`}
+                    onClick={close}
+                    title={`${notice.title} ${notice.text}`}
+                  >
+                    <span className="notice-kind" data-state={KIND[notice.kind].state}>
+                      {KIND[notice.kind].label}
                     </span>
+                    <span className="notice-title">{notice.title}</span>
                   </Link>
                 </li>
               ))}
