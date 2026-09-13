@@ -106,6 +106,26 @@ describe('buildNotices', () => {
     expect(feed.unread).toBe(5)
   })
 
+  it('marks a flagged loop as worth interrupting for, and an ordinary one as not', () => {
+    const urgent = loop({ id: 'loop-deposit', status: 'NEEDS_YOU', interruptUser: true })
+    const quiet = loop({ id: 'loop-streaming', status: 'NEEDS_YOU', interruptUser: false })
+    const feed = buildNotices(
+      [
+        event('state_changed', 'loop-deposit', newest),
+        event('state_changed', 'loop-streaming', oldest),
+      ],
+      [urgent, quiet],
+    )
+    expect(feed.notices.map((n) => n.interrupts)).toEqual([true, false])
+  })
+
+  it('goes quiet once a flagged loop is resolved, because good news is not an interruption', () => {
+    const done = loop({ id: 'loop-deposit', status: 'RESOLVED', interruptUser: true })
+    const feed = buildNotices([event('state_changed', 'loop-deposit', newest)], [done])
+    expect(feed.notices[0]?.kind).toBe('resolved')
+    expect(feed.notices[0]?.interrupts).toBe(false)
+  })
+
   it('prefers "is done" over "was handled" once the loop is closed', () => {
     const feed = buildNotices([event('action_executed', 'loop-housing', newest)], [housing])
     expect(lines(feed.notices)).toEqual(['Housing fee is done.'])

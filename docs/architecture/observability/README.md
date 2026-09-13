@@ -15,7 +15,7 @@ Emitted by `agent/app/OpenLoopAgent/src/log.ts`, wired in `main.ts` (the Runtime
 | `scan_started` | once per scan | `messages`, `threads` |
 | `thread_started` | per thread | `threadId`, `messages` |
 | `role` | per specialist call | `role` (extract, investigate, judge, update, plan), `threadId`, `ms` |
-| `loop_created` | a thread became a loop | `threadId`, `loopId`, `status`, `priority`, `riskLevel`, `actions`, `ms` |
+| `loop_created` | a thread became a loop | `threadId`, `loopId`, `status`, `priority`, `riskLevel`, `interruptUser`, `actions`, `ms` |
 | `loop_updated` | delta path moved a loop | `threadId`, `loopId`, `from`, `to`, `ms` |
 | `thread_skipped` | no loop from this thread | `threadId`, `reason`, `ms` |
 | `scan_completed` | once per scan | `threads`, `created`, `updated`, `skipped`, `byStatus`, `ms` |

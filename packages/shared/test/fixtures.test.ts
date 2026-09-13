@@ -79,6 +79,15 @@ describe('demo expected ledger', () => {
     expect(loops).toHaveLength(11)
     // Every seeded loop names its area so the board's By area view shows the full picture.
     for (const l of loops) expect(l.area, l.id).not.toBe('other')
+    // Interrupting is reserved for a decision the user owes now, so the demo shows a rare, earned
+    // shoulder tap rather than a notification per loop.
+    const interrupting = loops.filter((l: { interruptUser: boolean }) => l.interruptUser)
+    expect(interrupting.length).toBeGreaterThan(0)
+    expect(interrupting.length).toBeLessThan(loops.length / 2)
+    for (const l of interrupting) {
+      expect(l.status, l.id).toBe('NEEDS_YOU')
+      expect(['critical', 'high'], l.id).toContain(l.priority)
+    }
     for (const l of loops)
       for (const r of l.sourceRefs) expect(known.has(r.sourceId), r.sourceId).toBe(true)
     for (const e of evidence) expect(loopIds.has(e.loopId), e.loopId).toBe(true)

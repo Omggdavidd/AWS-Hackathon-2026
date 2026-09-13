@@ -72,6 +72,13 @@ export const OpenLoop = z.object({
   consequence: z.string().max(200).optional(),
   riskLevel: RiskTier.default('low'),
   priority: Priority.default('medium'),
+  /**
+   * Whether this loop is worth interrupting the user for, as opposed to waiting to be found. The
+   * Risk Judge decides it per loop (SPEC 1: interrupt only when a real decision is required); the
+   * web app gates the browser notification on it. Records written before it existed default to
+   * false, so an old loop can never tap someone on the shoulder retroactively.
+   */
+  interruptUser: z.boolean().default(false),
   confidence: Confidence,
   nextAction: z.string().max(200).optional(),
   waitingOn: z.string().max(120).optional(),

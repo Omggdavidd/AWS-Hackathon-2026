@@ -112,6 +112,9 @@ describe('runScan', () => {
 
     const deposit = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))
     expect(deposit?.priority).toBe('critical')
+    // The Risk Judge's interrupt decision reaches the ledger; the web app gates its notification on it.
+    expect(deposit?.interruptUser).toBe(true)
+    expect(issue?.interruptUser).toBe(false)
     const actions = await store.listActions('u', { loopId: deposit?.id ?? '' })
     expect(actions).toHaveLength(1)
     expect(actions[0]).toMatchObject({
