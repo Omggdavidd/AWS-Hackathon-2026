@@ -23,14 +23,14 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 - [x] Public GitHub repository
 - [x] MIT or Apache license file visible on the repo page
 - [x] README with setup instructions sufficient to run the project from a clean machine
-- [ ] All source code, assets and demo data needed to run
+- [x] All source code, assets and demo data needed to run (verified 2026-09-14: the 60-second path in `README.md` needs only the repo; `demo/` carries the inbox, the delta batch and the expected ledger, all asserted by tests)
 - [x] Architecture diagram (`docs/architecture/openloop-architecture.png`, source SVG beside it)
-- [ ] Text description of features and functionality (paste-ready copy in `DEVPOST.md`)
+- [x] Text description of features and functionality (paste-ready copy in `DEVPOST.md`, 751 words: tagline, inspiration, what it does, who it is for, how we built it, challenges, what is next, links)
 - [ ] Demo video, 5 minutes maximum, showing the working project, hosted public on YouTube or Vimeo, visibility verified
 - [ ] Pitch in the video covers the problem, who it is for and why it matters
-- [ ] Testing access or instructions; credentials if any site is private
-- [ ] Project uses Strands Agents meaningfully and runs on AWS
-- [ ] No secrets or credentials anywhere in the repo history
+- [x] Testing access or instructions; credentials if any site is private (the deployed app is public and needs none; `README.md` carries both the no-AWS local run and the full setup)
+- [x] Project uses Strands Agents meaningfully and runs on AWS (verified 2026-09-14: `@strands-agents/sdk` across five files — seven specialist roles as structured-output Agents and four custom tools; deployed to AgentCore Runtime `AgentCore-OpenLoop-default` in `us-east-1` on Bedrock)
+- [x] No secrets or credentials anywhere in the repo history (audited 2026-09-14 across all 235 commits: no AWS access keys, private keys or tokens, and no `.env`, `.pem`, `.key` or credentials file was ever added — only `.env.example`. `gitleaks` also runs on every push and pull request)
 - [x] Disclosure of any pre-existing code incorporated (`README.md` *Originality*)
 
 ## Optional boosters
