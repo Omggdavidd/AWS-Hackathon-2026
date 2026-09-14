@@ -65,6 +65,7 @@ Checked and clean:
 - **`/messages/[id]`** serves only the bundled demo fixtures and 404s on an unknown id, so it cannot be walked into arbitrary content.
 - **Cookies** (`openloops-theme`, `openloops-seen`) hold a theme name and a timestamp, are `SameSite=Lax`, and carry nothing sensitive. Neither is a session.
 - **High-risk actions** cannot execute without `APPROVED`, enforced in `mayExecute` and covered by tests. Note the scope of that claim: it stops the *agent* acting unilaterally. It does not stop a person who can reach the UI from clicking Approve, because there is no auth — see the first section.
+- **Sending mail, paying and submitting a form never execute unattended**, whatever risk tier they carry, along with the catch-all `other`. The tier is assigned by the Risk Judge, so it is model output; resting the guarantee on the tier alone meant a `pay` the model rated `low` was auto-executable (#163). The type is now checked before the tier in `isAutoExecutable`, and a test pins each of those four types at all three tiers. Approval still executes them — this is a gate, not a ban.
 
 ## If something does go wrong
 

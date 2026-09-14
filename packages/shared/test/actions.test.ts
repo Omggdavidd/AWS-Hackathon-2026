@@ -24,6 +24,38 @@ describe('action policy (ADR-0005)', () => {
     ).toBe(false)
   })
 
+  // The Risk Judge assigns the tier, so the tier is model output. These four types must not be
+  // reachable without a person no matter what it assigns (#163): a `pay` rated `low` used to
+  // auto-execute, because the low branch returned before the type was ever looked at.
+  it.each(['send_email', 'pay', 'submit_form', 'other'] as const)(
+    'never auto-executes %s, at any tier',
+    (type) => {
+      for (const riskTier of ['low', 'medium', 'high'] as const) {
+        expect(isAutoExecutable({ ...base, type, riskTier })).toBe(false)
+        expect(mayExecute({ ...base, type, riskTier })).toMatchObject({ ok: false })
+      }
+    },
+  )
+
+  it('still auto-executes the preparing effects the demo relies on', () => {
+    expect(isAutoExecutable({ ...base, riskTier: 'low', type: 'follow_up' })).toBe(true)
+    expect(isAutoExecutable({ ...base, riskTier: 'low', type: 'create_calendar_event' })).toBe(true)
+    expect(isAutoExecutable({ ...base, riskTier: 'low', type: 'remind' })).toBe(true)
+    expect(isAutoExecutable({ ...base, riskTier: 'medium', type: 'draft_email' })).toBe(true)
+  })
+
+  it('an approved high-risk action still executes, so the gate is approval and not a ban', () => {
+    expect(
+      mayExecute({
+        ...base,
+        type: 'pay',
+        riskTier: 'high',
+        requiresApproval: true,
+        status: 'APPROVED',
+      }),
+    ).toEqual({ ok: true })
+  })
+
   it('gates execution on approval for high risk and on status for the rest', () => {
     expect(mayExecute(base)).toEqual({ ok: true })
     expect(
