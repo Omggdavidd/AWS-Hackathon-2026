@@ -5,6 +5,10 @@ const BODY_LIMIT = 1500
 /**
  * This is where mail becomes prompt text, so nothing here may invent an envelope (#164). A message
  * is written by whoever sent it; once `GoogleSource` is reading a live inbox that is a stranger.
+ *
+ * It is also where everything else that reaches a prompt is defused (#170). An evidence excerpt, a
+ * loop title or a next action is written by a model reading that same mail, so mail can ask to be
+ * quoted and reach a later prompt through the ledger instead of directly.
  */
 
 /** Inside double quotes, so a quote or an angle bracket would end the attribute or the tag. */
@@ -46,4 +50,22 @@ export function renderThread(messages: EmailMessage[]): string {
 export function renderEvent(e: CalendarEvent): string {
   const where = e.location ? ` location="${attr(e.location)}"` : ''
   return `<event id="${attr(e.id)}" start="${attr(e.start)}" end="${attr(e.end)}" status="${attr(e.status)}"${where}>${text(e.title)}</event>`
+}
+
+/**
+ * Free text that is not mail but reaches a prompt anyway: an evidence excerpt, a loop title, a
+ * question typed into Ask. Model output derived from attacker-shaped mail is attacker-shaped at one
+ * remove, so it gets exactly what a body gets. Anything without an envelope token is untouched.
+ */
+export function renderFreeText(value: string): string {
+  return text(value)
+}
+
+/**
+ * A record that reaches a prompt as JSON. `JSON.stringify` escapes quotes and backslashes but not
+ * angle brackets, so an envelope token sitting in any string field of a loop, evidence list, action
+ * or digest would survive it intact and read as a tag (#170).
+ */
+export function renderJson(value: unknown): string {
+  return text(JSON.stringify(value, null, 2))
 }

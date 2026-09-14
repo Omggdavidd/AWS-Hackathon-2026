@@ -1,8 +1,14 @@
 import type { LedgerStore } from '@openloop/shared'
 import { tool } from '@strands-agents/sdk'
 import { z } from 'zod'
+import { renderFreeText } from '../render'
 
-/** Read-only view of the ledger for agents that need to know what is already tracked (ADR-0004). */
+/**
+ * Read-only view of the ledger for agents that need to know what is already tracked (ADR-0004).
+ *
+ * A tool result re-enters the model's context like any other prompt text, and a title or an excerpt
+ * is model output written from mail, so both are defused here too (#170).
+ */
 export function ledgerTools(store: LedgerStore, userId: string) {
   const findOpenLoops = tool({
     name: 'find_open_loops',
@@ -17,7 +23,7 @@ export function ledgerTools(store: LedgerStore, userId: string) {
       return loops
         .map(
           (l) =>
-            `${l.id} [${l.status}] ${l.title}${l.dueAt ? ` due ${l.dueAt}` : ''} sources=${l.sourceRefs.map((r) => r.sourceId).join(',')}`,
+            `${l.id} [${l.status}] ${renderFreeText(l.title)}${l.dueAt ? ` due ${l.dueAt}` : ''} sources=${l.sourceRefs.map((r) => r.sourceId).join(',')}`,
         )
         .join('\n')
     },
@@ -38,14 +44,14 @@ export function loopEvidenceTool(store: LedgerStore, userId: string) {
     callback: async ({ loopId }) => {
       const loop = await store.getLoop(userId, loopId)
       if (!loop) return 'No such loop.'
-      const head = `${loop.id} [${loop.status}] ${loop.title}${loop.nextAction ? ` next=${loop.nextAction}` : ''}`
+      const head = `${loop.id} [${loop.status}] ${renderFreeText(loop.title)}${loop.nextAction ? ` next=${renderFreeText(loop.nextAction)}` : ''}`
       const evidence = await store.listEvidence(loopId)
       if (evidence.length === 0) return `${head}\nNo evidence recorded.`
       return [
         head,
         ...evidence.map(
           (e) =>
-            `${e.observedAt} ${e.sourceId} (${e.supports}, confidence ${e.confidence}): ${e.excerpt}`,
+            `${e.observedAt} ${e.sourceId} (${e.supports}, confidence ${e.confidence}): ${renderFreeText(e.excerpt)}`,
         ),
       ].join('\n')
     },
