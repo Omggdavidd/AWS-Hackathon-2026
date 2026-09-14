@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import {
   FixtureSource,
   type InvestigatorOutput,
+  type LedgerStore,
   LocalLedgerStore,
   OpenLoop,
 } from '@openloop/shared'
@@ -129,6 +130,24 @@ function cite(
     excerpt: `stub excerpt for ${sourceId}`,
     supports,
     confidence: 0.9,
+  }
+}
+
+/** The local ledger with one write replaced, so a thread can be made to die partway through. */
+function ledgerThatFails(store: LocalLedgerStore, at: Partial<LedgerStore>): LedgerStore {
+  return {
+    getLoop: (u, id) => store.getLoop(u, id),
+    putLoop: (l) => store.putLoop(l),
+    listLoops: (u, f) => store.listLoops(u, f),
+    findLoopsBySource: (u, id) => store.findLoopsBySource(u, id),
+    appendEvidence: (e) => store.appendEvidence(e),
+    listEvidence: (id) => store.listEvidence(id),
+    putAction: (a) => store.putAction(a),
+    getAction: (u, id) => store.getAction(u, id),
+    listActions: (u, f) => store.listActions(u, f),
+    appendAudit: (e) => store.appendAudit(e),
+    listAudit: (u, o) => store.listAudit(u, o),
+    ...at,
   }
 }
 
@@ -489,6 +508,111 @@ describe('runScan', () => {
       threadId: 'thr-deposit',
       error: 'stub: the model refused',
     })
+  })
+
+  it('publishes no loop for a thread that dies while writing one', async () => {
+    const inner = new LocalLedgerStore()
+    const events: ScanEvent[] = []
+    const store = ledgerThatFails(inner, {
+      async appendEvidence(evidence) {
+        if (evidence.threadId === 'thr-deposit') throw new Error('stub: the ledger refused')
+        return inner.appendEvidence(evidence)
+      },
+    })
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 3,
+      onEvent: (e) => events.push(e),
+    })
+
+    expect(summary).toMatchObject({ threads: 12, created: 10, skipped: 1, failed: 1 })
+
+    // The row is written after the records it hangs from, so the failed thread left nothing behind.
+    const loops = await inner.listLoops('u')
+    expect(loops).toHaveLength(10)
+    expect(loops.some((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))).toBe(false)
+    expect(summary.created).toBe(loops.length)
+
+    // No loop a person can open has an empty evidence panel or an empty history.
+    for (const loop of loops) {
+      expect((await inner.listEvidence(loop.id)).length).toBeGreaterThan(0)
+      expect(await inner.listAudit('u', { loopId: loop.id })).not.toHaveLength(0)
+    }
+
+    const audit = await inner.listAudit('u')
+    expect(audit.find((a) => a.kind === 'scan_completed')).toMatchObject({
+      details: { created: 10, failed: 1 },
+    })
+    expect(events.at(-1)).toMatchObject({ type: 'done' })
+  })
+
+  it('counts a loop that reached the ledger before its thread failed, and says so in its history', async () => {
+    const inner = new LocalLedgerStore()
+    const store = ledgerThatFails(inner, {
+      async putAction() {
+        throw new Error('stub: the ledger refused')
+      },
+    })
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 3,
+    })
+
+    // Only the deposit thread proposes an action, and it failed after its row was already visible.
+    expect(summary).toMatchObject({ threads: 12, created: 11, skipped: 1, failed: 1 })
+    const loops = await inner.listLoops('u')
+    expect(loops).toHaveLength(11)
+    expect(summary.created).toBe(loops.length)
+
+    const deposit = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))
+    expect((await inner.listEvidence(deposit?.id ?? '')).length).toBeGreaterThan(0)
+    expect(await inner.listActions('u', { loopId: deposit?.id ?? '' })).toHaveLength(0)
+    const reasons = (await inner.listAudit('u', { loopId: deposit?.id ?? '' })).map((a) => a.reason)
+    expect(reasons.some((r) => r.includes('failed after the loop was opened'))).toBe(true)
+  })
+
+  it('gives a thread its own resolved loop rather than one it only cited', async () => {
+    const store = new LocalLedgerStore()
+    // Both are RESOLVED and both are claimed by thr-housing: one carries the thread, the other was
+    // opened elsewhere from a message this thread also contains. Query order puts the cited one
+    // first, so only the stated precedence keeps the thread's mail on the thread's own loop.
+    const resolved = (id: string, refs: OpenLoop['sourceRefs']) =>
+      OpenLoop.parse({
+        id,
+        userId: 'u',
+        title: id,
+        category: 'other',
+        status: 'RESOLVED',
+        confidence: 0.9,
+        sourceRefs: refs,
+        createdAt: now,
+        updatedAt: now,
+        resolvedAt: now,
+      })
+    await store.putLoop(resolved('loop-cited', [{ sourceType: 'email', sourceId: 'msg-002' }]))
+    await store.putLoop(
+      resolved('loop-own', [{ sourceType: 'email', sourceId: 'msg-003', threadId: 'thr-housing' }]),
+    )
+
+    await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: { ...stubs, extract: onlyThread('thr-none') },
+      now: '2026-09-11T13:00:00.000Z',
+    })
+
+    expect((await store.listEvidence('loop-own')).map((e) => e.sourceId)).toEqual(['msg-002'])
+    expect(await store.listEvidence('loop-cited')).toHaveLength(0)
+    expect(await store.listLoops('u')).toHaveLength(2)
   })
 })
 
