@@ -78,6 +78,14 @@ describe('the origin guard on the actions that spend or reset', () => {
 })
 
 describe('the ledger a deployment gets', () => {
+  // These are about which ledger a deployment opens, not the guard, so every call comes from the app.
+  beforeEach(() => {
+    requestHeaders = new Headers({
+      origin: 'https://openloop-neon.vercel.app',
+      host: 'openloop-neon.vercel.app',
+    })
+  })
+
   it('refuses to serve demo data in production with no table', async () => {
     const { actions } = await load({ VERCEL_ENV: 'production' })
     await expect(actions.markDone('loop-deposit')).rejects.toThrow(
