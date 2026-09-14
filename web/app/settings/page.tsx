@@ -16,7 +16,7 @@ import {
 } from '@/lib/appearance'
 import { LEDGER_TABLE } from '@/lib/ledger'
 import { EMAIL_MAX, PURPOSES, purposeLabel, readProfile } from '@/lib/profile'
-import { readRuntimeMode } from '@/lib/runtime-lock'
+import { lockConfigured, readRuntimeMode } from '@/lib/runtime-lock'
 
 export const dynamic = 'force-dynamic'
 
@@ -184,7 +184,7 @@ export default async function SettingsPage() {
 
       <section className="setting-section" aria-labelledby="s-runtime">
         <h2 id="s-runtime">Runtime</h2>
-        <RuntimeLockControl mode={runtimeMode} />
+        <RuntimeLockControl mode={runtimeMode} configured={lockConfigured} />
       </section>
 
       <section className="setting-section" aria-labelledby="s-demo">

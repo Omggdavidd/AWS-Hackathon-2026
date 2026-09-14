@@ -20,7 +20,12 @@ import {
 } from '@/lib/profile'
 import { resolveLoopByUser } from '@/lib/resolve'
 import { restoreLoopByUser } from '@/lib/restore'
-import { readRuntimeMode, writeRuntimeMode } from '@/lib/runtime-lock'
+import {
+  lockConfigured,
+  readRuntimeMode,
+  requireRuntimeOpen,
+  writeRuntimeMode,
+} from '@/lib/runtime-lock'
 import { isSameOrigin } from '@/lib/same-origin'
 
 /**
@@ -83,7 +88,9 @@ export async function ignoreLoop(loopId: string): Promise<void> {
  */
 export async function approveAction(actionId: string): Promise<void> {
   await requireSameOrigin()
-  // Before the record moves, so a refusal leaves the approval to be made again rather than half done.
+  // Both before the record moves, so a refusal leaves the approval to be made again rather than half
+  // done. The pause comes first: a refused approval should not spend the day's allowance.
+  await requireRuntimeOpen()
   if (scanConfigured && !(await withinDailyCeiling())) throw new Error(CEILING_MESSAGE)
   const store = await getStore()
   const action = await store.getAction(USER_ID, actionId)
@@ -206,9 +213,12 @@ export async function resetDemo(): Promise<string> {
 /**
  * Anyone may make the deployment stricter. Re-enabling model calls requires the server-held key;
  * hashing both values before timingSafeEqual keeps length and contents out of the comparison path.
+ * With no key on the server nothing could resume, so nothing may pause either: the control is inert
+ * until the deployment sets one, and a public URL cannot be wedged.
  */
 export async function setRuntimeMode(form: FormData): Promise<void> {
   await requireSameOrigin()
+  if (!lockConfigured) return
   const requested = form.get('mode')
   if (requested !== 'open' && requested !== 'demo' && requested !== 'locked') return
 

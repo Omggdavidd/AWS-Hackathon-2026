@@ -7,7 +7,18 @@ const LABEL: Record<RuntimeMode, string> = {
   locked: 'Locked',
 }
 
-export function RuntimeLockControl({ mode }: { mode: RuntimeMode }) {
+/**
+ * `configured` is the unlock key's presence on the server. Without one, pausing would be a one-way
+ * door on a public URL, so every control here is disabled and the action ignores the request too.
+ */
+export function RuntimeLockControl({
+  mode,
+  configured,
+}: {
+  mode: RuntimeMode
+  configured: boolean
+}) {
+  const unavailable = configured ? undefined : 'Available when the unlock key is set'
   return (
     <div className="setting-stack">
       <div className="setting-row">
@@ -25,14 +36,20 @@ export function RuntimeLockControl({ mode }: { mode: RuntimeMode }) {
         <div>
           <p className="setting-name">Pause</p>
           <p className="setting-hint">
-            Either pause is safe to press publicly. Locked names an incident; Demo names judging or
-            recording. Both stop model calls at the runtime.
+            {configured
+              ? 'Either pause is safe to press publicly. Locked names an incident; Demo names judging or recording. Both stop model calls at the runtime.'
+              : 'Set OPENLOOP_UNLOCK_KEY in the deployment to use these. Until then nothing here can pause the agent, because nothing here could resume it.'}
           </p>
         </div>
         <div className="setting-inline">
           <form action={setRuntimeMode}>
             <input type="hidden" name="mode" value="demo" />
-            <button className="setting-button" type="submit" disabled={mode === 'demo'}>
+            <button
+              className="setting-button"
+              type="submit"
+              disabled={!configured || mode === 'demo'}
+              title={unavailable}
+            >
               Demo
             </button>
           </form>
@@ -42,7 +59,8 @@ export function RuntimeLockControl({ mode }: { mode: RuntimeMode }) {
               className="setting-button"
               data-danger
               type="submit"
-              disabled={mode === 'locked'}
+              disabled={!configured || mode === 'locked'}
+              title={unavailable}
             >
               Lock
             </button>
@@ -56,7 +74,9 @@ export function RuntimeLockControl({ mode }: { mode: RuntimeMode }) {
             Resume
           </label>
           <p className="setting-hint">
-            The unlock key is compared on the server and is never stored in the browser or ledger.
+            {configured
+              ? 'The unlock key is compared on the server and is never stored in the browser or ledger.'
+              : 'With no key on the server there is nothing to compare, so Resume is off as well.'}
           </p>
         </div>
         <div className="setting-inline">
@@ -67,9 +87,15 @@ export function RuntimeLockControl({ mode }: { mode: RuntimeMode }) {
             type="password"
             autoComplete="off"
             placeholder="Unlock key"
+            disabled={!configured}
             required
           />
-          <button className="setting-button" type="submit" disabled={mode === 'open'}>
+          <button
+            className="setting-button"
+            type="submit"
+            disabled={!configured || mode === 'open'}
+            title={unavailable}
+          >
             Resume
           </button>
         </div>

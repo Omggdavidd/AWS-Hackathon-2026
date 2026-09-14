@@ -93,11 +93,26 @@ export function clearRuntimeModeCache(tableName?: string): void {
   for (const key of cache.keys()) if (key.startsWith(`${tableName}\0`)) cache.delete(key)
 }
 
-function getClient(): DynamoDBClient {
-  sharedClient ??= new DynamoDBClient({
-    region: process.env.AWS_REGION ?? 'us-east-1',
+/**
+ * A client for the config row alone. Callers that already know their region or run against a local
+ * endpoint (the reset script) build their own; everything else shares the module's.
+ */
+export function createLockClient({
+  region,
+  endpoint,
+}: {
+  region?: string
+  endpoint?: string
+} = {}): DynamoDBClient {
+  return new DynamoDBClient({
+    region: region ?? process.env.AWS_REGION ?? 'us-east-1',
+    ...(endpoint ? { endpoint } : {}),
     maxAttempts: 2,
     requestHandler: { connectionTimeout: 1000, requestTimeout: 2000 },
   })
+}
+
+function getClient(): DynamoDBClient {
+  sharedClient ??= createLockClient()
   return sharedClient
 }

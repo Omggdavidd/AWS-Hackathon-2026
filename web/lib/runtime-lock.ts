@@ -10,6 +10,13 @@ import { LEDGER_TABLE } from './ledger'
 export const LOCK_DEFAULT = parseRuntimeMode(process.env.OPENLOOP_LOCK_DEFAULT)
 export const PAUSED_MESSAGE =
   'The agent is paused. Loops below are real results from the last scan.'
+/**
+ * Whether the Settings controls do anything, the way `scanConfigured` gates the agent buttons.
+ * Pausing is public, so a deployment without the key could be paused by anyone and resumed by
+ * nobody; until one is set the controls are inert. `OPENLOOP_LOCK_DEFAULT` and a row written
+ * outside the app still pause the runtime.
+ */
+export const lockConfigured = Boolean(process.env.OPENLOOP_UNLOCK_KEY)
 
 export async function readRuntimeMode(): Promise<RuntimeMode> {
   if (!LEDGER_TABLE) return LOCK_DEFAULT
