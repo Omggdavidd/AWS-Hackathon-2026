@@ -1,5 +1,14 @@
 import { z } from 'zod'
-import { Confidence, IsoDateTime, LoopStatus, Money, Priority, RiskTier, SourceRef } from './common'
+import {
+  Confidence,
+  Id,
+  IsoDateTime,
+  LoopStatus,
+  Money,
+  Priority,
+  RiskTier,
+  SourceRef,
+} from './common'
 import { EvidenceSupports } from './evidence'
 import { ActionType, LoopArea, LoopCategory } from './open-loop'
 import { ProposedActionType } from './proposed-action'
@@ -122,3 +131,22 @@ export const CatchUpSummary = z.object({
   nothingElse: z.boolean(),
 })
 export type CatchUpSummary = z.infer<typeof CatchUpSummary>
+
+/** Ask (SPEC §8G): one question about the ledger, answered in place with the loops it leaned on. */
+export const AskAnswer = z.object({
+  answer: z.string().max(1000),
+  references: z
+    .array(
+      z.object({
+        loopId: Id,
+        title: z.string().max(120),
+        sourceIds: z.array(Id).max(4).default([]),
+      }),
+    )
+    .max(6)
+    .default([]),
+  /** The control that would do the work when the question asks for some. Ask only reads (ADR-0005). */
+  suggests: z.enum(['handle', 'scan', 'catch_up', 'none']).default('none'),
+  confidence: Confidence,
+})
+export type AskAnswer = z.infer<typeof AskAnswer>

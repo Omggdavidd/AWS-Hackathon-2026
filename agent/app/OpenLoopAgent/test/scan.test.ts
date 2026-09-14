@@ -75,6 +75,9 @@ const stubs: Specialists = {
   async summarize() {
     return { headline: 'stub', items: [], nothingElse: true }
   },
+  async answer() {
+    return { answer: 'stub', references: [], suggests: 'none' as const, confidence: 0.9 }
+  },
   async judge({ loop }) {
     // Status-aware, like the real prompt: what a responsibility costs you depends on whose move it
     // is. That makes a re-judgment on the delta path visible in the record rather than a no-op.

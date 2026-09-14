@@ -4,10 +4,12 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { AppRail, AppTabs } from '@/components/app-rail'
 import { AppearanceMenu } from '@/components/appearance-menu'
+import { CommandBar } from '@/components/command-bar'
 import { LoopMark } from '@/components/loop-mark'
 import { NotificationBell } from '@/components/notification-bell'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Welcome } from '@/components/welcome'
+import { scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
 import {
   ACCENT_COOKIE,
@@ -118,6 +120,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                   <span className="inbox-address">{profile.inbox}</span>
                   <small>{purposeLabel(profile.purpose)}</small>
                 </Link>
+                <CommandBar configured={scanConfigured} />
                 <NotificationBell
                   notices={feed.notices}
                   unread={feed.unread}

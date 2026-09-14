@@ -1,5 +1,6 @@
 import {
   ActionPlan,
+  AskAnswer,
   CatchUpSummary,
   type EmailMessage,
   type Evidence,
@@ -12,12 +13,14 @@ import {
   RiskJudgment,
 } from '@openloop/shared'
 import { Agent, type Model } from '@strands-agents/sdk'
+import type { AskContext } from '../ask'
 import type { CatchUpDigest } from '../catch-up'
 import { renderThread } from '../render'
 import { inboxTools } from '../tools/inbox'
-import { ledgerTools } from '../tools/ledger'
+import { ledgerTools, loopEvidenceTool } from '../tools/ledger'
 import {
   ACTION_PROMPT,
+  ASK_PROMPT,
   CATCH_UP_PROMPT,
   EXTRACTOR_PROMPT,
   INVESTIGATOR_PROMPT,
@@ -66,6 +69,8 @@ export interface Specialists {
   }): Promise<ActionPlan>
   /** Catch me up (plan step 12): the digest is computed in code; the model only writes the words. */
   summarize(input: { digest: CatchUpDigest; now: string }): Promise<CatchUpSummary>
+  /** Ask (SPEC §8G): answer one question from the ledger. Reads only; it can look, never act. */
+  answer(input: { question: string; context: AskContext; now: string }): Promise<AskAnswer>
 }
 
 /** The keys of `Specialists`, so a caller can give a role its own model (ADR-0007). */
@@ -154,6 +159,20 @@ export function createSpecialists({
         `Now is ${now}. Digest since ${digest.since}:\n${JSON.stringify(digest, null, 2)}`,
       )
       return CatchUpSummary.parse(result.structuredOutput)
+    },
+
+    async answer({ question, context, now }) {
+      const agent = new Agent({
+        model: models?.answer ?? model,
+        systemPrompt: ASK_PROMPT,
+        tools: [...ledgerTools(store, userId), loopEvidenceTool(store, userId)],
+        structuredOutputSchema: AskAnswer,
+        printer: false,
+      })
+      const result = await agent.invoke(
+        `Now is ${now}.\n\nLedger:\n${JSON.stringify(context, null, 2)}\n\nQuestion:\n${question}`,
+      )
+      return AskAnswer.parse(result.structuredOutput)
     },
 
     async judge({ loop, evidence, now }) {
