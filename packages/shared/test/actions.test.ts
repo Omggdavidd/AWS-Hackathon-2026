@@ -26,7 +26,7 @@ describe('action policy (ADR-0005)', () => {
 
   // The tier is a field the Risk Judge writes and `requiresApproval` is derived from it, so a model
   // that called a payment low risk used to buy itself a free pass past both. The type decides.
-  it.each(['pay', 'submit_form', 'send_email', 'book_appointment', 'other'] as const)(
+  it.each(['pay', 'submit_form', 'send_email', 'book_appointment', 'follow_up', 'other'] as const)(
     'never executes %s alone, whatever tier it carries',
     (type) => {
       for (const riskTier of ['low', 'medium'] as const) {
@@ -44,7 +44,7 @@ describe('action policy (ADR-0005)', () => {
   )
 
   it('still lets the preparing types through at the tier they had', () => {
-    for (const type of ['draft_email', 'create_calendar_event', 'remind', 'follow_up'] as const) {
+    for (const type of ['draft_email', 'create_calendar_event', 'remind'] as const) {
       expect(isAutoExecutable({ ...base, type, riskTier: 'low' }), type).toBe(true)
       expect(isAutoExecutable({ ...base, type, riskTier: 'medium' }), type).toBe(true)
       expect(isAutoExecutable({ ...base, type, riskTier: 'high' }), type).toBe(false)
@@ -91,5 +91,19 @@ describe('FixtureActionSink', () => {
     expect(result.summary).toContain('office@example.com')
     expect(result.resultSourceRef).toEqual({ sourceType: 'agent', sourceId: 'action:a1' })
     expect(sink.log).toHaveLength(1)
+  })
+
+  // Why follow_up is gated on the type: nothing binds an action type to an effect kind, and the
+  // Action Agent is told send_email is the shape "used for follow-ups". Reaching the sink at all is
+  // the failure, so this pins what the sink would do with what it was handed.
+  it('treats a follow-up planned as send_email as mail leaving for the other party', async () => {
+    const sink = new FixtureActionSink()
+    const followUp: ProposedAction = { ...base, type: 'follow_up', riskTier: 'low' }
+    expect(mayExecute(followUp)).toEqual({ ok: false, reason: 'requires your approval' })
+    const result = await sink.execute(followUp, {
+      effect: { kind: 'send_email', to: 'bill@example.com', subject: 'Following up', body: 'Hi' },
+      summary: 'Sent follow-up',
+    })
+    expect(result.summary).toBe('Sent to bill@example.com: "Following up"')
   })
 })

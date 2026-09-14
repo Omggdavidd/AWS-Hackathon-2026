@@ -20,6 +20,10 @@ const NEVER_AUTOMATIC: ReadonlySet<ProposedActionType> = new Set([
   'submit_form',
   'send_email',
   'book_appointment',
+  // A follow-up is mail to the other party, not a note to the user: nothing binds an action type to
+  // an effect kind, and the Action Agent is told send_email is the shape "used for follow-ups", so a
+  // low tier here is one model field away from chasing someone in the user's name.
+  'follow_up',
   'other',
 ])
 
@@ -28,7 +32,6 @@ const MEDIUM_OK: ReadonlySet<ProposedActionType> = new Set([
   'draft_email',
   'create_calendar_event',
   'remind',
-  'follow_up',
 ])
 
 /** Effects a sink can carry out without a person (SPEC §12). The type is checked at every tier. */
