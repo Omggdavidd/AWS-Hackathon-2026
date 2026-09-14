@@ -133,6 +133,15 @@ function cite(
   }
 }
 
+/** A promise and the handle that settles it, for stepping two scans through one ledger. */
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let settle: () => void = () => {}
+  const promise = new Promise<void>((resolve) => {
+    settle = resolve
+  })
+  return { promise, resolve: () => settle() }
+}
+
 /** The local ledger with one write replaced, so a thread can be made to die partway through. */
 function ledgerThatFails(store: LocalLedgerStore, at: Partial<LedgerStore>): LedgerStore {
   return {
@@ -869,5 +878,48 @@ describe('runScan under concurrency', () => {
       'msg-001',
       'msg-014',
     ])
+  })
+
+  it('does not duplicate a loop another scan wrote while this one was still thinking', async () => {
+    // Two scans over one table, which the Scan button and the scheduled catch-up can produce. They
+    // share the ledger and nothing else, so the claim decision has to ask the store: a map of what
+    // this process claimed is invisible to the other one. The second scan reads the ledger before
+    // the first has written anything, then sits in its Extractor until the first has finished.
+    const base = (await FixtureSource.load(seed)).fixture
+    const oneThread = {
+      ...base,
+      messages: base.messages.filter((m) => m.threadId === 'thr-housing'),
+    }
+    const store = new LocalLedgerStore()
+    const hasRead = deferred()
+    const firstDone = deferred()
+
+    const second = runScan({
+      source: FixtureSource.fromData(oneThread),
+      store,
+      userId: 'u',
+      specialists: {
+        ...stubs,
+        extract: async (input) => {
+          hasRead.resolve()
+          await firstDone.promise
+          return stubs.extract(input)
+        },
+      },
+      now,
+    })
+    await hasRead.promise
+    const first = await runScan({
+      source: FixtureSource.fromData(oneThread),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+    })
+    firstDone.resolve()
+
+    expect(first.created).toBe(1)
+    expect(await second).toMatchObject({ created: 0, skipped: 1 })
+    expect(await store.listLoops('u')).toHaveLength(1)
   })
 })

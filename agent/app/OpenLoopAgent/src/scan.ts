@@ -87,22 +87,35 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
   }
   const commit = mutex()
   const loopLock = keyedMutex()
-  /** Loops this scan opened, by source id: the only writes a ledger query can be too early to see. */
+  /** Loops this scan has claimed but not yet written, by source id: a query cannot see them yet. */
   const opened = new Map<string, OpenLoop[]>()
 
+  /**
+   * Every loop in the ledger, by the source ids it carries. One query: on DynamoDB
+   * `findLoopsBySource` is `listLoops` with a filter applied afterwards, so asking per source id
+   * read the user's whole loop partition once per message instead of once per thread.
+   */
+  async function indexBySource(): Promise<Map<string, OpenLoop[]>> {
+    const index = new Map<string, OpenLoop[]>()
+    for (const loop of await store.listLoops(userId)) {
+      for (const ref of loop.sourceRefs) {
+        index.set(ref.sourceId, [...(index.get(ref.sourceId) ?? []), loop])
+      }
+    }
+    return index
+  }
+
   /** Loops in the ledger this thread would take over rather than open a second loop beside. */
-  async function knownFor(threadId: string, sourceIds: string[]): Promise<OpenLoop[]> {
-    return (
-      await Promise.all(
-        sourceIds.map(async (id) =>
-          (await store.findLoopsBySource(userId, id)).filter((l) => claims(l, threadId, id)),
-        ),
-      )
-    ).flat()
+  function matching(
+    index: Map<string, OpenLoop[]>,
+    threadId: string,
+    sourceIds: string[],
+  ): OpenLoop[] {
+    return sourceIds.flatMap((id) => (index.get(id) ?? []).filter((l) => claims(l, threadId, id)))
   }
 
   function openedFor(threadId: string, sourceIds: string[]): OpenLoop[] {
-    return sourceIds.flatMap((id) => (opened.get(id) ?? []).filter((l) => claims(l, threadId, id)))
+    return matching(opened, threadId, sourceIds)
   }
 
   function remember(loop: OpenLoop): void {
@@ -130,7 +143,7 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     threadId: string,
     sourceIds: string[],
   ): Promise<OpenLoop | undefined> {
-    return pick(await knownFor(threadId, sourceIds), threadId)
+    return pick(matching(await indexBySource(), threadId, sourceIds), threadId)
   }
 
   async function takeDeltaPath(
@@ -288,13 +301,6 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       resolvedAt: status === 'RESOLVED' ? now : undefined,
     })
 
-    // The thread's own ids were queried before the model ran and nothing outside this scan writes
-    // to the ledger, so only the ids the Investigator brought in are still unchecked. Query them
-    // here: `commit` is one global queue, and a query inside it makes every thread wait on every
-    // other thread's reads.
-    const cited = [...sourceIds].filter((id) => !threadIds.includes(id))
-    const known = cited.length > 0 ? await knownFor(threadId, cited) : []
-
     let actionCount = 0
     let published = false
     /**
@@ -376,10 +382,18 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     }
 
     const claimed = await commit(async () => {
-      // What the queries above cannot have seen is a loop another thread opened since; `opened`
-      // holds exactly those, and is written in this same section.
+      // The ledger decides, not this process: the Scan button and the scheduled catch-up can run
+      // two scans over one table, and a claim map only one of them can see would let both open the
+      // same loop. Read here rather than before the model ran, so the answer is as fresh as the
+      // write it guards, and read once for every candidate id at once — `commit` is one global
+      // queue, so a query inside it is a query every other thread waits on.
+      const candidates = [...sourceIds, ...threadIds]
       const duplicate = pick(
-        [...known, ...openedFor(threadId, [...sourceIds, ...threadIds])],
+        [
+          ...matching(await indexBySource(), threadId, candidates),
+          // Loops this scan has claimed but not yet published are in no ledger to read.
+          ...openedFor(threadId, candidates),
+        ],
         threadId,
       )
       if (duplicate) return { duplicate }
