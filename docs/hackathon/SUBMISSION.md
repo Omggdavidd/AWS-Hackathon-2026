@@ -25,7 +25,7 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 - [x] README with setup instructions sufficient to run the project from a clean machine
 - [ ] All source code, assets and demo data needed to run
 - [x] Architecture diagram (`docs/architecture/openloop-architecture.png`, source SVG beside it)
-- [ ] Text description of features and functionality
+- [ ] Text description of features and functionality (paste-ready copy in `DEVPOST.md`)
 - [ ] Demo video, 5 minutes maximum, showing the working project, hosted public on YouTube or Vimeo, visibility verified
 - [ ] Pitch in the video covers the problem, who it is for and why it matters
 - [ ] Testing access or instructions; credentials if any site is private
