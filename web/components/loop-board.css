@@ -90,6 +90,12 @@ body:has(.mindboard) .bottom-tabs {
   background-color: #0e1a2b;
   background-image: radial-gradient(#27364a 1px, transparent 1px);
 }
+/* Midnight is its own ground, not dark dimmed: the canvas has to come down with the cards or the
+   board sits on a white sheet. */
+:root[data-theme="midnight"] .board-viewport {
+  background-color: #04060b;
+  background-image: radial-gradient(#141d2b 1px, transparent 1px);
+}
 .board-viewport[data-dragging="true"] {
   cursor: grabbing;
   user-select: none;
@@ -578,7 +584,7 @@ body:has(.mindboard) .bottom-tabs {
     height: auto;
   }
   .board-viewport,
-  :root[data-theme="dark"] .board-viewport {
+  :root:is([data-theme="dark"], [data-theme="midnight"]) .board-viewport {
     overflow: visible;
     padding: 40px 16px 0;
     border-top: 0;

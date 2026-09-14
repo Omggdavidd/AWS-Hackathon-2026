@@ -29,11 +29,11 @@ const SEGMENTS: Segment[] = [
 ]
 
 /**
- * The top of a day: the date and clock, then the greeting as one sentence on an island in the
- * middle, lit in the accent the person chose in Appearance, then the day's loops as one bar, a
- * segment per state, widest where there are most (SPEC §8A). What needs you is first and heaviest,
- * what is closed trails off. The counts as a sentence are kept for screen readers, since the bar
- * is hidden from them. Each segment jumps to its part of the list.
+ * The top of a day, set the way Apple and Google set a greeting: the date and clock as a small line
+ * above, the greeting as the page's title, one quiet line under it, then the day's loops as one
+ * bar, a segment per state, widest where there are most (SPEC §8A). What needs you is first and
+ * heaviest, what is closed trails off. The counts as a sentence are kept for screen readers, since
+ * the bar is hidden from them. Each segment jumps to its part of the list.
  */
 export function Headline({
   groups,
@@ -58,7 +58,7 @@ export function Headline({
 
   return (
     <section className="daybar" aria-labelledby="headline" data-tour="headline">
-      <div className="daybar-top">
+      <header className="daybar-top">
         <p className="hero-date">
           <span>
             {now.toLocaleDateString('en-US', {
@@ -70,16 +70,14 @@ export function Headline({
           </span>
           <LiveClock timeZone={DEMO_TIME_ZONE} />
         </p>
-      </div>
-      <div className="greeting-island">
-        <h1 id="headline" className="greeting-line">
-          {greeting}, {name}.{' '}
-          <span className="greeting-rest">
-            {total === 0 ? 'Nothing needs you yet.' : 'Here’s everything that needs you so far.'}
-          </span>
+        <h1 id="headline" className="hero-greeting">
+          {greeting}, {name}.
         </h1>
+        <p className="hero-sub">
+          {total === 0 ? 'Nothing needs you yet.' : 'Here’s everything that needs you so far.'}
+        </p>
         <p className="sr-only">{summarize(groups)}</p>
-      </div>
+      </header>
       {total === 0 ? (
         <p className="daybar-empty">Nothing tracked yet. Scan the inbox to find what is open.</p>
       ) : (
