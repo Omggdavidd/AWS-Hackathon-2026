@@ -12,7 +12,8 @@
  *
  * Next's Server Actions compare Origin with Host only when Origin is present and let a request
  * with no Origin through. Route handlers get nothing by default, which is why this exists; the
- * server actions that spend or reset (`approveAction`, `resetDemo`) call it too.
+ * rule for server actions is the same, with no exceptions: every action in `web/app/actions.ts`
+ * that writes anything calls it as its first statement.
  */
 export function isSameOrigin(headers: Headers, url: string): boolean {
   const origin = headers.get('origin')
