@@ -21,9 +21,20 @@ Re-export the PNG by screenshotting the SVG with any headless Chromium. On Windo
   "file:///$(pwd -W)/openloop-architecture.svg"
 ```
 
-`--force-device-scale-factor=2` is what makes the export 3280 x 2320 and legible when a judge zooms in. Keep the window size equal to the SVG canvas, or the export will be cropped or letterboxed.
+`--force-device-scale-factor=2` is what makes the export 3280 x 2320 and legible when a judge zooms in.
 
-Fonts are a system stack (Segoe UI, then `system-ui`); the PNG is what ships, so a machine without Segoe UI will re-export at slightly different text widths. Check the render for overflow before committing it.
+On Linux and in containers, two things differ. The headless viewport comes up shorter than `--window-size`, which silently cuts the bottom band off the export, so render taller and crop back to the canvas:
+
+```
+chrome --headless=new --disable-gpu --no-sandbox --hide-scrollbars \
+  --force-device-scale-factor=2 --window-size=1640,1320 \
+  --screenshot=/tmp/tall.png "file://$(pwd)/openloop-architecture.svg"
+python3 -c "from PIL import Image; Image.open('/tmp/tall.png').crop((0,0,3280,2320)).save('openloop-architecture.png')"
+```
+
+Check the export before committing it: the last row of ink should be 2277, which is the italic line under the shared band. A shorter figure means the render was cut.
+
+Fonts are a system stack: Segoe UI, then Liberation Sans or Arial, then `system-ui`. Segoe UI still wins on Windows, and the Arial-metric fallback keeps a Linux export close to it — without it the generic `sans-serif` resolves to DejaVu Sans, which is wide enough to push text out of the ActionSink and runtime boxes. The PNG is what ships, so check the render for overflow whatever machine you export on.
 
 ## Other diagrams
 
