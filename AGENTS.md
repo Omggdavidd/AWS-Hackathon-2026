@@ -104,7 +104,7 @@ Do not read the whole `docs/` tree or every ADR by default.
 - Prefer the simplest thing that demos reliably. A working vertical slice beats a half-built platform.
 - Stay in scope. Do not refactor, rename or reformat files unrelated to the task.
 - Write tests where they are cheap and where breakage would be silent. Do not fake coverage.
-- Every `LedgerStore` implementation runs the shared contract suite (`@openloop/shared/testing`). The DynamoDB suite runs only with `OPENLOOP_DYNAMO_TEST_TABLE` set; run it before touching the adapter. Every `IngestionSource` must return results oldest first.
+- Every `LedgerStore` implementation runs the shared contract suite (`@openloop/shared/testing`). The DynamoDB suite runs on every PR against DynamoDB Local in CI and locally with `OPENLOOP_DYNAMO_TEST_TABLE` (real table) or `DYNAMODB_ENDPOINT` (Local) set; run it before touching the adapter. Every `IngestionSource` must return results oldest first.
 - Records cross package boundaries only as parsed Zod types from `@openloop/shared`. Never hand-write a record shape in `web/` or `agent/`.
 - Imports inside packages are extensionless (bundler resolution); Turbopack and esbuild both consume the shared package as TypeScript source.
 - In `web/`, credentials and the ledger are server-side only (`server-only` import in `lib/ledger.ts`). Client components receive plain data.
