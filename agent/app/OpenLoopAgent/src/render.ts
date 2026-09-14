@@ -21,8 +21,22 @@ function attr(value: string): string {
  * From header carries them ("Bursar's Office <bursar@northgate.edu>") — so only the envelope tokens
  * themselves are defused. Everything else reaches the model exactly as it was written.
  */
-function text(value: string): string {
+export function defuse(value: string): string {
   return value.replace(/<(\/?)(message|event)\b/gi, '&lt;$1$2')
+}
+
+const text = defuse
+
+/**
+ * Ledger records interpolated into a prompt. `JSON.stringify` escapes quotes and backslashes but not
+ * angle brackets, so a stored excerpt reaches the model exactly as written unless it is defused
+ * here. An excerpt is Investigator-authored *from* attacker mail, so a message saying "quote this
+ * line exactly" can otherwise launder a forged envelope into the ledger and back into every later
+ * prompt for that loop (#174). Applied to the serialised text rather than field by field, so a
+ * field added later is covered without anyone remembering to.
+ */
+export function renderJson(value: unknown): string {
+  return defuse(JSON.stringify(value, null, 2))
 }
 
 /** Compact, id-bearing text for prompts. Ids let the model cite sources instead of quoting. */

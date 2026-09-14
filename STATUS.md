@@ -55,6 +55,8 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 - 2026-09-13 Scan runs three threads at a time with per-role model ids and a loop belongs only to the thread it was found in, 95 to 105 seconds for the demo inbox instead of four to five minutes (#121, Ojulari123, closes #16); agent `.env.example` (#125, Ojulari123); `GoogleSource` reads live Gmail and Calendar behind the existing `IngestionSource`, the web OAuth half of #20 still open (#130, tdare514); budget alarm and `openloop-web` policy verified from the CLI (#144).
 - 2026-09-13 Security review of the deployed app and ledger: origin check on the three agent routes so an unauthenticated stranger cannot spend Bedrock tokens, response headers, and `docs/security.md` recording what is deliberately open (ab00bae).
 
+- 2026-09-14 Ledger records interpolated into a prompt are defused the way mail already was, so an evidence excerpt written from attacker mail cannot forge a `<message>` envelope in a later prompt (#174, ab00bae).
+
 ## Blocked
 
 - Nothing external. AWS is ready: personal account, `openloop-dev` IAM user with AdministratorAccess, CLI configured on David's machine in `us-east-1`, Bedrock use-case form accepted, Claude Sonnet 4.6 answers. Google Cloud project not yet created (needed for the live-Gmail stretch, #20). The Vercel project exists.

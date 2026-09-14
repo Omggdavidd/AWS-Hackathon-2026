@@ -16,7 +16,7 @@ import { Agent, type Model, type ToolList } from '@strands-agents/sdk'
 import type { z } from 'zod'
 import type { AskContext } from '../ask'
 import type { CatchUpDigest } from '../catch-up'
-import { renderThread } from '../render'
+import { defuse, renderJson, renderThread } from '../render'
 import { inboxTools } from '../tools/inbox'
 import { ledgerTools, loopEvidenceTool } from '../tools/ledger'
 import {
@@ -143,20 +143,20 @@ export function createSpecialists({
         'investigate',
         INVESTIGATOR_PROMPT,
         InvestigatorOutput,
-        `Today is ${now}.\n\nCandidate responsibility:\n${JSON.stringify(candidate, null, 2)}\n\nOriginating thread:\n${renderThread(thread)}`,
+        `Today is ${now}.\n\nCandidate responsibility:\n${renderJson(candidate)}\n\nOriginating thread:\n${renderThread(thread)}`,
         [...inboxTools(source), ...ledgerTools(store, userId)],
       )
     },
 
     async update({ loop, existingEvidence, newMessages, thread, now }) {
       const known = existingEvidence
-        .map((e) => `${e.sourceId} (${e.supports}): ${e.excerpt}`)
+        .map((e) => defuse(`${e.sourceId} (${e.supports}): ${e.excerpt}`))
         .join('\n')
       return run(
         'update',
         UPDATE_PROMPT,
         InvestigatorOutput,
-        `Today is ${now}.\n\nTracked responsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence already recorded:\n${known || '(none)'}\n\nNew messages in the thread:\n${renderThread(newMessages)}\n\nFull thread for context:\n${renderThread(thread)}`,
+        `Today is ${now}.\n\nTracked responsibility:\n${renderJson(loop)}\n\nEvidence already recorded:\n${known || '(none)'}\n\nNew messages in the thread:\n${renderThread(newMessages)}\n\nFull thread for context:\n${renderThread(thread)}`,
         [...inboxTools(source), ...ledgerTools(store, userId)],
       )
     },
@@ -166,7 +166,7 @@ export function createSpecialists({
         'plan',
         ACTION_PROMPT,
         ActionPlan,
-        `Today is ${now}. The user is Alex Rivera <alex.rivera@student.northgate.edu>.\n\nResponsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence:\n${JSON.stringify(evidence, null, 2)}\n\nProposed action:\n${JSON.stringify(action, null, 2)}\n\nThread:\n${renderThread(thread)}`,
+        `Today is ${now}. The user is Alex Rivera <alex.rivera@student.northgate.edu>.\n\nResponsibility:\n${renderJson(loop)}\n\nEvidence:\n${renderJson(evidence)}\n\nProposed action:\n${renderJson(action)}\n\nThread:\n${renderThread(thread)}`,
       )
     },
 
@@ -175,7 +175,7 @@ export function createSpecialists({
         'summarize',
         CATCH_UP_PROMPT,
         CatchUpSummary,
-        `Now is ${now}. Digest since ${digest.since}:\n${JSON.stringify(digest, null, 2)}`,
+        `Now is ${now}. Digest since ${digest.since}:\n${renderJson(digest)}`,
       )
     },
 
@@ -184,7 +184,7 @@ export function createSpecialists({
         'answer',
         ASK_PROMPT,
         AskAnswer,
-        `Now is ${now}.\n\nLedger:\n${JSON.stringify(context, null, 2)}\n\nQuestion:\n${question}`,
+        `Now is ${now}.\n\nLedger:\n${renderJson(context)}\n\nQuestion:\n${defuse(question)}`,
         [...ledgerTools(store, userId), loopEvidenceTool(store, userId)],
       )
     },
@@ -194,7 +194,7 @@ export function createSpecialists({
         'judge',
         RISK_JUDGE_PROMPT,
         RiskJudgment,
-        `Today is ${now}.\n\nResponsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence:\n${JSON.stringify(evidence, null, 2)}`,
+        `Today is ${now}.\n\nResponsibility:\n${renderJson(loop)}\n\nEvidence:\n${renderJson(evidence)}`,
       )
     },
   }

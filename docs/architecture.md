@@ -32,7 +32,7 @@ Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `Ledger
 ## 4. Boundaries and invariants
 
 - Models interpret evidence; the application owns state. Every state change has a reason and a timestamp; every loop keeps source ids.
-- Every hop between agents is a validated Zod schema. Free text never crosses a boundary as data.
+- Every hop between agents is a validated Zod schema. Free text never crosses a boundary as data: mail is rendered through `render.ts`, which defuses the envelope tokens, and every ledger record interpolated into a prompt goes through the same defusing (`renderJson`), so an excerpt the Investigator wrote from attacker mail cannot forge an envelope in a later prompt (#174).
 - The frontend never talks to Bedrock, Strands or Google directly. Only the Next.js server holds AWS and Google credentials.
 - High-risk execution is refused in code unless the `ProposedAction` is `APPROVED`. Prompts cannot override this, and the schema states that a high-risk action requires approval; today the scan derives that flag from the tier when it builds the action, and the stores do not validate on write, so the schema is a statement of the invariant rather than a gate in front of the ledger.
 - The runtime lock is checked inside the runtime before any command is dispatched, so `demo` and `locked` stop every model call whatever the caller is; the environment is the floor and the `CONFIG` row may only tighten it (ADR-0014).
