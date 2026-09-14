@@ -1,10 +1,12 @@
 'use client'
 
+import type { ScanSummary } from '@openloop/shared'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { StateIcon } from '@/components/loop-mark'
 import { DEMO_TIME_ZONE } from '@/lib/format'
+import { formatScanCounts, formatScanStatus } from '@/lib/scan-summary'
 
 type Op = 'catch_up' | 'handle' | 'delta' | 'scan'
 
@@ -29,10 +31,7 @@ type ScanEvent =
   | { type: 'skipped'; threadId: string; reason: string }
   | { type: 'loop'; loop: { title: string; status: string } }
   | { type: 'updated'; loop: { title: string }; from: string; to: string }
-  | {
-      type: 'summary'
-      summary: { threads: number; created: number; updated: number; skipped: number }
-    }
+  | { type: 'summary'; summary: ScanSummary }
 
 type ScanState = {
   threads: number
@@ -163,10 +162,7 @@ export function AgentPanel({
         if (!event) continue
         if (event.type === 'thread') state.threads++
         if (event.type === 'loop' || event.type === 'updated') state.found++
-        if (event.type === 'summary') {
-          const n = event.summary.created + event.summary.updated
-          state.done = `${n} thing${n === 1 ? '' : 's'} worth tracking across ${event.summary.threads} thread${event.summary.threads === 1 ? '' : 's'}.`
-        }
+        if (event.type === 'summary') state.done = formatScanStatus(event.summary)
         const line = describe(event)
         if (line) state.lines = [...state.lines.slice(-9), { id: nextId++, ...line }]
         publish()
@@ -414,6 +410,7 @@ function formatTime(at: Date): string {
   })
 }
 
+/** `/api/scan` has already put the summary through its schema, so the lines arrive as plain data. */
 function parseEvent(raw: string): ScanEvent | undefined {
   try {
     const first = JSON.parse(raw)
@@ -450,10 +447,7 @@ function describe(
         text: `${e.loop.title} · ${STATE_WORD[e.from] ?? e.from} to ${STATE_WORD[e.to] ?? e.to}`,
       }
     case 'summary':
-      return {
-        kind: 'done',
-        text: `${e.summary.created} new, ${e.summary.updated} updated, ${e.summary.skipped} skipped.`,
-      }
+      return { kind: 'done', text: formatScanCounts(e.summary) }
     default:
       return undefined
   }
