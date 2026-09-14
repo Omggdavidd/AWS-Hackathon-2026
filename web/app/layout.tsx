@@ -20,9 +20,8 @@ import {
   parseDensity,
   parseHome,
 } from '@/lib/appearance'
-import { pendingDecisions } from '@/lib/decisions'
 import { formatDateTime } from '@/lib/format'
-import { getStore, USER_ID } from '@/lib/ledger'
+import { loadAudit, loadDecisions, loadLoops, USER_ID } from '@/lib/ledger'
 import { buildNotices } from '@/lib/notifications'
 import { purposeLabel, readProfile } from '@/lib/profile'
 import './globals.css'
@@ -57,14 +56,10 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const home = parseHome(jar.get(HOME_COOKIE)?.value)
   const todayHref = home === 'today' ? '/' : '/?view=list'
   const profile = readProfile(jar)
-  const store = await getStore()
-  const [loops, audit] = await Promise.all([
-    store.listLoops(USER_ID),
-    store.listAudit(USER_ID, { limit: 60 }),
-  ])
+  const [loops, audit] = await Promise.all([loadLoops(USER_ID), loadAudit(USER_ID)])
   const [feed, decisions] = await Promise.all([
     buildNotices(audit, loops, jar.get('openloops-seen')?.value),
-    pendingDecisions(store, USER_ID, loops),
+    loadDecisions(USER_ID),
   ])
   const lastScan = audit.find((event) => event.kind === 'scan_completed')
   return (
