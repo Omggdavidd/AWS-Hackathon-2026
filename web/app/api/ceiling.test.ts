@@ -9,11 +9,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const aws = vi.hoisted(() => ({ send: vi.fn() }))
 const agent = vi.hoisted(() => ({ invokeScan: vi.fn(), invokeCommand: vi.fn() }))
 
+// The counter updates a row and `approveAction` reads the runtime lock, so both commands exist
+// here; with no lock row in the replies below the mode stays at the environment floor, `open`.
 vi.mock('@aws-sdk/client-dynamodb', () => ({
   DynamoDBClient: class {
     send = aws.send
   },
   UpdateItemCommand: class {},
+  GetItemCommand: class {},
+  PutItemCommand: class {},
 }))
 
 vi.mock('@/lib/agent', () => ({

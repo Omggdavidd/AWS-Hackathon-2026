@@ -15,6 +15,7 @@ import { summarizeChanges } from '@/lib/changes'
 import { formatDateTime, groupByStatus } from '@/lib/format'
 import { loadAudit, loadDecisions, loadLoops, USER_ID } from '@/lib/ledger'
 import { readProfile } from '@/lib/profile'
+import { readRuntimeMode } from '@/lib/runtime-lock'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +38,11 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
   const profile = readProfile(jar)
   const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value)
 
-  const [loops, audit] = await Promise.all([loadLoops(USER_ID), loadAudit(USER_ID)])
+  const [loops, audit, runtimeMode] = await Promise.all([
+    loadLoops(USER_ID),
+    loadAudit(USER_ID),
+    readRuntimeMode(),
+  ])
   const decisions = await loadDecisions(USER_ID)
   const lastScan = audit.find((event) => event.kind === 'scan_completed')
   const checked = lastScan ? formatDateTime(lastScan.at) : undefined
@@ -54,7 +59,12 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
       <section className="today-main" aria-label="Today">
         {banner && <ChangeBanner sentences={banner.sentences} latestAt={banner.latestAt} />}
         <Headline groups={groups} name={profile.name} now={now} />
-        <AgentPanel configured={scanConfigured} checked={checked} name={agentName} />
+        <AgentPanel
+          configured={scanConfigured}
+          checked={checked}
+          name={agentName}
+          runtimeMode={runtimeMode}
+        />
         <DecisionStrip decisions={decisions} />
         <p className="view-hint">
           Arrow keys move, <kbd>Enter</kbd> opens.

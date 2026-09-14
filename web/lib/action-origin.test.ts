@@ -13,6 +13,7 @@ process.env.OPENLOOP_LEDGER_FILE = join(
   'ledger.json',
 )
 delete process.env.OPENLOOP_LEDGER_TABLE
+process.env.OPENLOOP_UNLOCK_KEY = 'test-unlock-key'
 
 const { request } = vi.hoisted(() => ({ request: { headers: new Headers() } }))
 
@@ -33,6 +34,13 @@ function requestFrom(origin?: string): void {
   request.headers = new Headers(origin ? { host: HOST, origin } : { host: HOST })
 }
 
+function runtimeOpen(): FormData {
+  const form = new FormData()
+  form.set('mode', 'open')
+  form.set('key', 'test-unlock-key')
+  return form
+}
+
 function named(name: string): FormData {
   const form = new FormData()
   form.set('name', name)
@@ -51,6 +59,7 @@ const calls: Record<string, () => Promise<unknown>> = {
   updateProfile: () => actions.updateProfile(named('Loop')),
   renameAgent: () => actions.renameAgent(named('Nova')),
   resetDemo: () => actions.resetDemo(),
+  setRuntimeMode: () => actions.setRuntimeMode(runtimeOpen()),
 }
 
 describe('server actions and the Origin header', () => {

@@ -5,7 +5,12 @@ import {
   BedrockAgentCoreClient,
   InvokeAgentRuntimeCommand,
 } from '@aws-sdk/client-bedrock-agentcore'
-import { DynamoLedgerStore } from '@openloop/ledger-dynamo'
+import {
+  createLockClient,
+  DynamoLedgerStore,
+  getRuntimeMode,
+  parseRuntimeMode,
+} from '@openloop/ledger-dynamo'
 import { LocalLedgerStore } from '@openloop/shared'
 
 /**
@@ -112,6 +117,24 @@ const store = new DynamoLedgerStore({
 console.log(
   `▸ table ${table}  region ${region}${endpoint ? `  endpoint ${endpoint}` : ''}  user ${userId}`,
 )
+/**
+ * The rescan goes through the runtime, which refuses every command while the lock is anything but
+ * open. Read the lock before deleting anything: otherwise the reset empties the table, the scan
+ * writes nothing and the run still exits 0.
+ */
+if (scanAfter) {
+  const mode = await getRuntimeMode({
+    tableName: table,
+    defaultMode: parseRuntimeMode(process.env.OPENLOOP_LOCK_DEFAULT),
+    client: createLockClient({ region, ...(endpoint ? { endpoint } : {}) }),
+  })
+  if (mode !== 'open') {
+    console.log(
+      `refusing to delete anything: the agent is paused (${mode}), so the rescan would write nothing. Resume it in Settings, or pass --no-scan to clear the table without one.`,
+    )
+    process.exit(1)
+  }
+}
 const found = await store.purgeUser(userId, { dryRun: true })
 const total = found.loops + found.actions + found.audit + found.evidence
 console.log(
