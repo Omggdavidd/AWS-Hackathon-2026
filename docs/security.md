@@ -52,6 +52,8 @@ The runtime's DynamoDB policy (`agent/app/OpenLoopAgent/iam/dynamodb-ledger.json
 
 The `openloop-web` user for Vercel is scoped to DynamoDB item and query actions on the table plus `bedrock-agentcore:InvokeAgentRuntime` on the runtime ARN (#19). Verified from the CLI on 2026-09-13: one attached policy, `OpenLoopWebLeastPrivilege`, allowing `GetItem`, `PutItem`, `UpdateItem`, `DeleteItem`, `Query`, `BatchGetItem` and `BatchWriteItem` on `openloop-ledger` and its indexes, and `InvokeAgentRuntime` on the one runtime ARN and its endpoints. No `DeleteTable`, no wildcard resource, no inline policies, no groups. `DeleteItem` is there because the web reset deletes the demo user's rows.
 
+`openloop-scheduler` is the role EventBridge Scheduler assumes for the daily catch-up (ADR-0013): `InvokeAgentRuntime` on the one runtime ARN, trusted only by `scheduler.amazonaws.com` from this account, nothing else.
+
 `openloop-dev` holds `AdministratorAccess` (`STATUS.md` *Blocked*). Normal for a hackathon, worth retiring afterwards.
 
 ## Application surface
