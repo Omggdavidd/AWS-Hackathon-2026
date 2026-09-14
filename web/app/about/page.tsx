@@ -13,19 +13,27 @@ const TEAM = [
 const STORIES = [
   {
     who: 'Students',
-    text: 'A registration deposit due Friday, a form the department is waiting on, a housing fee. Open Loops keeps each one open until the receipt or the confirmation shows up in your mail, and puts the deadline on your calendar.',
+    state: 'needs-you',
+    label: 'Needs you',
+    text: 'A registration deposit due Friday. A form the department is waiting on. A housing fee. Each stays open until the receipt or the confirmation shows up in your mail, with the deadline on your calendar.',
   },
   {
     who: 'Applications and follow-ups',
-    text: 'You applied, they said thanks, and nothing since. That is a Waiting loop: the ledger knows who owes the next move, the agent drafts the follow-up for you to send, and the loop closes when the reply arrives.',
+    state: 'waiting',
+    label: 'Waiting',
+    text: 'You applied, they said thanks, and nothing since. The ledger knows who owes the next move, the agent drafts the follow-up for you to send, and the loop closes when the reply arrives.',
   },
   {
     who: 'A manager buried in mail',
-    text: 'A branch manager gets a hundred messages a day, and the six that carry a real request are lost among them. The ledger holds only what is owed and to whom, with the evidence; everything else stays quiet.',
+    state: 'watching',
+    label: 'Watching',
+    text: 'A hundred messages a day, and the six that carry a real request are lost among them. The ledger holds only what is owed and to whom, with the evidence. Everything else stays quiet.',
   },
   {
     who: 'Time away',
-    text: 'A week of leave, or a week when you cannot face the inbox. The agent keeps checking in on its own and Catch me up tells you what changed. Only a decision that is genuinely yours interrupts you.',
+    state: 'resolved',
+    label: 'Resolved',
+    text: 'A week of leave, or a week when you cannot face the inbox. The agent checks in on its own every morning and tells you what changed. Only a decision that is genuinely yours interrupts you.',
   },
 ]
 
@@ -86,12 +94,16 @@ export default function AboutPage() {
       <section className="about-section" aria-labelledby="about-who">
         <h2 id="about-who">Who it is for</h2>
         <p>
-          Anyone whose obligations arrive as email and quietly expire there. The same four states
-          cover very different lives.
+          Anyone whose obligations arrive as email and quietly expire there. Four lives, one ledger:
+          each story is a state the agent already tracks.
         </p>
         <ul className="about-stories">
           {STORIES.map((story) => (
-            <li key={story.who}>
+            <li key={story.who} data-state={story.state}>
+              <span className="about-chip">
+                <StateIcon name={story.state} />
+                {story.label}
+              </span>
               <strong>{story.who}</strong>
               <p>{story.text}</p>
             </li>
@@ -143,10 +155,15 @@ export default function AboutPage() {
           connecting anything. In the order we would build it:
         </p>
         <ol className="about-next">
-          {NEXT.map((item) => (
+          {NEXT.map((item, i) => (
             <li key={item.title}>
-              <strong>{item.title}</strong>
-              <p>{item.text}</p>
+              <span className="about-step" aria-hidden="true">
+                {i + 1}
+              </span>
+              <div>
+                <strong>{item.title}</strong>
+                <p>{item.text}</p>
+              </div>
             </li>
           ))}
         </ol>
