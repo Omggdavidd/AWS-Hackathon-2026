@@ -174,6 +174,9 @@ const HUB = { x: 555, y: 26, width: 250, height: 150 }
 const WIDTH = 300
 const DOCK_INSET = 104
 const DRAG_THRESHOLD = 6
+/** Matches the phone layout in loop-board.css, where the groups stack and the page scrolls instead of the canvas. */
+const STACKED = '(max-width: 767px)'
+const stacked = () => matchMedia(STACKED).matches
 const groupHeight = (count: number) => 88 + Math.min(Math.max(count, 1) * 102, 322)
 type Gesture = {
   kind: 'pan' | 'move' | 'resize'
@@ -277,6 +280,10 @@ export function LoopBoard({
     const group = visible.find((g) => g.id === id)
     const point = positionsRef.current[id]
     if (!el || !group || !point) return
+    if (stacked()) {
+      document.getElementById(`board-${id}`)?.scrollIntoView({ block: 'start' })
+      return
+    }
     updateCamera(
       fitCamera(
         { ...point, width: WIDTH, height: heightOf(positionsRef.current, group) },
@@ -334,6 +341,7 @@ export function LoopBoard({
     const el = viewport.current
     if (!el) return
     const wheel = (event: WheelEvent) => {
+      if (stacked()) return
       if (
         !event.ctrlKey &&
         !event.metaKey &&
@@ -358,7 +366,7 @@ export function LoopBoard({
   }, [updateCamera])
 
   function begin(event: PointerEvent<HTMLElement>, kind: Gesture['kind'], group?: Group) {
-    if (event.button !== 0 || gesture.current) return
+    if (event.button !== 0 || gesture.current || stacked()) return
     if (
       kind === 'pan' &&
       event.target instanceof Element &&
@@ -519,7 +527,11 @@ export function LoopBoard({
         <div
           className="board-plane"
           data-ready={ready}
-          style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})` }}
+          style={
+            {
+              '--camera': `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
+            } as React.CSSProperties
+          }
         >
           <svg className="board-connections" aria-hidden="true">
             {visible.map((g) => {
@@ -570,7 +582,13 @@ export function LoopBoard({
                 className="board-group"
                 data-state={g.tone}
                 data-dragging={dragging === g.id}
-                style={{ left: p.x, top: p.y, height: heightOf(positions, g) }}
+                style={
+                  {
+                    left: p.x,
+                    top: p.y,
+                    '--group-height': `${heightOf(positions, g)}px`,
+                  } as React.CSSProperties
+                }
               >
                 <div className="board-group-head">
                   <button

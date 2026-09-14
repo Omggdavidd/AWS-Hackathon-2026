@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { TOUR_COOKIE } from '@/lib/agent-name'
 
 type Step = { target: string; title: string; text: string }
@@ -60,6 +61,7 @@ export function Tour() {
   const [index, setIndex] = useState(0)
   const [box, setBox] = useState<Box>()
   const [done, setDone] = useState(false)
+  const [cardHeight, setCardHeight] = useState(180)
   const card = useRef<HTMLDivElement>(null)
 
   const steps = STEPS
@@ -74,7 +76,9 @@ export function Tour() {
       else finish()
       return
     }
-    el.scrollIntoView({ block: 'center', behavior: 'instant' })
+    // A tall anchor (the agent panel on a phone) goes to the top so the card fits beneath it.
+    const tall = el.getBoundingClientRect().height > window.innerHeight / 3
+    el.scrollIntoView({ block: tall ? 'start' : 'center', behavior: 'instant' })
     const measure = () => {
       const r = el.getBoundingClientRect()
       setBox({ top: r.top - 6, left: r.left - 6, width: r.width + 12, height: r.height + 12 })
@@ -87,6 +91,12 @@ export function Tour() {
       window.removeEventListener('scroll', measure, true)
     }
   }, [index, done, step?.target])
+
+  // Place the card by its real height: the same text wraps much taller on a phone.
+  useLayoutEffect(() => {
+    const height = card.current?.offsetHeight
+    if (height && height !== cardHeight) setCardHeight(height)
+  })
 
   useEffect(() => {
     card.current?.querySelector<HTMLButtonElement>('button[data-next]')?.focus()
@@ -116,11 +126,17 @@ export function Tour() {
   }
 
   if (done || !box || !step) return null
-  const below = box.top + box.height + GAP + 180 < window.innerHeight
-  const cardTop = below ? box.top + box.height + GAP : Math.max(12, box.top - GAP - 180)
+  // A phone's bottom tabs cover the foot of the window, so the card stops above them.
+  const tabs = document.querySelector('.bottom-tabs')?.getBoundingClientRect()
+  const floor = tabs?.height ? tabs.top : window.innerHeight
+  const below = box.top + box.height + GAP + cardHeight <= floor - 12
+  const cardTop = below
+    ? box.top + box.height + GAP
+    : Math.max(12, Math.min(box.top - GAP - cardHeight, floor - cardHeight - 12))
   const cardLeft = Math.max(12, Math.min(box.left, window.innerWidth - CARD_WIDTH - 12))
 
-  return (
+  // Portalled to the body: inside the shell's stacking context the bottom tabs would cover it.
+  return createPortal(
     <div className="tour" role="dialog" aria-modal="true" aria-labelledby="tour-title">
       <div
         className="tour-ring"
@@ -149,6 +165,7 @@ export function Tour() {
           </span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
