@@ -3,10 +3,11 @@ import { access, copyFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { DynamoLedgerStore } from '@openloop/ledger-dynamo'
 import { type LedgerStore, LocalLedgerStore } from '@openloop/shared'
+import { DEMO_NAME } from './profile'
 
 /** Single demo user until auth exists (architecture §6). */
 export const USER_ID = 'user-alex'
-export const USER_NAME = 'Alex'
+export const USER_NAME = DEMO_NAME
 
 const repoRoot = process.env.OPENLOOP_REPO_ROOT ?? path.resolve(process.cwd(), '..')
 const ledgerFile =

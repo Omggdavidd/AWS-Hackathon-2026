@@ -8,14 +8,14 @@ import { Headline } from '@/components/headline'
 import { LoopDetail } from '@/components/loop-detail'
 import { TodayList } from '@/components/today-list'
 import { Tour } from '@/components/tour'
-import { Welcome } from '@/components/welcome'
 import { scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName, TOUR_COOKIE } from '@/lib/agent-name'
 import { HOME_COOKIE, HOME_HREF, parseHome } from '@/lib/appearance'
 import { summarizeChanges } from '@/lib/changes'
 import { pendingDecisions } from '@/lib/decisions'
 import { formatDateTime, groupByStatus } from '@/lib/format'
-import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
+import { getStore, USER_ID } from '@/lib/ledger'
+import { readProfile } from '@/lib/profile'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,13 +31,12 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
   if (view === 'calendar') redirect('/calendar')
   const selected = typeof rawLoop === 'string' && rawLoop ? rawLoop : undefined
   const jar = await cookies()
-  const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value)
-  // First visit: nothing is named yet, so the product introduces itself before showing a list.
-  if (!agentName) return <Welcome />
   // The view the person chose to open on, unless the list is asked for by name or a loop is named.
   const home = parseHome(jar.get(HOME_COOKIE)?.value)
   if (home !== 'today' && view !== 'list' && !selected && !rawTour) redirect(HOME_HREF[home])
   const tour = rawTour === '1' || !jar.get(TOUR_COOKIE)
+  const profile = readProfile(jar)
+  const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value)
 
   const store = await getStore()
   const [loops, audit] = await Promise.all([
@@ -59,7 +58,7 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
       {tour && <Tour />}
       <section className="today-main" aria-label="Today">
         {banner && <ChangeBanner sentences={banner.sentences} latestAt={banner.latestAt} />}
-        <Headline groups={groups} name={USER_NAME} now={now} />
+        <Headline groups={groups} name={profile.name} now={now} />
         <AgentPanel configured={scanConfigured} checked={checked} name={agentName} />
         <DecisionStrip decisions={decisions} />
         <p className="view-hint">

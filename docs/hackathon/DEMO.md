@@ -28,7 +28,7 @@ Check before you hit record:
 
 - [ ] The agent panel says *"Your agent"* with all four buttons live, not greyed. On the deployed URL this is already true; locally it needs `web/.env.local`.
 - [ ] The ledger has been reset and freshly scanned, not left mid-demo. The bar under the greeting should read **6 need you, 1 waiting on others, 3 on your radar, 1 of 11 closed**. (As of 2026-09-13 the deployed ledger is mid-demo — 3 need you, 5 of 12 closed, a delta already run — so it *must* be reset before a take. That is #29.)
-- [ ] Decide whether the take opens on the welcome screen. A fresh browser profile shows it (name the agent, then the five-stop tour); a profile that has visited before goes straight to Today. Either is fine; do not let the tour run mid-scene.
+- [ ] Decide whether the take opens on the welcome screen. A fresh browser profile shows it on every route (your name, what the inbox is for, the inbox, the agent's name, then the five-stop tour); a profile that has visited before goes straight to Today. Either is fine; do not let the tour run mid-scene.
 - [ ] Light theme, browser at 1440 wide, bookmarks bar hidden, notifications silenced.
 - [ ] A second browser tab already open on `docs/architecture/openloop-architecture.png` and one on the CloudWatch log group, for scene 7.
 

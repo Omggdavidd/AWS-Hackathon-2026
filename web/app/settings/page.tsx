@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { renameAgent } from '@/app/actions'
+import { renameAgent, updateProfile } from '@/app/actions'
 import { AppearanceControls } from '@/components/appearance-menu'
 import { NotificationSetting } from '@/components/notification-setting'
 import { ResetDemo } from '@/components/reset-demo'
@@ -14,6 +14,7 @@ import {
   parseHome,
 } from '@/lib/appearance'
 import { LEDGER_TABLE } from '@/lib/ledger'
+import { EMAIL_MAX, PURPOSES, purposeLabel, readProfile } from '@/lib/profile'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,12 +25,87 @@ export default async function SettingsPage() {
   const accent = parseAccent(jar.get(ACCENT_COOKIE)?.value)
   const density = parseDensity(jar.get(DENSITY_COOKIE)?.value)
   const home = parseHome(jar.get(HOME_COOKIE)?.value)
+  const profile = readProfile(jar)
   return (
     <div className="page-column settings">
       <header className="page-head">
         <h1>Settings</h1>
         <p>Your agent, how the app looks, what it may do, and where its mail comes from.</p>
       </header>
+
+      <section className="setting-section" aria-labelledby="s-you">
+        <h2 id="s-you">You</h2>
+        <form action={updateProfile} className="setting-stack">
+          <div className="setting-row">
+            <div>
+              <label htmlFor="settings-you" className="setting-name">
+                Name
+              </label>
+              <p className="setting-hint">How the app greets you.</p>
+            </div>
+            <div className="setting-inline">
+              <input
+                id="settings-you"
+                name="you"
+                defaultValue={profile.name}
+                maxLength={NAME_MAX}
+                autoComplete="given-name"
+                required
+              />
+            </div>
+          </div>
+          <div className="setting-row">
+            <div>
+              <label htmlFor="settings-inbox" className="setting-name">
+                Inbox
+              </label>
+              <p className="setting-hint">
+                The address in the top bar. The demo reads the seeded inbox whatever is typed here;
+                live Gmail is the next connection (#20).
+              </p>
+            </div>
+            <div className="setting-inline">
+              <input
+                id="settings-inbox"
+                name="inbox"
+                type="email"
+                defaultValue={profile.inbox}
+                maxLength={EMAIL_MAX}
+                autoComplete="email"
+                required
+              />
+            </div>
+          </div>
+          <div className="setting-row">
+            <div>
+              <p className="setting-name">Using it for</p>
+              <p className="setting-hint">Work, school, personal, or the inbox you only skim.</p>
+            </div>
+            <div
+              className="setting-inline setting-choices"
+              role="radiogroup"
+              aria-label="Using it for"
+            >
+              {PURPOSES.map((p) => (
+                <label key={p.id} className="welcome-choice compact">
+                  <input
+                    type="radio"
+                    name="purpose"
+                    value={p.id}
+                    defaultChecked={p.id === profile.purpose}
+                  />
+                  <span className="welcome-choice-label">{p.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="setting-row setting-actions">
+            <SubmitButton pendingLabel="Saving…" subtle>
+              Save
+            </SubmitButton>
+          </div>
+        </form>
+      </section>
 
       <section className="setting-section" aria-labelledby="s-agent">
         <h2 id="s-agent">Your agent</h2>
@@ -83,8 +159,10 @@ export default async function SettingsPage() {
           <div>
             <p className="setting-name">Inbox and calendar</p>
             <p className="setting-hint">
-              Reading the seeded demo inbox: fifteen messages and three events. Live Gmail and
-              Google Calendar are the next connection, tracked as #20.
+              Connected as <strong>{profile.inbox}</strong> for{' '}
+              {purposeLabel(profile.purpose).toLowerCase()}. Reading the seeded demo inbox: fifteen
+              messages and three events. Live Gmail and Google Calendar are the next connection,
+              tracked as #20.
             </p>
           </div>
           <span className="setting-state">Demo fixtures</span>
