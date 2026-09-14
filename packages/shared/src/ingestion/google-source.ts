@@ -331,8 +331,13 @@ function decodeEntities(text: string): string {
   return text.replace(
     /&(?:#(\d+)|#x([0-9a-f]+)|(amp|lt|gt|quot|apos|nbsp));/gi,
     (match, dec, hex, name) => {
-      if (dec) return String.fromCodePoint(Number(dec))
-      if (hex) return String.fromCodePoint(Number.parseInt(hex, 16))
+      if (dec || hex) {
+        // `String.fromCodePoint` throws above U+10FFFF, and one bad entity in one HTML mail must
+        // not abort the scan; leave the entity as written.
+        const point = dec ? Number(dec) : Number.parseInt(hex, 16)
+        if (!Number.isInteger(point) || point < 0 || point > 0x10ffff) return match
+        return String.fromCodePoint(point)
+      }
       const named: Record<string, string> = {
         amp: '&',
         lt: '<',

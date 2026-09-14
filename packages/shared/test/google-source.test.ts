@@ -285,6 +285,10 @@ describe('Gmail helpers', () => {
 
   it('strips markup and decodes entities', () => {
     expect(stripHtml('<div>Rent is &#36;1,200 &amp; due</div>')).toBe('Rent is $1,200 & due')
+    // An out-of-range numeric entity must not throw and abort the whole scan.
+    expect(stripHtml('<p>hi &#99999999; there &#xFFFFFFFF;</p>')).toBe(
+      'hi &#99999999; there &#xFFFFFFFF;',
+    )
   })
 
   it('splits an address list without breaking a quoted comma', () => {
