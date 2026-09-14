@@ -47,7 +47,11 @@ export interface ScanSummary {
   skipped: number
   created: number
   updated: number
-  /** Threads whose pipeline threw. The scan carries on; the rest of the inbox still lands. */
+  /**
+   * Threads whose pipeline threw. The scan carries on; the rest of the inbox still lands. A thread
+   * that threw after its loop reached the ledger is counted in both `created` and here, so `created`
+   * never reports fewer loops than a person can see.
+   */
   failed: number
   byStatus: Record<string, number>
 }
@@ -60,7 +64,9 @@ const DEFAULT_CONCURRENCY = 3
  * per new thread, and writes the ledger. A thread that already has a loop takes the delta path: only
  * messages the loop has not seen go to the Investigator, which may transition the loop with a reason.
  * Threads run concurrently, so the ledger writes are guarded: `commit` keeps the duplicate check and
- * the loop it creates atomic, and `loopLock` serializes the read-modify-write of one loop.
+ * the claim it makes atomic, and `loopLock` serializes the read-modify-write of one loop. A new
+ * loop's row is written last, after the evidence it hangs from, so a thread that fails partway
+ * leaves nothing a person can see.
  */
 export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
   const { source, store, userId, specialists } = opts
@@ -105,16 +111,26 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     }
   }
 
-  /** An open loop is the one to update; a resolved one still beats opening a duplicate of it. */
-  function pick(known: OpenLoop[]): OpenLoop | undefined {
-    return known.find((l) => l.status !== 'RESOLVED') ?? known[0]
+  /**
+   * An open loop is the one to update; a resolved one still beats opening a duplicate of it. Among
+   * resolved ones a loop that already carries this thread wins: that loop is this thread's, while a
+   * loop matched only through a source the investigation cited belongs to another thread. Stated
+   * here rather than left to the order the candidates arrive in, which changed with every rewrite of
+   * the duplicate check and silently moved a thread's mail onto a different loop.
+   */
+  function pick(candidates: OpenLoop[], threadId: string): OpenLoop | undefined {
+    return (
+      candidates.find((l) => l.status !== 'RESOLVED') ??
+      candidates.find((l) => l.sourceRefs.some((r) => r.threadId === threadId)) ??
+      candidates[0]
+    )
   }
 
   async function findExisting(
     threadId: string,
     sourceIds: string[],
   ): Promise<OpenLoop | undefined> {
-    return pick(await knownFor(threadId, sourceIds))
+    return pick(await knownFor(threadId, sourceIds), threadId)
   }
 
   async function takeDeltaPath(
@@ -125,7 +141,11 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     record: (event: ScanEvent) => void,
   ): Promise<void> {
     await loopLock(match.id, async () => {
-      const existing = (await store.getLoop(userId, match.id)) ?? match
+      const existing = await store.getLoop(userId, match.id)
+      // Only a loop this scan claimed can be missing, and only when the thread that claimed it died
+      // before publishing the row. This thread's mail belongs to that loop, so it fails with it
+      // rather than publishing a loop whose evidence nobody wrote.
+      if (!existing) throw new Error(`loop ${match.id} was claimed but never published`)
       const seen = new Set<string>([
         ...existing.sourceRefs.map((r) => r.sourceId),
         ...(await store.listEvidence(existing.id)).map((e) => e.sourceId),
@@ -275,22 +295,17 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     const cited = [...sourceIds].filter((id) => !threadIds.includes(id))
     const known = cited.length > 0 ? await knownFor(threadId, cited) : []
 
-    const claimed = await commit(async () => {
-      // What the queries above cannot have seen is a loop another thread opened since; `opened`
-      // holds exactly those, and is written in this same section.
-      const duplicate = pick([...known, ...openedFor(threadId, [...sourceIds, ...threadIds])])
-      if (duplicate) return duplicate
-      await store.putLoop(loop)
-      remember(loop)
-      return undefined
-    })
-    if (claimed) return takeDeltaPath(claimed, thread, threadId, threadStartedAt, record)
-
-    // Under the loop's own lock, like every other write to a loop: `commit` published the row, so
-    // another thread can already be on the delta path for it. Outside the lock its evidence, its
-    // opening audit and its actions would land in the middle of that thread's writes.
     let actionCount = 0
-    await loopLock(loopId, async () => {
+    let published = false
+    /**
+     * Everything the loop is made of, then the row that makes it visible. Evidence is only reachable
+     * through its loop, so a thread that dies while writing it leaves nothing a person can see;
+     * publishing the row first left loops with an empty evidence panel and no history whenever a
+     * later write threw, and the per-thread catch turned that into a silent one. Runs under the
+     * loop's own lock, like every other write to a loop: `commit` has already claimed it, so another
+     * thread can be on its delta path.
+     */
+    const write = async (): Promise<void> => {
       for (const e of investigation.evidence) {
         const evidence: Evidence = {
           id: randomUUID(),
@@ -306,52 +321,100 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
         await store.appendEvidence(evidence)
       }
 
-      await store.appendAudit(
-        audit(
-          userId,
-          loopId,
-          'loop_created',
-          `${extracted.rationale} ${investigation.rationale}`.trim(),
-          now,
-        ),
-      )
+      await store.putLoop(loop)
+      published = true
 
-      for (const proposed of judgment.proposedActions) {
-        const action: ProposedAction = {
-          id: randomUUID(),
-          loopId,
-          userId,
-          type: proposed.type,
-          riskTier: proposed.riskTier,
-          requiresApproval: proposed.riskTier === 'high',
-          summary: proposed.summary,
-          payload: proposed.payload,
-          status: 'PROPOSED',
-          createdAt: now,
+      try {
+        await store.appendAudit(
+          audit(
+            userId,
+            loopId,
+            'loop_created',
+            `${extracted.rationale} ${investigation.rationale}`.trim(),
+            now,
+          ),
+        )
+
+        for (const proposed of judgment.proposedActions) {
+          const action: ProposedAction = {
+            id: randomUUID(),
+            loopId,
+            userId,
+            type: proposed.type,
+            riskTier: proposed.riskTier,
+            requiresApproval: proposed.riskTier === 'high',
+            summary: proposed.summary,
+            payload: proposed.payload,
+            status: 'PROPOSED',
+            createdAt: now,
+          }
+          await store.putAction(action)
+          await store.appendAudit({
+            ...audit(userId, loopId, 'action_proposed', proposed.summary, now),
+            actionId: action.id,
+          })
+          actionCount++
         }
-        await store.putAction(action)
-        await store.appendAudit({
-          ...audit(userId, loopId, 'action_proposed', proposed.summary, now),
-          actionId: action.id,
-        })
-        actionCount++
+      } catch (err) {
+        // The row is already in the ledger and a person will read it. Say in its own history that
+        // the thread failed, rather than show a loop that cannot explain what is missing from it.
+        await store
+          .appendAudit(
+            audit(
+              userId,
+              loopId,
+              'loop_created',
+              `The scan of this thread failed after the loop was opened, so it may be missing proposed actions: ${
+                err instanceof Error ? err.message : String(err)
+              }`,
+              now,
+            ),
+          )
+          .catch(() => {})
+        throw err
       }
-    })
+    }
 
-    summary.created++
-    summary.byStatus[status] = (summary.byStatus[status] ?? 0) + 1
-    record({ type: 'loop', loop, actions: actionCount })
-    log({
-      evt: 'loop_created',
-      threadId,
-      loopId,
-      status,
-      priority: loop.priority,
-      riskLevel: loop.riskLevel,
-      interruptUser: loop.interruptUser,
-      actions: actionCount,
-      ms: elapsed(threadStartedAt),
+    const claimed = await commit(async () => {
+      // What the queries above cannot have seen is a loop another thread opened since; `opened`
+      // holds exactly those, and is written in this same section.
+      const duplicate = pick(
+        [...known, ...openedFor(threadId, [...sourceIds, ...threadIds])],
+        threadId,
+      )
+      if (duplicate) return { duplicate }
+      remember(loop)
+      // The lock is taken inside the section that claimed the loop, not after it: `commit` is one
+      // queue, so any thread that later finds this claim in `opened` queues behind `write` and
+      // cannot read the loop before its records are there.
+      return { write: loopLock(loopId, write) }
     })
+    if ('duplicate' in claimed) {
+      return takeDeltaPath(claimed.duplicate, thread, threadId, threadStartedAt, record)
+    }
+
+    try {
+      await claimed.write
+    } finally {
+      // Counted from the row, not from the end of the write: a throw after `putLoop` must not leave
+      // the summary reporting fewer loops than the ledger holds.
+      if (published) {
+        summary.created++
+        summary.byStatus[status] = (summary.byStatus[status] ?? 0) + 1
+        record({ type: 'loop', loop, actions: actionCount })
+        log({
+          evt: 'loop_created',
+          threadId,
+          loopId,
+          status,
+          priority: loop.priority,
+          riskLevel: loop.riskLevel,
+          interruptUser: loop.interruptUser,
+          actions: actionCount,
+          ms: elapsed(threadStartedAt),
+        })
+      }
+    }
   }
 
   const queue = [...threads]
