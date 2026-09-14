@@ -1,7 +1,13 @@
 import type { AuditEvent, AuditKind } from '@openloop/shared'
 import { loop } from '@openloop/shared/testing'
 import { describe, expect, it } from 'vitest'
-import { buildNotices } from './notifications'
+import {
+  buildNotices,
+  type Notice,
+  type NoticeKind,
+  SUMMARY_CAP,
+  summarizeNotices,
+} from './notifications'
 
 const newest = '2026-09-13T12:00:00.000Z'
 const middle = '2026-09-13T09:00:00.000Z'
@@ -129,5 +135,71 @@ describe('buildNotices', () => {
   it('prefers "is done" over "was handled" once the loop is closed', () => {
     const feed = buildNotices([event('action_executed', 'loop-housing', newest)], [housing])
     expect(lines(feed.notices)).toEqual(['Housing fee is done.'])
+  })
+})
+
+/** A notice as the bubble sees it: only the kind and whether it is unread matter. */
+function notice(kind: NoticeKind, unread = true): Notice {
+  seq += 1
+  return {
+    id: `n${seq}`,
+    loopId: `loop-${seq}`,
+    title: 'Something',
+    text: 'changed.',
+    kind,
+    at: newest,
+    unread,
+    interrupts: false,
+  }
+}
+
+describe('summarizeNotices', () => {
+  it('names the most urgent category and counts the rest', () => {
+    const text = summarizeNotices([
+      notice('needs_you'),
+      notice('needs_you'),
+      notice('needs_you'),
+      notice('waiting'),
+      notice('waiting'),
+      notice('waiting'),
+      notice('waiting'),
+    ])
+    expect(text).toBe('3 need you and 4 more are waiting.')
+  })
+
+  it('leads with what needs a decision even when it is not the biggest pile', () => {
+    const text = summarizeNotices([notice('resolved'), notice('resolved'), notice('needs_you')])
+    expect(text).toBe('1 needs you and 2 more are done.')
+  })
+
+  it('says one line and stops when there is only one category', () => {
+    expect(summarizeNotices([notice('new'), notice('new')])).toBe('2 are new.')
+    expect(summarizeNotices([notice('handled')])).toBe('1 was handled.')
+  })
+
+  it('stops naming categories past two rather than listing every one', () => {
+    const text = summarizeNotices([
+      notice('needs_you'),
+      notice('waiting'),
+      notice('watching'),
+      notice('resolved'),
+    ])
+    expect(text).toBe('1 needs you and 3 more changed.')
+  })
+
+  it('ignores notices already seen, and says nothing when none are unread', () => {
+    expect(summarizeNotices([notice('needs_you'), notice('resolved', false)])).toBe('1 needs you.')
+    expect(summarizeNotices([notice('needs_you', false)])).toBeUndefined()
+    expect(summarizeNotices([])).toBeUndefined()
+  })
+
+  it('never grows past the cap, whatever the counts', () => {
+    const many = [
+      ...Array.from({ length: 40 }, () => notice('watching')),
+      ...Array.from({ length: 40 }, () => notice('needs_you')),
+    ]
+    const text = summarizeNotices(many)
+    expect(text).toBeDefined()
+    expect((text as string).length).toBeLessThanOrEqual(SUMMARY_CAP)
   })
 })

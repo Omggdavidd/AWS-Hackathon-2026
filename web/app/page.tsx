@@ -2,7 +2,6 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { AgentPanel } from '@/components/agent-panel'
-import { ChangeBanner } from '@/components/change-banner'
 import { DecisionStrip } from '@/components/decision-strip'
 import { Headline } from '@/components/headline'
 import { LoopDetail } from '@/components/loop-detail'
@@ -11,7 +10,6 @@ import { Tour } from '@/components/tour'
 import { scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName, TOUR_COOKIE } from '@/lib/agent-name'
 import { HOME_COOKIE, HOME_HREF, parseHome } from '@/lib/appearance'
-import { summarizeChanges } from '@/lib/changes'
 import { formatDateTime, groupByStatus } from '@/lib/format'
 import { loadAudit, loadDecisions, loadLoops, USER_ID } from '@/lib/ledger'
 import { readProfile } from '@/lib/profile'
@@ -48,16 +46,11 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
   const checked = lastScan ? formatDateTime(lastScan.at) : undefined
   const now = new Date()
   const groups = groupByStatus(loops)
-  // Rendered only when something newer than the last dismissal happened, so there is no flash.
-  const changed = summarizeChanges(audit, loops, now)
-  const seen = jar.get('openloops-seen')?.value
-  const banner = changed && (!seen || changed.latestAt > seen) ? changed : undefined
 
   return (
     <div className="today" data-open={selected ? '' : undefined}>
       {tour && <Tour />}
       <section className="today-main" aria-label="Today">
-        {banner && <ChangeBanner sentences={banner.sentences} latestAt={banner.latestAt} />}
         <Headline groups={groups} name={profile.name} now={now} />
         <AgentPanel
           configured={scanConfigured}
