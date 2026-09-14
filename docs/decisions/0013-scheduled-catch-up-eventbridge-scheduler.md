@@ -26,7 +26,7 @@ Chosen option: "EventBridge Scheduler, daily, `catch_up`", because it needs no n
 ### Consequences
 
 * Good, because the activity feed and the change banner show the agent checked in while nobody was there, which is the unattended story, for about thirty cents a month.
-* Good, because the spend is bounded by construction: one cheap command, once a day, and the $25 budget alarm on the account is the backstop.
+* Good, because the spend is bounded by construction: one cheap command, once a day, and the $60 budget alarm on the account is the backstop.
 * Bad, because a run during a recording session would move the Catch me up baseline; `docs/hackathon/DEMO.md` says when it fires and how to disable it (`pnpm --filter @openloop/agent create-schedule -- --disable`).
 * Bad, because a scheduled `scan` or `handle` would need a run lock on the ledger and an asynchronous target (a small Lambda that starts the runtime and returns); neither exists, so the agent still only reads mail when a person asks.
 
