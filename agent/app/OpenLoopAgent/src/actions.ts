@@ -7,9 +7,12 @@ import {
   canTransition,
   type IngestionSource,
   type LedgerStore,
+  type LoopStatus,
   mayExecute,
+  type OpenLoop,
   type ProposedAction,
   type ProposedActionType,
+  StaleLoopWriteError,
 } from '@openloop/shared'
 import type { Specialists } from './agents'
 import { elapsed, type Logger, noopLogger, timed } from './log'
@@ -165,38 +168,16 @@ export async function executeAction(
     await store.putAction(executed)
     await store.appendAudit(audit(userId, action, 'action_executed', result.summary, now))
     if (plan.loopStatusAfter) {
-      // `loop` is the snapshot taken before the model and the sink ran, and that window is the
-      // length of a real execution — about 20 seconds with "I already did this" on screen. Build
-      // the transition from what the ledger says now, or a resolution made in the meantime is
-      // silently overwritten and the loop reopens under the user (#66).
-      const current = (await store.getLoop(userId, loop.id)) ?? loop
-      if (current.status === 'RESOLVED') {
-        // The effect still happened and is already recorded above; only the status write is
-        // dropped. The user closing a loop outranks what the agent planned before they did.
-        log({ evt: 'transition_skipped', actionId, loopId: loop.id, reason: 'already resolved' })
-        await store.appendAudit(
-          audit(
-            userId,
-            action,
-            'notification',
-            `${plan.summary}; you had already marked this done, so it stays closed`,
-            now,
-          ),
-        )
-      } else if (canTransition(current.status, plan.loopStatusAfter)) {
-        const moved = applyTransition(current, plan.loopStatusAfter, now)
-        await store.putLoop(moved)
-        await store.appendAudit({
-          ...audit(
-            userId,
-            action,
-            'state_changed',
-            `${plan.summary}; ${current.status} -> ${moved.status}`,
-            now,
-          ),
-          details: { from: current.status, to: moved.status },
-        })
-      }
+      await applyPlannedStatus({
+        store,
+        userId,
+        loop,
+        action,
+        plan,
+        to: plan.loopStatusAfter,
+        now,
+        log,
+      })
     }
     log({ evt: 'action_executed', actionId, loopId: loop.id, ms: elapsed(startedAt) })
     return { actionId, status: 'EXECUTED', summary: result.summary }
@@ -247,6 +228,97 @@ export async function handleWhatYouCan(opts: ExecuteOptions): Promise<HandleSumm
     summary.handled.push(await executeAction(opts, action.id))
   }
   return summary
+}
+
+/**
+ * Attempts at the compare-and-swap before giving up, as in `web/lib/resolve.ts`: one retry covers
+ * a real race, three bounds the work and can never spin.
+ */
+const MAX_ATTEMPTS = 3
+
+/**
+ * Move the loop to the state the plan asked for, after the effect has already happened.
+ *
+ * `loop` is the snapshot taken before the model and the sink ran, and that window is the length of
+ * a real execution — about 20 seconds with "I already did this" on screen. The transition is built
+ * from what the ledger says now, or a resolution made in the meantime is silently overwritten and
+ * the loop reopens under the user (#66). The write is a compare-and-swap (ADR-0015), so a scan
+ * landing in the same window is not overwritten either; a lost race re-reads, runs the #66 guard
+ * again against the fresh record, and re-applies the plan's status to that.
+ *
+ * Nothing here throws. The effect is done and the action is already EXECUTED, so a status write
+ * that cannot land must not turn a finished action into a failed one: losing every attempt drops
+ * the status change and says so in the loop's history, as the resolved case does.
+ */
+async function applyPlannedStatus(input: {
+  store: LedgerStore
+  userId: string
+  loop: OpenLoop
+  action: ProposedAction
+  plan: ActionPlan
+  to: LoopStatus
+  now: string
+  log: Logger
+}): Promise<void> {
+  const { store, userId, loop, action, plan, to, now, log } = input
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const current = (await store.getLoop(userId, loop.id)) ?? loop
+    if (current.status === 'RESOLVED') {
+      // The effect still happened and is already recorded; only the status write is dropped. The
+      // user closing a loop outranks what the agent planned before they did.
+      log({
+        evt: 'transition_skipped',
+        actionId: action.id,
+        loopId: loop.id,
+        reason: 'already resolved',
+      })
+      await store.appendAudit(
+        audit(
+          userId,
+          action,
+          'notification',
+          `${plan.summary}; you had already marked this done, so it stays closed`,
+          now,
+        ),
+      )
+      return
+    }
+    if (!canTransition(current.status, to)) return
+
+    const moved = applyTransition(current, to, now)
+    try {
+      await store.putLoop(moved, { ifUnchanged: true })
+    } catch (err) {
+      if (err instanceof StaleLoopWriteError) continue
+      throw err
+    }
+    await store.appendAudit({
+      ...audit(
+        userId,
+        action,
+        'state_changed',
+        `${plan.summary}; ${current.status} -> ${moved.status}`,
+        now,
+      ),
+      details: { from: current.status, to: moved.status },
+    })
+    return
+  }
+  log({
+    evt: 'transition_skipped',
+    actionId: action.id,
+    loopId: loop.id,
+    reason: 'lost to concurrent writes',
+  })
+  await store.appendAudit(
+    audit(
+      userId,
+      action,
+      'notification',
+      `${plan.summary}; the loop changed underneath too many times, so its state was left alone`,
+      now,
+    ),
+  )
 }
 
 function audit(

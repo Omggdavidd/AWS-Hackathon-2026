@@ -29,3 +29,4 @@ Format: MADR 4.0 minimal, see `adr-template.md`. Keep each under a page. Write i
 | [0012](0012-repository-layout-and-tooling.md) | pnpm workspace with web, agent, shared schemas and demo fixtures; Biome and Vitest | accepted |
 | [0013](0013-scheduled-catch-up-eventbridge-scheduler.md) | The agent checks in on its own: a daily catch-up scheduled with Amazon EventBridge Scheduler | proposed |
 | [0014](0014-runtime-lock-config-row-and-shared-secret.md) | A runtime lock lives in a CONFIG row of the ledger table, and a shared secret lifts it | proposed |
+| [0015](0015-optimistic-concurrency-on-loop-writes.md) | Loop writes can be compare-and-swap: a version on the record, a condition on the write | proposed |

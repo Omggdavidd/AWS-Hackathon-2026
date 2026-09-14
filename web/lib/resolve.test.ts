@@ -1,4 +1,4 @@
-import { LocalLedgerStore, type ProposedAction } from '@openloop/shared'
+import { LocalLedgerStore, type OpenLoop, type ProposedAction } from '@openloop/shared'
 import { loop } from '@openloop/shared/testing'
 import { describe, expect, it } from 'vitest'
 import { resolveLoopByUser } from './resolve'
@@ -76,5 +76,77 @@ describe('resolveLoopByUser', () => {
   it('returns false for an unknown loop', async () => {
     const store = await setup()
     expect(await resolveLoopByUser(store, 'user-1', 'nope', now)).toBe(false)
+  })
+})
+
+const SCAN_NEXT_ACTION = 'Scan: pay the deposit by Friday'
+
+/**
+ * Let a competing writer land on the loop between the caller's read and its own write, for the
+ * first `losses` attempts: the scan or the 07:00 catch-up against a user click. Returns the loops
+ * the caller tried to write, so a test can count its attempts.
+ */
+function raceWrites(
+  store: LocalLedgerStore,
+  losses: number,
+  change: (l: OpenLoop) => OpenLoop = (l) => ({ ...l, nextAction: SCAN_NEXT_ACTION }),
+): OpenLoop[] {
+  const write = store.putLoop.bind(store)
+  const attempts: OpenLoop[] = []
+  let left = losses
+  store.putLoop = async (loop, opts) => {
+    attempts.push(loop)
+    if (left > 0) {
+      left -= 1
+      const current = await store.getLoop(loop.userId, loop.id)
+      if (current) await write(change(current), { ifUnchanged: true })
+    }
+    return write(loop, opts)
+  }
+  return attempts
+}
+
+describe('resolveLoopByUser racing the agent', () => {
+  it('keeps what a scan wrote mid-click and still resolves, in one retry', async () => {
+    const store = await setup()
+    const attempts = raceWrites(store, 1)
+
+    expect(await resolveLoopByUser(store, 'user-1', 'loop-1', now)).toBe(true)
+
+    const after = await store.getLoop('user-1', 'loop-1')
+    expect(after?.status).toBe('RESOLVED')
+    expect(after?.nextAction).toBe(SCAN_NEXT_ACTION)
+    expect(attempts).toHaveLength(2)
+  })
+
+  it('audits the retried resolve once, not once per attempt', async () => {
+    const store = await setup()
+    await store.putAction(action({ id: 'a1' }))
+    raceWrites(store, 1)
+
+    await resolveLoopByUser(store, 'user-1', 'loop-1', now)
+
+    const audit = await store.listAudit('user-1', { loopId: 'loop-1' })
+    expect(audit.filter((e) => e.kind === 'state_changed')).toHaveLength(1)
+    expect(audit.filter((e) => e.kind === 'action_cancelled')).toHaveLength(1)
+  })
+
+  it('gives up after three attempts and reports it did nothing, rather than throwing', async () => {
+    const store = await setup()
+    const attempts = raceWrites(store, Number.POSITIVE_INFINITY)
+
+    expect(await resolveLoopByUser(store, 'user-1', 'loop-1', now)).toBe(false)
+
+    expect(attempts).toHaveLength(3)
+    expect((await store.getLoop('user-1', 'loop-1'))?.status).toBe('NEEDS_YOU')
+    expect(await store.listAudit('user-1', { loopId: 'loop-1' })).toEqual([])
+  })
+
+  it('stops when the re-read shows the loop was resolved by whoever won', async () => {
+    const store = await setup()
+    raceWrites(store, 1, (l) => ({ ...l, status: 'RESOLVED', resolvedAt: now }))
+
+    expect(await resolveLoopByUser(store, 'user-1', 'loop-1', now)).toBe(false)
+    expect(await store.listAudit('user-1', { loopId: 'loop-1' })).toEqual([])
   })
 })

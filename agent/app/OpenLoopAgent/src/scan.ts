@@ -10,7 +10,9 @@ import {
   type LedgerStore,
   OpenLoop,
   type ProposedAction,
+  type RiskJudgment,
   type ScanSummary,
+  StaleLoopWriteError,
 } from '@openloop/shared'
 import type { Specialists } from './agents'
 import { elapsed, type Logger, noopLogger, timed } from './log'
@@ -47,6 +49,12 @@ export type { ScanSummary }
 
 /** Threads run in parallel; three keeps the Bedrock round trips overlapping without hammering it. */
 const DEFAULT_CONCURRENCY = 3
+
+/**
+ * Attempts at a compare-and-swap on one loop before giving up, as in `web/lib/resolve.ts`: one
+ * retry covers a real race, three bounds the work and can never spin.
+ */
+const MAX_ATTEMPTS = 3
 
 /**
  * The Orchestrator (ADR-0003): groups messages by thread, runs Extractor, Investigator and Risk Judge
@@ -316,6 +324,11 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
         await store.appendEvidence(evidence)
       }
 
+      // Blind rather than a compare-and-swap, unlike every other loop write here: the id is a uuid
+      // minted in this process and claimed under `commit`, so no other writer can be holding this
+      // row, and `ifUnchanged` is a swap and not a create-if-absent — with no prior version it
+      // would overwrite an existing row just as happily (ADR-0015). Absent counts as 0, so the
+      // first conditional writer to touch this loop still claims it exactly once.
       await store.putLoop(loop)
       published = true
 
@@ -540,85 +553,127 @@ async function updateLoop(input: {
       confidence: e.confidence,
     })
   }
-  const knownRefs = new Set(loop.sourceRefs.map((r) => r.sourceId))
-  const sourceRefs = [
-    ...loop.sourceRefs,
-    ...newMessages
-      .filter((m) => !knownRefs.has(m.id))
-      .map((m) => ({ sourceType: 'email' as const, sourceId: m.id, threadId: m.threadId })),
-  ]
-
-  let next: OpenLoop = { ...loop, sourceRefs, updatedAt: now, confidence: result.confidence }
-  if (result.waitingOn) next.waitingOn = result.waitingOn
-  const from = loop.status
   const to = result.proposedStatus
+  const waitingOn = result.waitingOn ?? loop.waitingOn
   // The Investigator proposes a state; the lifecycle decides whether the loop can reach it. A
   // resolved loop cannot go back to uncertain, and `findExisting` hands a resolved loop to a
   // thread whose update can say exactly that. Refusing it costs one loop its state change;
   // letting `applyTransition` throw would cost the scan every thread still in flight.
-  const transitioned = canTransition(from, to)
-  const refused = !transitioned && to !== from
-  if (transitioned) {
-    next = applyTransition(next, to, now)
-    next.owner =
-      to === 'WAITING' ? 'other' : to === 'WATCHING' || to === 'RESOLVED' ? 'nobody' : 'user'
-
-    // What a responsibility costs you depends on the state it is in, so a state change re-opens the
-    // question the Risk Judge answered at creation. Without this the consequence, priority and
-    // interrupt decision stay frozen at the first message: a loop that was Waiting on someone and
-    // now asks something of the user would keep the low priority it earned while it was somebody
-    // else's move, and would never interrupt. Only on a transition, never on evidence alone — this
-    // is a model call, and new mail in a tracked thread is far more often confirmation than change.
-    const judgment = await timed(
+  //
+  // What a responsibility costs you depends on the state it is in, so a state change re-opens the
+  // question the Risk Judge answered at creation. Without this the consequence, priority and
+  // interrupt decision stay frozen at the first message: a loop that was Waiting on someone and
+  // now asks something of the user would keep the low priority it earned while it was somebody
+  // else's move, and would never interrupt. Only on a transition, never on evidence alone — this
+  // is a model call, and new mail in a tracked thread is far more often confirmation than change.
+  // It runs once, before the write attempts: a retry re-applies this judgment rather than paying
+  // for a second one.
+  let judgment: RiskJudgment | undefined
+  if (canTransition(loop.status, to)) {
+    judgment = await timed(
       log,
       { evt: 'role', role: 'judge', ...(threadId ? { threadId } : {}) },
       () =>
         specialists.judge({
           loop: {
-            title: next.title,
-            category: next.category,
-            actionType: next.actionType,
+            title: loop.title,
+            category: loop.category,
+            actionType: loop.actionType,
             status: to,
-            ...(next.dueAt ? { dueAt: next.dueAt } : {}),
-            ...(next.amount ? { amount: next.amount } : {}),
-            ...(next.requestedBy ? { requestedBy: next.requestedBy } : {}),
-            ...(next.waitingOn ? { waitingOn: next.waitingOn } : {}),
+            ...(loop.dueAt ? { dueAt: loop.dueAt } : {}),
+            ...(loop.amount ? { amount: loop.amount } : {}),
+            ...(loop.requestedBy ? { requestedBy: loop.requestedBy } : {}),
+            ...(waitingOn ? { waitingOn } : {}),
           },
           evidence: [...existingEvidence.map(asJudgeEvidence), ...result.evidence],
           now,
         }),
     )
-    next.consequence = judgment.consequence
-    next.riskLevel = judgment.riskTier
-    next.priority = judgment.priority
-    next.interruptUser = judgment.interruptUser
-    next.nextAction = judgment.nextAction
   }
-  await store.putLoop(next)
+
   const messageIds = newMessages.map((m) => m.id)
-  if (transitioned) {
-    await store.appendAudit({
-      ...audit(userId, loop.id, 'state_changed', `${result.rationale} ${from} -> ${to}`, now),
-      details: { from, to, messages: messageIds },
-    })
-  } else if (refused) {
-    await store.appendAudit({
-      ...audit(
-        userId,
-        loop.id,
-        'evidence_added',
-        `${result.rationale} ${from} -> ${to} is not a move this loop can make, so it stays ${from}`,
-        now,
-      ),
-      details: { from, proposed: to, messages: messageIds },
-    })
-  } else {
-    await store.appendAudit({
-      ...audit(userId, loop.id, 'evidence_added', result.rationale, now),
-      details: { messages: messageIds },
-    })
+  // The loop write is a compare-and-swap (ADR-0015). `loopLock` already serializes this scan's own
+  // writes to one loop, so a conflict here is the web app or a second scan, and the answer is the
+  // same as in `web/lib/resolve.ts`: re-read and re-apply the same intent to the fresh record. Only
+  // the loop row is written inside the retry — the evidence is already in the ledger and the audit
+  // row follows the write that won — so a retry cannot leave duplicates behind. Nothing in here
+  // takes `loopLock` again: this already runs inside that lock, and it is not reentrant.
+  let current = loop
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const from = current.status
+    // Never upgraded on a retry: the judgment belongs to the move the first read allowed, and a
+    // move that only became legal because somebody else wrote the loop would need a second Risk
+    // Judge call inside a write retry. A move the fresh record no longer allows is downgraded to
+    // refused, which is what the audit trail already has a sentence for.
+    const transitioned = judgment !== undefined && canTransition(from, to)
+    const refused = !transitioned && to !== from
+
+    const knownRefs = new Set(current.sourceRefs.map((r) => r.sourceId))
+    let next: OpenLoop = {
+      ...current,
+      sourceRefs: [
+        ...current.sourceRefs,
+        ...newMessages
+          .filter((m) => !knownRefs.has(m.id))
+          .map((m) => ({ sourceType: 'email' as const, sourceId: m.id, threadId: m.threadId })),
+      ],
+      updatedAt: now,
+      confidence: result.confidence,
+    }
+    if (result.waitingOn) next.waitingOn = result.waitingOn
+    if (transitioned && judgment) {
+      next = applyTransition(next, to, now)
+      next.owner =
+        to === 'WAITING' ? 'other' : to === 'WATCHING' || to === 'RESOLVED' ? 'nobody' : 'user'
+      next.consequence = judgment.consequence
+      next.riskLevel = judgment.riskTier
+      next.priority = judgment.priority
+      next.interruptUser = judgment.interruptUser
+      next.nextAction = judgment.nextAction
+    }
+
+    let stored: OpenLoop
+    try {
+      stored = await store.putLoop(next, { ifUnchanged: true })
+    } catch (err) {
+      if (!(err instanceof StaleLoopWriteError)) throw err
+      const fresh = await store.getLoop(userId, loop.id)
+      if (!fresh) throw new Error(`loop ${loop.id} disappeared while it was being updated`)
+      current = fresh
+      continue
+    }
+
+    if (transitioned) {
+      await store.appendAudit({
+        ...audit(userId, loop.id, 'state_changed', `${result.rationale} ${from} -> ${to}`, now),
+        details: { from, to, messages: messageIds },
+      })
+    } else if (refused) {
+      await store.appendAudit({
+        ...audit(
+          userId,
+          loop.id,
+          'evidence_added',
+          `${result.rationale} ${from} -> ${to} is not a move this loop can make, so it stays ${from}`,
+          now,
+        ),
+        details: { from, proposed: to, messages: messageIds },
+      })
+    } else {
+      await store.appendAudit({
+        ...audit(userId, loop.id, 'evidence_added', result.rationale, now),
+        details: { messages: messageIds },
+      })
+    }
+    return transitioned ? { loop: stored, from, to, reason: result.rationale } : undefined
   }
-  return transitioned ? { loop: next, from, to, reason: result.rationale } : undefined
+  // The evidence landed; only the loop row did not. Thrown rather than swallowed, so the thread is
+  // counted in `ScanSummary.failed` and named in the log instead of the scan reporting a state
+  // change the ledger does not hold. The rest of the inbox still lands: the worker catches this
+  // like any other thread failure.
+  throw new Error(
+    `loop ${loop.id} changed under this update ${MAX_ATTEMPTS} times; its state was not written`,
+  )
 }
 
 /**
