@@ -17,7 +17,8 @@ import { executeAction, handleWhatYouCan } from './src/actions'
 import { createSpecialists } from './src/agents'
 import { ask } from './src/ask'
 import { catchUp } from './src/catch-up'
-import { jsonLogger } from './src/log'
+import { GmailSourceSchema, googleAccessToken, googleSourceLogger } from './src/google-auth'
+import { jsonLogger, timed } from './src/log'
 import { loadModel, loadModelsByRole } from './src/model'
 import { runScan } from './src/scan'
 
@@ -37,8 +38,8 @@ const requestSchema = z.object({
   userId: z.string().min(1),
   /**
    * fixture: without a path, the demo inbox bundled into the runtime (the deployed bundle has no
-   * demo/ directory). gmail: a real inbox, read with the short-lived access token the web app
-   * obtained (ADR-0011); the runtime never sees a refresh token and stores no credential.
+   * demo/ directory). gmail: a real inbox, with the credentials the web app holds (ADR-0011); the
+   * runtime stores nothing it is given and asks Google for nothing on its own.
    */
   source: z
     .discriminatedUnion('kind', [
@@ -48,11 +49,7 @@ const requestSchema = z.object({
         /** `delta` overlays the next-morning batch (demo/seed-inbox-delta.json) for the delta-path demo. */
         variant: z.enum(['base', 'delta']).default('base'),
       }),
-      z.object({
-        kind: z.literal('gmail'),
-        accessToken: z.string().min(1),
-        backfillDays: z.number().int().positive().max(3650).default(90),
-      }),
+      GmailSourceSchema,
     ])
     .default({ kind: 'fixture', variant: 'base' }),
   /** Where loops are written. Local JSON is ephemeral on the Runtime; DynamoDB is shared with the web app (ADR-0009). */
@@ -72,11 +69,14 @@ const app = new BedrockAgentCoreApp({
   invocationHandler: {
     requestSchema,
     async *process(payload) {
+      // Structured pipeline lines go to stdout, which the Runtime ships to CloudWatch (#30).
+      const logger = jsonLogger()
       const source: IngestionSource =
         payload.source.kind === 'gmail'
           ? new GoogleSource({
-              accessToken: payload.source.accessToken,
+              accessToken: googleAccessToken(payload.source),
               backfillDays: payload.source.backfillDays,
+              onEvent: googleSourceLogger(logger),
             })
           : payload.source.path
             ? await FixtureSource.load(payload.source.path)
@@ -95,16 +95,20 @@ const app = new BedrockAgentCoreApp({
         store,
         userId: payload.userId,
       })
-      // Structured pipeline lines go to stdout, which the Runtime ships to CloudWatch (#30).
-      const logger = jsonLogger()
+      /** What live ingestion lost, once it is done. A fixture source loses nothing and has no stats. */
+      const logIngestionStats = () => {
+        if (source instanceof GoogleSource) logger({ evt: 'source_stats', ...source.stats })
+      }
       if (payload.command === 'catch_up') {
-        const summary = await catchUp({
-          store,
-          userId: payload.userId,
-          specialists,
-          ...(payload.now ? { now: payload.now } : {}),
-          ...(payload.since ? { since: payload.since } : {}),
-        })
+        const summary = await timed(logger, { evt: 'catch_up' }, () =>
+          catchUp({
+            store,
+            userId: payload.userId,
+            specialists,
+            ...(payload.now ? { now: payload.now } : {}),
+            ...(payload.since ? { since: payload.since } : {}),
+          }),
+        )
         yield { data: JSON.stringify({ type: 'catch_up', ...summary }) }
         return
       }
@@ -141,6 +145,7 @@ const app = new BedrockAgentCoreApp({
         } else {
           yield { data: JSON.stringify({ type: 'handled', ...(await handleWhatYouCan(opts)) }) }
         }
+        logIngestionStats()
         return
       }
       const events: string[] = []
@@ -153,6 +158,7 @@ const app = new BedrockAgentCoreApp({
         ...(payload.now ? { now: payload.now } : {}),
         onEvent: (e) => events.push(JSON.stringify(e)),
       })
+      logIngestionStats()
       for (const line of events) yield { data: line }
       yield { data: JSON.stringify({ type: 'summary', summary }) }
     },

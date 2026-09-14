@@ -21,6 +21,10 @@ Emitted by `agent/app/OpenLoopAgent/src/log.ts`, wired in `main.ts` (the Runtime
 | `scan_completed` | once per scan | `threads`, `created`, `updated`, `skipped`, `byStatus`, `ms` |
 | `action_started` / `action_blocked` / `action_executed` / `action_failed` | one action | `actionId`, `loopId`, `reason` or `error`, `ms` |
 | `sink` | the effect left the agent | `actionId`, `effect` (the kind only), `ms` |
+| `catch_up` | once per `catch_up` command | `ms` |
+| `source_message_skipped` | live Gmail returned a message we cannot read | `messageId`, `reason` |
+| `source_truncated` | a ceiling cut a live listing short | `kind` (messages or events), `limit`, `from`, `to` |
+| `source_stats` | once, after live ingestion | `skippedMessages`, `truncatedMessages`, `truncatedEvents` |
 
 A blocked high-risk action logs `action_blocked` and never reaches `sink` — the policy gate is
 visible in the log, which is the point worth showing a judge.
@@ -29,6 +33,12 @@ visible in the log, which is the point worth showing a judge.
 itself: a `draft_email` effect carries the recipient, subject and body, and a log line is the wrong
 place for any of them. `test/actions.test.ts` pins this — it asserts the recipient, subject and body
 of a drafted reply appear nowhere in the emitted lines, and it fails if the payload is logged again.
+
+The three `source_*` lines follow the same rule: a message Gmail sent in a shape we cannot read is
+logged by id and by the reason it failed to parse, never by subject, body or address, and
+`test/google-auth.test.ts` pins that. Nor does a Google credential reach the log: a refresh that
+Google rejects fails with the status and its answer, with the client secret and the refresh token
+struck out of both the message and anything built from it.
 
 No message content reaches the log at all: `thread_started` carries the thread id and a count, not
 the subject line. Subjects are often the sensitive part of a message, and `docs/architecture.md` §4
