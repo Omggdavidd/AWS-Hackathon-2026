@@ -37,7 +37,8 @@ import './loop-board.css'
 
 type Mode = 'state' | 'category' | 'area'
 
-const MODES: { id: Mode; title: string; hint: string; icon: string }[] = [
+type ModeOption = { id: Mode; title: string; hint: string; icon: string }
+const MODES: [ModeOption, ...ModeOption[]] = [
   {
     id: 'state',
     title: 'State',
@@ -176,7 +177,7 @@ const DRAG_THRESHOLD = 6
 const groupHeight = (count: number) => 88 + Math.min(Math.max(count, 1) * 102, 322)
 type Gesture = {
   kind: 'pan' | 'move' | 'resize'
-  id?: string
+  id?: string | undefined
   pointer: number
   start: Point
   origin: Point & { h?: number }
@@ -201,7 +202,7 @@ export function LoopBoard({
   loops: OpenLoop[]
   now: string
   name: string
-  checked?: string
+  checked?: string | undefined
   storageKey: string
   agent: ReactNode
 }) {
@@ -245,12 +246,15 @@ export function LoopBoard({
   function fitBoard(nodes = positionsRef.current, forMode = mode) {
     const el = viewport.current
     if (!el) return
-    const shown = shownFor(forMode)
-    const x = Math.min(HUB.x, ...shown.map((g) => nodes[g.id].x)) - 20
-    const y = Math.min(HUB.y, ...shown.map((g) => nodes[g.id].y)) - 30
-    const right = Math.max(HUB.x + HUB.width, ...shown.map((g) => nodes[g.id].x + WIDTH)) + 20
+    const shown = shownFor(forMode).flatMap((g) => {
+      const node = nodes[g.id]
+      return node ? [{ g, node }] : []
+    })
+    const x = Math.min(HUB.x, ...shown.map(({ node }) => node.x)) - 20
+    const y = Math.min(HUB.y, ...shown.map(({ node }) => node.y)) - 30
+    const right = Math.max(HUB.x + HUB.width, ...shown.map(({ node }) => node.x + WIDTH)) + 20
     const bottom =
-      Math.max(HUB.y + HUB.height, ...shown.map((g) => nodes[g.id].y + heightOf(nodes, g))) + 25
+      Math.max(HUB.y + HUB.height, ...shown.map(({ g, node }) => node.y + heightOf(nodes, g))) + 25
     const inset = dockRef.current ? DOCK_INSET : 40
     const cam = fitCamera(
       { x, y, width: right - x, height: bottom - y },
@@ -271,8 +275,8 @@ export function LoopBoard({
   function focusGroup(id: string) {
     const el = viewport.current
     const group = visible.find((g) => g.id === id)
-    if (!el || !group) return
     const point = positionsRef.current[id]
+    if (!el || !group || !point) return
     updateCamera(
       fitCamera(
         { ...point, width: WIDTH, height: heightOf(positionsRef.current, group) },
@@ -284,9 +288,9 @@ export function LoopBoard({
   const resizeBoard = useEffectEvent((first: boolean, saved: BoardPositions) => {
     const el = viewport.current
     if (!el) return
-    if (first && el.clientWidth < 700) {
+    const p = saved['needs-you']
+    if (first && p && el.clientWidth < 700) {
       toggleDock(false)
-      const p = saved['needs-you']
       const zoom = Math.min(1, (el.clientWidth - 40) / WIDTH)
       updateCamera({ zoom, x: el.clientWidth / 2 - (p.x + WIDTH / 2) * zoom, y: 24 - p.y * zoom })
     } else fitBoard(positionsRef.current)
@@ -398,15 +402,14 @@ export function LoopBoard({
           y: clamp(g.origin.y + dy / zoom, -3000, 3000),
         },
       })
-    else if (g.kind === 'resize' && g.id)
-      updatePositions({
-        ...positionsRef.current,
-        [g.id]: {
-          ...positionsRef.current[g.id],
-          h: clamp((g.origin.h ?? 0) + dy / zoom, MIN_HEIGHT, MAX_HEIGHT),
-        },
-      })
-    else updateCamera({ ...cameraRef.current, x: g.origin.x + dx, y: g.origin.y + dy })
+    else if (g.kind === 'resize' && g.id) {
+      const node = positionsRef.current[g.id]
+      if (node)
+        updatePositions({
+          ...positionsRef.current,
+          [g.id]: { ...node, h: clamp((g.origin.h ?? 0) + dy / zoom, MIN_HEIGHT, MAX_HEIGHT) },
+        })
+    } else updateCamera({ ...cameraRef.current, x: g.origin.x + dx, y: g.origin.y + dy })
   }
   function end(event: PointerEvent) {
     if (gesture.current?.pointer !== event.pointerId) return
@@ -425,6 +428,7 @@ export function LoopBoard({
     if (!delta) return
     event.preventDefault()
     const p = positionsRef.current[id]
+    if (!p) return
     const step = event.shiftKey ? 80 : 20
     updatePositions(
       {
@@ -443,11 +447,13 @@ export function LoopBoard({
     if (!delta) return
     event.preventDefault()
     const step = event.shiftKey ? 120 : 40
+    const node = positionsRef.current[group.id]
+    if (!node) return
     updatePositions(
       {
         ...positionsRef.current,
         [group.id]: {
-          ...positionsRef.current[group.id],
+          ...node,
           h: clamp(heightOf(positionsRef.current, group) + delta * step, MIN_HEIGHT, MAX_HEIGHT),
         },
       },
@@ -518,6 +524,7 @@ export function LoopBoard({
           <svg className="board-connections" aria-hidden="true">
             {visible.map((g) => {
               const p = positions[g.id]
+              if (!p) return null
               const startX = HUB.x + HUB.width / 2
               const startY = HUB.y + HUB.height
               const endX = p.x + WIDTH / 2
@@ -554,6 +561,8 @@ export function LoopBoard({
           {visible.map((g) => {
             const items = members(g)
             const isCollapsed = Boolean(collapsed[g.id])
+            const p = positions[g.id]
+            if (!p) return null
             return (
               <article
                 key={g.id}
@@ -561,11 +570,7 @@ export function LoopBoard({
                 className="board-group"
                 data-state={g.tone}
                 data-dragging={dragging === g.id}
-                style={{
-                  left: positions[g.id].x,
-                  top: positions[g.id].y,
-                  height: heightOf(positions, g),
-                }}
+                style={{ left: p.x, top: p.y, height: heightOf(positions, g) }}
               >
                 <div className="board-group-head">
                   <button

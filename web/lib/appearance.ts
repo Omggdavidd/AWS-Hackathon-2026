@@ -2,15 +2,16 @@ export const ACCENT_COOKIE = 'openloops-accent'
 export const DENSITY_COOKIE = 'openloops-density'
 export const HOME_COOKIE = 'openloops-home'
 
+export const DEFAULT_ACCENT = '#177e89'
+
 /** Five accents that sit well on both grounds; the first is the product's own and means "no cookie". */
 export const ACCENT_PRESETS: { id: string; name: string; hex: string }[] = [
-  { id: 'teal', name: 'Teal', hex: '#177e89' },
+  { id: 'teal', name: 'Teal', hex: DEFAULT_ACCENT },
   { id: 'plum', name: 'Plum', hex: '#7a4fb5' },
   { id: 'rose', name: 'Rose', hex: '#c2467a' },
   { id: 'amber', name: 'Amber', hex: '#b8721a' },
   { id: 'slate', name: 'Slate', hex: '#4b6a8a' },
 ]
-export const DEFAULT_ACCENT = ACCENT_PRESETS[0].hex
 
 export type Density = 'comfortable' | 'compact'
 export type Home = 'today' | 'board' | 'calendar'

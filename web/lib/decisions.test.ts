@@ -60,7 +60,7 @@ describe('pendingDecisions', () => {
     await store.putAction(action('auto', {}))
     const decisions = await pendingDecisions(store, 'u')
     expect(decisions.map((d) => d.action.id)).toEqual(['new', 'old'])
-    expect(decisions[0].loop?.title).toBe('loop-a')
+    expect(decisions[0]?.loop?.title).toBe('loop-a')
   })
 })
 

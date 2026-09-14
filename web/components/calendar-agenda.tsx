@@ -9,8 +9,8 @@ import { AREA_LABEL, dayKey, daysUntil } from '@/lib/format'
  * loop. An empty day says so and points at the next day that has something.
  */
 export function CalendarAgenda({ day, loops, now }: { day: string; loops: OpenLoop[]; now: Date }) {
-  const [y, m, d] = day.split('-').map(Number)
-  const date = new Date(Date.UTC(y, m - 1, d))
+  const [y, m, d] = day.split('-')
+  const date = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)))
   const title = date.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
