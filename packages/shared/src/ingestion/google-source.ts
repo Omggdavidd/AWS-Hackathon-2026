@@ -21,6 +21,29 @@ const MAX_PAGES = 50
  */
 export type AccessToken = string | (() => string | Promise<string>)
 
+/**
+ * What a listing lost, and why. `IngestionSource` hands back bare arrays, so a caller reading only
+ * the array cannot tell a quiet inbox from one that was cut short; these travel out of band through
+ * `onEvent` and `stats` rather than changing the interface the fixtures also implement.
+ */
+export type GoogleSourceEvent =
+  | { type: 'message_skipped'; id: string; reason: string }
+  | {
+      type: 'truncated'
+      kind: 'messages' | 'events'
+      limit: number
+      /** The window actually covered, which is narrower than the one asked for. */
+      covered: { from: string; to: string }
+    }
+
+export interface GoogleSourceStats {
+  /** Messages fetched but unusable: a payload that did not parse, or no date to place them by. */
+  skippedMessages: number
+  /** A ceiling ended a listing early, so what came back is a slice of the window asked for. */
+  truncatedMessages: boolean
+  truncatedEvents: boolean
+}
+
 export interface GoogleSourceOptions {
   accessToken: AccessToken
   /** How far back `listMessages` reaches when the caller gives no `after`. */
@@ -38,6 +61,12 @@ export interface GoogleSourceOptions {
   /** Retries on 429 and 5xx. */
   maxRetries?: number
   retryBaseMs?: number
+  /** Ceiling on one wait between tries, including a `Retry-After` the server asks for. */
+  retryMaxMs?: number
+  /** Give up on one request after this long, so a hung connection cannot eat the scan budget. */
+  requestTimeoutMs?: number
+  /** What a listing skipped or truncated, as it happens. Defaults to silence. */
+  onEvent?: (event: GoogleSourceEvent) => void
   /** Injected in tests so the suite never touches the network. */
   fetchImpl?: typeof fetch
   now?: () => Date
@@ -77,7 +106,8 @@ const GmailListSchema = z.object({
   nextPageToken: z.string().optional(),
 })
 
-const GmailThreadSchema = z.object({ messages: z.array(GmailMessageSchema).default([]) })
+/** Messages stay `unknown` here so one unreadable message cannot cost the rest of the thread. */
+const GmailThreadSchema = z.object({ messages: z.array(z.unknown()).default([]) })
 
 const CalendarTimeSchema = z.object({
   dateTime: z.string().optional(),
@@ -101,6 +131,11 @@ const CalendarListSchema = z.object({
   nextPageToken: z.string().optional(),
 })
 
+/** One try at a request, with the body already read so the timeout covers reading it too. */
+type Attempt =
+  | { ok: true; body: unknown }
+  | { ok: false; status: number; retryAfter: string | null; detail: string }
+
 /**
  * Live Gmail and Google Calendar behind the one `IngestionSource` the fixtures also implement
  * (ADR-0006, ADR-0011), so switching between the seeded demo and a real inbox is configuration.
@@ -118,7 +153,15 @@ export class GoogleSource implements IngestionSource {
   private readonly concurrency: number
   private readonly maxRetries: number
   private readonly retryBaseMs: number
+  private readonly retryMaxMs: number
+  private readonly requestTimeoutMs: number
+  private readonly onEvent: (event: GoogleSourceEvent) => void
   private readonly now: () => Date
+  private readonly counts: GoogleSourceStats = {
+    skippedMessages: 0,
+    truncatedMessages: false,
+    truncatedEvents: false,
+  }
 
   constructor(private readonly options: GoogleSourceOptions) {
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch.bind(globalThis)
@@ -130,7 +173,15 @@ export class GoogleSource implements IngestionSource {
     this.concurrency = options.concurrency ?? 5
     this.maxRetries = options.maxRetries ?? 3
     this.retryBaseMs = options.retryBaseMs ?? 250
+    this.retryMaxMs = options.retryMaxMs ?? 30_000
+    this.requestTimeoutMs = options.requestTimeoutMs ?? 30_000
+    this.onEvent = options.onEvent ?? (() => {})
     this.now = options.now ?? (() => new Date())
+  }
+
+  /** What every listing on this instance has skipped or cut short so far. */
+  get stats(): GoogleSourceStats {
+    return { ...this.counts }
   }
 
   async listMessages(query: MessageQuery = {}): Promise<EmailMessage[]> {
@@ -140,11 +191,24 @@ export class GoogleSource implements IngestionSource {
       return thread.filter((m) => matchesMessageQuery(m, query))
     }
     const after = query.after ?? this.backfillStart()
-    const ids = await this.listMessageIds(gmailQuery({ ...query, after }))
-    const messages = await mapPool(ids, this.concurrency, (id) => this.getMessage(id))
+    const { ids, truncated } = await this.listMessageIds(gmailQuery({ ...query, after }))
+    const fetched = await mapPool(ids, this.concurrency, (id) => this.getMessage(id))
     // Gmail's after:/before: are whole-day and text search is fuzzy, so the exact contract in
     // MessageQuery is applied here rather than trusted to the server.
-    return messages.filter((m) => matchesMessageQuery(m, { ...query, after })).sort(byDateAscending)
+    const messages = fetched
+      .filter((m): m is EmailMessage => m !== undefined)
+      .filter((m) => matchesMessageQuery(m, { ...query, after }))
+      .sort(byDateAscending)
+    if (truncated) {
+      this.counts.truncatedMessages = true
+      this.onEvent({
+        type: 'truncated',
+        kind: 'messages',
+        limit: this.maxMessages,
+        covered: { from: messages[0]?.date ?? after, to: messages.at(-1)?.date ?? after },
+      })
+    }
+    return messages
   }
 
   async getThread(threadId: string): Promise<EmailMessage[]> {
@@ -152,15 +216,19 @@ export class GoogleSource implements IngestionSource {
       `${GMAIL_BASE}/users/me/threads/${encodeURIComponent(threadId)}?format=full`,
     )
     const thread = GmailThreadSchema.parse(raw)
-    return thread.messages.map((m) => this.toEmailMessage(m)).sort(byDateAscending)
+    return thread.messages
+      .map((m, index) => this.toEmailMessage(m, `${threadId}[${index}]`))
+      .filter((m): m is EmailMessage => m !== undefined)
+      .sort(byDateAscending)
   }
 
   async listEvents(range: { from?: string; to?: string } = {}): Promise<CalendarEvent[]> {
+    const timeMin = range.from ?? this.backfillStart()
     const params = new URLSearchParams({
       singleEvents: 'true',
       orderBy: 'startTime',
       maxResults: '250',
-      timeMin: range.from ?? this.backfillStart(),
+      timeMin,
     })
     if (range.to !== undefined) params.set('timeMax', range.to)
     const events: CalendarEvent[] = []
@@ -173,12 +241,27 @@ export class GoogleSource implements IngestionSource {
         `${CALENDAR_BASE}/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`,
       )
       const parsed = CalendarListSchema.parse(raw)
-      for (const item of parsed.items) {
+      for (const [index, item] of parsed.items.entries()) {
         const event = toCalendarEvent(item)
         // A cancelled instance of a recurring event arrives without start or end; there is nothing
         // to track and the schema requires both.
         if (event) events.push(event)
-        if (events.length >= this.maxEvents) return sortEvents(events)
+        if (events.length >= this.maxEvents) {
+          const sorted = sortEvents(events)
+          // orderBy=startTime is ascending, so the ceiling keeps the soonest events and drops the
+          // far end, the same way the message ceiling keeps the most recent mail: both hold on to
+          // the slice nearest now. Only say it was cut when something was left behind.
+          if (index < parsed.items.length - 1 || parsed.nextPageToken !== undefined) {
+            this.counts.truncatedEvents = true
+            this.onEvent({
+              type: 'truncated',
+              kind: 'events',
+              limit: this.maxEvents,
+              covered: { from: sorted[0]?.start ?? timeMin, to: sorted.at(-1)?.start ?? timeMin },
+            })
+          }
+          return sorted
+        }
       }
       pageToken = parsed.nextPageToken
       if (!pageToken) break
@@ -191,7 +274,12 @@ export class GoogleSource implements IngestionSource {
     return from.toISOString()
   }
 
-  private async listMessageIds(q: string): Promise<string[]> {
+  /**
+   * Gmail returns ids newest first and offers no ordering parameter, so the ceiling keeps the most
+   * recent mail in the window and stops. `truncated` is the whole signal available: the listing
+   * stops rather than paging on to count what it is dropping.
+   */
+  private async listMessageIds(q: string): Promise<{ ids: string[]; truncated: boolean }> {
     const ids: string[] = []
     let pageToken: string | undefined
     for (let page = 0; page < MAX_PAGES; page++) {
@@ -199,59 +287,127 @@ export class GoogleSource implements IngestionSource {
       if (pageToken) params.set('pageToken', pageToken)
       const raw = await this.request(`${GMAIL_BASE}/users/me/messages?${params}`)
       const parsed = GmailListSchema.parse(raw)
-      for (const m of parsed.messages) {
+      for (const [index, m] of parsed.messages.entries()) {
         ids.push(m.id)
-        if (ids.length >= this.maxMessages) return ids
+        if (ids.length >= this.maxMessages) {
+          const more = index < parsed.messages.length - 1 || parsed.nextPageToken !== undefined
+          return { ids, truncated: more }
+        }
       }
       pageToken = parsed.nextPageToken
       if (!pageToken) break
     }
-    return ids
+    return { ids, truncated: false }
   }
 
-  private async getMessage(id: string): Promise<EmailMessage> {
+  private async getMessage(id: string): Promise<EmailMessage | undefined> {
     const raw = await this.request(
       `${GMAIL_BASE}/users/me/messages/${encodeURIComponent(id)}?format=full`,
     )
-    return this.toEmailMessage(GmailMessageSchema.parse(raw))
+    return this.toEmailMessage(raw, id)
   }
 
-  private toEmailMessage(message: GmailMessageWire): EmailMessage {
+  /**
+   * A message Gmail describes in a shape we cannot read is dropped rather than thrown: one bad
+   * message in a fetch of 250 must not cost the other 249. The skip is counted and announced,
+   * because a scan that quietly ingested 249 of 250 is worse than one that failed.
+   */
+  private toEmailMessage(raw: unknown, id: string): EmailMessage | undefined {
+    const wire = GmailMessageSchema.safeParse(raw)
+    if (!wire.success) return this.skip(id, firstIssue(wire.error))
+    const message = wire.data
     const headers = message.payload?.headers ?? []
+    const date = messageDate(message, headers)
+    if (date === undefined) return this.skip(message.id, 'no usable date')
     const body = truncate(extractBody(message.payload), this.maxBodyChars)
     const snippet = decodeEntities(message.snippet) || body
-    return EmailMessage.parse({
+    const parsed = EmailMessage.safeParse({
       id: message.id,
       threadId: message.threadId,
       from: headerValue(headers, 'from'),
       to: splitAddresses(headerValue(headers, 'to')),
       subject: headerValue(headers, 'subject'),
-      date: messageDate(message, headers),
+      date,
       snippet: truncate(snippet.replace(/\s+/g, ' ').trim(), 300),
       body,
       labels: message.labelIds,
     })
+    if (!parsed.success) return this.skip(message.id, firstIssue(parsed.error))
+    return parsed.data
+  }
+
+  private skip(id: string, reason: string): undefined {
+    this.counts.skippedMessages++
+    this.onEvent({ type: 'message_skipped', id, reason })
+    return undefined
+  }
+
+  private async resolveToken(): Promise<string> {
+    return typeof this.options.accessToken === 'function'
+      ? await this.options.accessToken()
+      : this.options.accessToken
   }
 
   private async request(url: string): Promise<unknown> {
-    const token =
-      typeof this.options.accessToken === 'function'
-        ? await this.options.accessToken()
-        : this.options.accessToken
-    for (let attempt = 0; ; attempt++) {
-      const response = await this.fetchImpl(url, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-      })
-      if (response.ok) return response.json()
-      if (attempt < this.maxRetries && RETRYABLE.has(response.status)) {
-        await sleep(this.retryBaseMs * 2 ** attempt)
+    let token = await this.resolveToken()
+    let reauthorized = false
+    for (let attempt = 0; ; ) {
+      const result = await this.attempt(url, token)
+      if (result.ok) return result.body
+      // A Google access token lives about an hour and a backfill makes hundreds of sequential
+      // calls, so expiry mid-scan is the likeliest failure. Ask the caller for a fresh one once; a
+      // plain string cannot be refreshed, and a second 401 is a refusal, not an expiry.
+      if (
+        result.status === 401 &&
+        !reauthorized &&
+        typeof this.options.accessToken === 'function'
+      ) {
+        reauthorized = true
+        token = await this.resolveToken()
         continue
       }
-      const detail = await response.text().catch(() => '')
+      if (attempt < this.maxRetries && RETRYABLE.has(result.status)) {
+        await sleep(
+          retryDelayMs(result.retryAfter, attempt, this.retryBaseMs, this.retryMaxMs, this.now()),
+        )
+        attempt++
+        continue
+      }
       // The URL carries the search query but never the token, which lives in the header.
       throw new Error(
-        `Google API ${response.status} for ${stripQuery(url)}${detail ? `: ${truncate(detail, 300)}` : ''}`,
+        `Google API ${result.status} for ${stripQuery(url)}${result.detail ? `: ${truncate(result.detail, 300)}` : ''}`,
       )
+    }
+  }
+
+  /** One request under a timeout that covers reading the body, so a stalled stream also ends. */
+  private async attempt(url: string, token: string): Promise<Attempt> {
+    const controller = new AbortController()
+    let timedOut = false
+    const timer = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, this.requestTimeoutMs)
+    try {
+      const response = await this.fetchImpl(url, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        signal: controller.signal,
+      })
+      if (response.ok) return { ok: true, body: await response.json() }
+      return {
+        ok: false,
+        status: response.status,
+        retryAfter: response.headers.get('retry-after'),
+        detail: await response.text().catch(() => ''),
+      }
+    } catch (error) {
+      if (timedOut)
+        throw new Error(
+          `Google API timed out after ${this.requestTimeoutMs}ms for ${stripQuery(url)}`,
+        )
+      throw error
+    } finally {
+      clearTimeout(timer)
     }
   }
 }
@@ -270,6 +426,35 @@ export function gmailQuery(query: MessageQuery): string {
   return parts.join(' ')
 }
 
+/** `Retry-After` is whole seconds or an HTTP date. Anything else means the server said nothing. */
+export function retryAfterMs(header: string | null, now: Date): number | undefined {
+  if (header === null || header.trim() === '') return undefined
+  const seconds = Number(header)
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000)
+  const at = Date.parse(header)
+  if (Number.isNaN(at)) return undefined
+  return Math.max(0, at - now.getTime())
+}
+
+/**
+ * How long to wait before trying again: what the server asked for, otherwise exponential backoff.
+ * Both are jittered, because concurrent workers that back off by the same amount rebuild the burst
+ * that throttled them. Half of the backoff is fixed so a retry cannot return almost immediately.
+ */
+export function retryDelayMs(
+  retryAfter: string | null,
+  attempt: number,
+  baseMs: number,
+  maxMs: number,
+  now: Date,
+  random: () => number = Math.random,
+): number {
+  const advertised = retryAfterMs(retryAfter, now)
+  if (advertised !== undefined) return Math.min(advertised, maxMs) + random() * baseMs
+  const delay = Math.min(baseMs * 2 ** attempt, maxMs)
+  return delay / 2 + random() * (delay / 2)
+}
+
 function gmailDate(iso: string, shiftDays: number): string {
   const at = new Date(Date.parse(iso) + shiftDays * 86_400_000)
   const month = `${at.getUTCMonth() + 1}`.padStart(2, '0')
@@ -280,7 +465,7 @@ function gmailDate(iso: string, shiftDays: number): string {
 function messageDate(
   message: GmailMessageWire,
   headers: { name: string; value: string }[],
-): string {
+): string | undefined {
   // internalDate is the delivery time Gmail sorts by, and is milliseconds since the epoch.
   if (message.internalDate !== undefined && message.internalDate !== '') {
     const ms = Number(message.internalDate)
@@ -288,7 +473,13 @@ function messageDate(
   }
   const header = Date.parse(headerValue(headers, 'date'))
   if (Number.isFinite(header)) return new Date(header).toISOString()
-  throw new Error(`Gmail message ${message.id} has no usable date`)
+  return undefined
+}
+
+function firstIssue(error: z.ZodError): string {
+  const issue = error.issues[0]
+  if (issue === undefined) return 'invalid message'
+  return `${issue.path.join('.') || 'message'}: ${issue.message}`
 }
 
 /** Prefer text/plain; fall back to stripped HTML, then to a single-part body. */
