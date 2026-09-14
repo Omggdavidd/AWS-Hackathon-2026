@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { DecisionSheet } from '@/components/decision-sheet'
-import { pendingDecisions } from '@/lib/decisions'
 import { formatDue, formatMoney } from '@/lib/format'
-import { getStore, USER_ID } from '@/lib/ledger'
+import { loadDecisions, USER_ID } from '@/lib/ledger'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,8 +13,7 @@ export const dynamic = 'force-dynamic'
 export default async function DecisionsPage({ searchParams }: PageProps<'/decisions'>) {
   const { action: raw } = await searchParams
   const selected = typeof raw === 'string' && raw ? raw : undefined
-  const store = await getStore()
-  const decisions = await pendingDecisions(store, USER_ID)
+  const decisions = await loadDecisions(USER_ID)
   const now = new Date()
   const n = decisions.length
   return (

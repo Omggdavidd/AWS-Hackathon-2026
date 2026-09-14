@@ -4,7 +4,7 @@ import { LoopBoard } from '@/components/loop-board'
 import { scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
 import { formatDateTime } from '@/lib/format'
-import { getStore, USER_ID } from '@/lib/ledger'
+import { loadAudit, loadLoops, USER_ID } from '@/lib/ledger'
 import { readProfile } from '@/lib/profile'
 
 export const dynamic = 'force-dynamic'
@@ -14,11 +14,7 @@ export default async function BoardPage() {
   const jar = await cookies()
   const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value)
   const profile = readProfile(jar)
-  const store = await getStore()
-  const [loops, audit] = await Promise.all([
-    store.listLoops(USER_ID),
-    store.listAudit(USER_ID, { limit: 40 }),
-  ])
+  const [loops, audit] = await Promise.all([loadLoops(USER_ID), loadAudit(USER_ID)])
   const lastScan = audit.find((event) => event.kind === 'scan_completed')
   const checked = lastScan ? formatDateTime(lastScan.at) : undefined
   return (
