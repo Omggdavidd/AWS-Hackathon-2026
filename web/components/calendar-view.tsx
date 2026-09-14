@@ -26,22 +26,24 @@ export function CalendarView({
   loops: OpenLoop[]
   now: Date
   /** A day key, YYYY-MM-DD, whose agenda is open beside the grid. */
-  selected?: string
+  selected?: string | undefined
 }) {
   const today = dayKey(now)
-  const [y, m, d] = today.split('-').map(Number)
-  const first = new Date(Date.UTC(y, m - 1, d))
+  const [y, m, d] = today.split('-')
+  const first = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)))
   first.setUTCDate(first.getUTCDate() - ((first.getUTCDay() + 6) % 7)) // back to Monday
-  const days = Array.from({ length: WEEKS * 7 }, (_, i) => {
-    const date = new Date(first)
-    date.setUTCDate(first.getUTCDate() + i)
+  const addDays = (base: Date, count: number) => {
+    const date = new Date(base)
+    date.setUTCDate(base.getUTCDate() + count)
     return date
-  })
+  }
+  const days = Array.from({ length: WEEKS * 7 }, (_, i) => addDays(first, i))
+  const lastDay = addDays(first, WEEKS * 7 - 1)
   const key = (date: Date) => date.toISOString().slice(0, 10)
   const byDay = new Map<string, OpenLoop[]>()
   const beyond: OpenLoop[] = []
   const undated: OpenLoop[] = []
-  const last = key(days[days.length - 1])
+  const last = key(lastDay)
   for (const loop of loops) {
     if (!loop.dueAt) {
       if (loop.status !== 'RESOLVED') undated.push(loop)
@@ -52,7 +54,7 @@ export function CalendarView({
     else byDay.set(k, [...(byDay.get(k) ?? []), loop])
   }
   beyond.sort((a, b) => (a.dueAt ?? '').localeCompare(b.dueAt ?? ''))
-  const range = `${days[0].toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })} to ${days[days.length - 1].toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })}`
+  const range = `${first.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })} to ${lastDay.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' })}`
 
   return (
     <div className="calendar">
@@ -70,7 +72,7 @@ export function CalendarView({
         </thead>
         <tbody>
           {Array.from({ length: WEEKS }, (_, w) => (
-            <tr key={key(days[w * 7])}>
+            <tr key={key(addDays(first, w * 7))}>
               {days.slice(w * 7, w * 7 + 7).map((date, i) => {
                 const k = key(date)
                 const items = byDay.get(k) ?? []

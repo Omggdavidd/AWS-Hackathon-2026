@@ -10,6 +10,60 @@ const TEAM = [
   { name: 'Ayomide Awofisayo', login: 'AyomideAw', role: 'Demo and submission checks' },
 ]
 
+const STORIES = [
+  {
+    who: 'Students',
+    state: 'needs-you',
+    label: 'Needs you',
+    text: 'A registration deposit due Friday. A form the department is waiting on. A housing fee. Each stays open until the receipt or the confirmation shows up in your mail, with the deadline on your calendar.',
+  },
+  {
+    who: 'Applications and follow-ups',
+    state: 'waiting',
+    label: 'Waiting',
+    text: 'You applied, they said thanks, and nothing since. The ledger knows who owes the next move, the agent drafts the follow-up for you to send, and the loop closes when the reply arrives.',
+  },
+  {
+    who: 'A manager buried in mail',
+    state: 'watching',
+    label: 'Watching',
+    text: 'A hundred messages a day, and the six that carry a real request are lost among them. The ledger holds only what is owed and to whom, with the evidence. Everything else stays quiet.',
+  },
+  {
+    who: 'Time away',
+    state: 'resolved',
+    label: 'Resolved',
+    text: 'A week of leave, or a week when you cannot face the inbox. The agent checks in on its own every morning and tells you what changed. Only a decision that is genuinely yours interrupts you.',
+  },
+]
+
+const NEXT = [
+  {
+    title: 'Your real inbox',
+    text: 'The Gmail and Google Calendar reader is built; the sign-in that hands it a token is next. Then the seeded demo becomes your mail.',
+  },
+  {
+    title: 'Real effects, still gated',
+    text: 'Drafts saved into Gmail and events on your actual calendar. Sending and paying keep waiting for your approval, enforced in code.',
+  },
+  {
+    title: 'Follow-ups with a clock',
+    text: 'No reply in two weeks becomes a nudge on its own, so an application or a request to a colleague never goes cold without you knowing.',
+  },
+  {
+    title: 'Several inboxes, one ledger',
+    text: 'School, work and personal mail in one place, grouped by the area of life they belong to.',
+  },
+  {
+    title: 'Read it to me',
+    text: 'A spoken morning digest and asking the agent a question out loud, for the moments when a screen is the wrong tool.',
+  },
+  {
+    title: 'Where obligations also live',
+    text: 'School portals, billing notices and shared team inboxes, so the ledger sees the responsibility wherever it arrives.',
+  },
+]
+
 const STATES = [
   { id: 'needs-you', name: 'Needs you', text: 'Your move: a decision, a payment, a signature.' },
   {
@@ -37,31 +91,24 @@ export default function AboutPage() {
           only when a real decision is needed.
         </p>
       </header>
-      <section className="about-section" aria-labelledby="about-team">
-        <h2 id="about-team">The Dev Team</h2>
-        <ul className="about-team">
-          {TEAM.map((member) => (
-            <li key={member.login}>
-              <a href={`https://github.com/${member.login}`} className="about-link">
-                {member.name}
-              </a>
-              <span className="about-role">{member.role}</span>
+      <section className="about-section" aria-labelledby="about-who">
+        <h2 id="about-who">Who it is for</h2>
+        <p>
+          Anyone whose obligations arrive as email and quietly expire there. Four lives, one ledger:
+          each story is a state the agent already tracks.
+        </p>
+        <ul className="about-stories">
+          {STORIES.map((story) => (
+            <li key={story.who} data-state={story.state}>
+              <span className="about-chip">
+                <StateIcon name={story.state} />
+                {story.label}
+              </span>
+              <strong>{story.who}</strong>
+              <p>{story.text}</p>
             </li>
           ))}
         </ul>
-        <p>
-          New here?{' '}
-          <Link href="/?tour=1" className="about-link">
-            Replay the tour
-          </Link>
-          .
-        </p>
-        <p>
-          Source, architecture and decisions:{' '}
-          <a href="https://github.com/Omggdavidd/AWS-Hackathon-2026" className="about-link">
-            github.com/Omggdavidd/AWS-Hackathon-2026
-          </a>
-        </p>
       </section>
       <section className="about-section" aria-labelledby="about-states">
         <h2 id="about-states">Every loop is in one of four states</h2>
@@ -100,6 +147,52 @@ export default function AboutPage() {
             same ledger.
           </figcaption>
         </figure>
+      </section>
+      <section className="about-section" aria-labelledby="about-next">
+        <h2 id="about-next">What is next</h2>
+        <p>
+          Everything above runs today on a seeded inbox, so a judge can click through it without
+          connecting anything. In the order we would build it:
+        </p>
+        <ol className="about-next">
+          {NEXT.map((item, i) => (
+            <li key={item.title}>
+              <span className="about-step" aria-hidden="true">
+                {i + 1}
+              </span>
+              <div>
+                <strong>{item.title}</strong>
+                <p>{item.text}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+      <section className="about-section" aria-labelledby="about-team">
+        <h2 id="about-team">The Dev Team</h2>
+        <ul className="about-team">
+          {TEAM.map((member) => (
+            <li key={member.login}>
+              <a href={`https://github.com/${member.login}`} className="about-link">
+                {member.name}
+              </a>
+              <span className="about-role">{member.role}</span>
+            </li>
+          ))}
+        </ul>
+        <p>
+          New here?{' '}
+          <Link href="/?tour=1" className="about-link">
+            Replay the tour
+          </Link>
+          .
+        </p>
+        <p>
+          Source, architecture and decisions:{' '}
+          <a href="https://github.com/Omggdavidd/AWS-Hackathon-2026" className="about-link">
+            github.com/Omggdavidd/AWS-Hackathon-2026
+          </a>
+        </p>
       </section>
     </div>
   )

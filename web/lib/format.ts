@@ -196,9 +196,13 @@ export function dayKey(iso: string | Date, timeZone = DEMO_TIME_ZONE): string {
 
 /** Whole days from `now` to `iso` in the demo zone; negative when past. */
 export function daysUntil(iso: string, now: Date): number {
-  const [y1, m1, d1] = dayKey(now).split('-').map(Number)
-  const [y2, m2, d2] = dayKey(iso).split('-').map(Number)
-  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86_400_000)
+  const [y1, m1, d1] = dayKey(now).split('-')
+  const [y2, m2, d2] = dayKey(iso).split('-')
+  return Math.round(
+    (Date.UTC(Number(y2), Number(m2) - 1, Number(d2)) -
+      Date.UTC(Number(y1), Number(m1) - 1, Number(d1))) /
+      86_400_000,
+  )
 }
 
 /**

@@ -1,6 +1,6 @@
 # Security posture
 
-What the deployed system exposes, what is deliberately open, and what is still outstanding. Reviewed 2026-09-13 against `main` and the live deployment.
+What the deployed system exposes, what is deliberately open, and what is still outstanding. Reviewed 2026-09-13 against `main` and the live deployment; every claim below re-checked against the code 2026-09-14.
 
 This file owns the security posture. Environment variables live in the `.env.example` next to the code, IAM policy in `agent/app/OpenLoopAgent/iam/`, and the invariants that the product depends on in [`architecture.md`](architecture.md) §4.
 
@@ -10,10 +10,10 @@ This file owns the security posture. Environment variables live in the `.env.exa
 
 Consequences, accepted knowingly:
 
-- Anyone with the URL sees the demo ledger. It contains no real personal data — every person, address and organisation in `demo/` is invented.
+- Anyone with the URL sees the demo ledger. The ledger contains no real personal data — every person, address and organisation in `demo/` is invented. (Onboarding does put what a visitor types about themselves in that visitor's own cookies; see *Application surface*.)
 - Anyone with the URL can change that ledger: approve an action, mark a loop done, park one.
 
-Neither of those is a data-protection problem, because there is no real data and one user. The problem is the next one.
+Neither of those is a data-protection problem, because the ledger holds no real data and there is one user. The problem is the next one.
 
 ## The real exposure: unauthenticated spend
 
@@ -21,14 +21,14 @@ Neither of those is a data-protection problem, because there is no real data and
 
 Before this review, any script that could reach the URL could run those in a loop. The guard is live: a POST without a matching `Origin` returns 403 from the deployment, checked 2026-09-13 on `/api/scan`, `/api/handle` and `/api/catch-up`; `/api/ask` was checked the same way against a production build before it shipped.
 
-**Mitigated:** every route handler that invokes the runtime now rejects any request that did not come from the app's own origin (`web/lib/same-origin.ts`). Browsers always send `Origin` on a POST, so the app works unchanged; `curl` and most bots send nothing and get a 403. This also closes the CSRF hole — before it, any page a teammate visited could have fired a scan from their browser. Next's Server Actions check `Origin` against `Host` only when an `Origin` header is present; a handcrafted POST with no `Origin` is let through with a logged warning (`action-handler.js` in Next 16). So the two server actions that reach the runtime or the table apply the same guard themselves: `approveAction` in `web/app/actions.ts` (spends Bedrock through `execute`) and `resetDemo` (wipes the demo user's rows) refuse a request with no matching `Origin`, since action ids are in the public HTML. The other server actions only move a loop between states on the ledger and keep Next's default check.
+**Mitigated:** every route handler that invokes the runtime now rejects any request that did not come from the app's own origin (`web/lib/same-origin.ts`). Browsers always send `Origin` on a POST, so the app works unchanged; `curl` and most bots send nothing and get a 403. This also closes the CSRF hole — before it, any page a teammate visited could have fired a scan from their browser. Next's Server Actions check `Origin` against `Host` only when an `Origin` header is present; a handcrafted POST with no `Origin` is let through with a logged warning (`action-handler.js` in Next 16). Action ids are in the public HTML, so every server action in `web/app/actions.ts` that writes anything — a loop's state, a proposed action, or the profile and agent-name cookies — calls the same guard as its first statement. `approveAction` is the one that spends Bedrock through `execute` and `resetDemo` the one that wipes the demo user's rows; the rest only move a loop between states or change a name, and they carry the guard because one rule is easier to keep right than a list of exceptions. `web/lib/action-origin.test.ts` calls each action with and without an `Origin`, so a guard that goes missing fails the test suite.
 
 `/api/ask` is the only one of those routes that takes arbitrary user text and hands it to a model holding ledger-read tools (`find_open_loops`, `get_loop_evidence`). The 500-character cap on the question bounds what one request costs, not what it says: a prompt that talks the model into an unhelpful answer is still possible, and the defence against it is that the `ask` path holds no sink and can only read one user's own ledger, so the worst outcome is a wrong answer rather than an effect.
 
-**Not mitigated, and this is the honest limit:** an attacker who sets one header walks straight through. An origin check is a bill boundary against casual abuse, not a defence against anyone trying. Two things would actually bound the damage, in priority order:
+**Not fully mitigated, and this is the honest limit:** an attacker who sets one header walks straight through. An origin check is a bill boundary against casual abuse, not a defence against anyone trying. Two things bound the damage past that point:
 
-1. **An AWS budget alarm and a hard cap.** `SUBMISSION.md` already says to set a $25 alarm; it is still unticked. This is the single highest-value action on this page and it needs nobody's code.
-2. **A rate limit on those routes** — per-IP and a global daily ceiling. Needs shared state, so on Vercel it means a counter in DynamoDB or a managed limiter. Deliberately not attempted the day before submission: a limiter that misfires locks a judge out of the demo, which is worse than the risk it removes.
+1. **An AWS budget alarm.** In place: a $25 monthly cost budget with email alerts at 85% and 100% of actual spend and 100% of forecast, verified from the CLI 2026-09-13 (#144, ticked in `SUBMISSION.md`). Note what it is and is not — a tripwire, not a hard cap. AWS does not stop the spend when it fires, it tells us the spend happened, so it bounds how long abuse runs unnoticed rather than what it costs.
+2. **A rate limit on those routes** — still open, and now the only thing between a determined caller and the bill. Per-IP and a global daily ceiling; needs shared state, so on Vercel it means a counter in DynamoDB or a managed limiter. Deliberately not attempted the day before submission: a limiter that misfires locks a judge out of the demo, which is worse than the risk it removes.
 
 ## Response headers
 
@@ -52,6 +52,8 @@ The runtime's DynamoDB policy (`agent/app/OpenLoopAgent/iam/dynamodb-ledger.json
 
 The `openloop-web` user for Vercel is scoped to DynamoDB item and query actions on the table plus `bedrock-agentcore:InvokeAgentRuntime` on the runtime ARN (#19). Verified from the CLI on 2026-09-13: one attached policy, `OpenLoopWebLeastPrivilege`, allowing `GetItem`, `PutItem`, `UpdateItem`, `DeleteItem`, `Query`, `BatchGetItem` and `BatchWriteItem` on `openloop-ledger` and its indexes, and `InvokeAgentRuntime` on the one runtime ARN and its endpoints. No `DeleteTable`, no wildcard resource, no inline policies, no groups. `DeleteItem` is there because the web reset deletes the demo user's rows.
 
+`openloop-scheduler` is the role EventBridge Scheduler assumes for the daily catch-up (ADR-0013): `InvokeAgentRuntime` on the one runtime ARN, trusted only by `scheduler.amazonaws.com` from this account, nothing else.
+
 `openloop-dev` holds `AdministratorAccess` (`STATUS.md` *Blocked*). Normal for a hackathon, worth retiring afterwards.
 
 ## Application surface
@@ -59,10 +61,12 @@ The `openloop-web` user for Vercel is scoped to DynamoDB item and query actions 
 Checked and clean:
 
 - **No raw HTML anywhere.** Loop titles, reasons and drafted email bodies are all model-generated and all render as escaped React text; there is no `dangerouslySetInnerHTML` in the tree. That is the obvious injection path in a product that displays model output, and it is closed.
+- **Mail cannot forge the prompt envelope it arrives in.** `renderMessage` and `renderEvent` wrap each message and event in `<message>` / `<event>` tags carrying the ids the model cites as evidence. A body, subject or display name that closed one of those tags and opened another could invent a message with a source id the UI then links to. Attribute values are escaped and the envelope tokens are defused in text (#164); a real From header keeps its angle brackets, so prompt text for both demo fixtures is byte-identical to before the change. This matters when `GoogleSource` is reading a live inbox and the sender is a stranger.
 - **Every ledger read and write is user-scoped.** No handler takes a user id from the request.
 - **`/messages/[id]`** serves only the bundled demo fixtures and 404s on an unknown id, so it cannot be walked into arbitrary content.
-- **Cookies** (`openloops-theme`, `openloops-seen`) hold a theme name and a timestamp, are `SameSite=Lax`, and carry nothing sensitive. Neither is a session.
+- **Cookies.** Ten, all `SameSite=Lax` with a one-year max-age, none `HttpOnly` because the client reads them: `openloops-theme`, `-accent`, `-density` and `-home` (appearance), `-seen` and `-toured` (what has been dismissed), `-agent` (the agent's name), and `-you`, `-inbox` and `-purpose` from onboarding (#151). None is a session and none carries a credential. The last three do hold what the visitor typed about themselves — a name, an email address, and which of four purposes the inbox serves — bounded and validated by `cleanPersonName`, `cleanEmail` and `parsePurpose` in `web/lib/profile.ts`, and falling back to the demo persona when absent. That is real personal data on an unauthenticated public URL, so read the "no real personal data" line above as covering the ledger only: these stay in that visitor's own browser, are never written to the ledger and never reach Bedrock, but they are typed by a real person rather than invented in `demo/`.
 - **High-risk actions** cannot execute without `APPROVED`, enforced in `mayExecute` and covered by tests. Note the scope of that claim: it stops the *agent* acting unilaterally. It does not stop a person who can reach the UI from clicking Approve, because there is no auth — see the first section.
+- **Sending mail, paying and submitting a form never execute unattended**, whatever risk tier they carry, along with the catch-all `other`. The tier is assigned by the Risk Judge, so it is model output; resting the guarantee on the tier alone meant a `pay` the model rated `low` was auto-executable (#163). The type is now checked before the tier in `isAutoExecutable`, and a test pins each of those four types at all three tiers. Approval still executes them — this is a gate, not a ban.
 
 ## If something does go wrong
 

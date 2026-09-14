@@ -26,6 +26,7 @@ pnpm --filter @openloop/agent scan -- --catch-up  # what changed since the last 
 pnpm --filter @openloop/agent scan -- --ask "what am I waiting on?"  # answer one question from the ledger; reads only
 pnpm --filter @openloop/agent agreement         # one four-thread calibration run
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
+pnpm --filter @openloop/agent create-schedule   # daily 07:00 America/New_York catch-up through EventBridge Scheduler (ADR-0013); -- --disable before a recording, -- --delete to remove
 pnpm reset-demo --dry-run                       # count the rows a reset would delete; deletes nothing
 pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~95 to 105s)
 pnpm reset-demo --table openloop-ledger --yes --no-scan   # delete only, no runtime call

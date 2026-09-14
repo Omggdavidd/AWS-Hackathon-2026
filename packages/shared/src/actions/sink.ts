@@ -1,4 +1,4 @@
-import type { ActionPlan, ActionResult, ProposedAction } from '../schemas/index'
+import type { ActionPlan, ActionResult, ProposedAction, ProposedActionType } from '../schemas/index'
 
 /**
  * Where effects happen (ADR-0005). The fixture sink simulates them for the deterministic demo; Gmail and
@@ -9,8 +9,17 @@ export interface ActionSink {
   execute(action: ProposedAction, plan: ActionPlan): Promise<ActionResult>
 }
 
+/**
+ * Effects that always wait for a person, whatever tier the Risk Judge assigned (SPEC §12). The tier
+ * is model output, so it cannot be the only thing standing in front of mail leaving the account or
+ * money moving: a `pay` rated `low` would otherwise run unattended. `other` is here because an effect
+ * nothing recognises is exactly the one not to carry out on a guess.
+ */
+const NEVER_AUTOMATIC: ProposedActionType[] = ['send_email', 'pay', 'submit_form', 'other']
+
 /** Effects a sink can carry out without a person: everything except sending mail or paying (SPEC §12). */
 export function isAutoExecutable(action: ProposedAction): boolean {
+  if (NEVER_AUTOMATIC.includes(action.type)) return false
   if (action.riskTier === 'high') return false
   if (action.riskTier === 'low') return true
   return [

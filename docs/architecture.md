@@ -42,7 +42,7 @@ Important names: `OpenLoop`, `Evidence`, `ProposedAction`, `AuditEvent`, `Ledger
 
 ## 5. Deployment
 
-- Agent: `pnpm --filter @openloop/agent deploy-runtime` to AgentCore Runtime in `us-east-1` (CodeZip, arm64, Node 22): stack `AgentCore-OpenLoop-default`, runtime `OpenLoop_OpenLoopAgent-CA60RSCE0z`. Invoked with IAM SigV4 from the web server.
+- Agent: `pnpm --filter @openloop/agent deploy-runtime` to AgentCore Runtime in `us-east-1` (CodeZip, arm64, Node 22): stack `AgentCore-OpenLoop-default`, runtime `OpenLoop_OpenLoopAgent-CA60RSCE0z`. Invoked with IAM SigV4 from the web server, and once a day by an EventBridge Scheduler schedule (`openloop-catch-up`, 07:00 America/New_York, role `openloop-scheduler`) that sends the `catch_up` command so the agent checks in unattended (ADR-0013, `pnpm --filter @openloop/agent create-schedule`).
 - Web: Vercel, production from `main`, preview per PR. Environment: AWS credentials scoped to `InvokeAgentRuntime` and the DynamoDB table, Google OAuth client, table name, runtime ARN.
 - Data: one DynamoDB table `openloop-ledger` in `us-east-1`, created by `pnpm --filter @openloop/ledger-dynamo create-table` (`openloop-ledger-test` for the contract suite). Local development can use the in-process adapter.
 - Models: Bedrock, `global.anthropic.claude-sonnet-4-6` by default.
