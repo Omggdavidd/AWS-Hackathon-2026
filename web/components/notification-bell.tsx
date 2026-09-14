@@ -33,7 +33,7 @@ export function NotificationBell({
 }: {
   notices: Notice[]
   unread: number
-  latestAt?: string
+  latestAt?: string | undefined
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)

@@ -29,7 +29,7 @@ export type NoticeFeed = {
   notices: Notice[]
   unread: number
   /** The newest notice's timestamp. Marking all as read stores this. Undefined when empty. */
-  latestAt?: string
+  latestAt?: string | undefined
 }
 
 const LIMIT = 12
