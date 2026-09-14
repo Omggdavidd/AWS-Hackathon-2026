@@ -1,4 +1,5 @@
 import { invokeCommand, scanConfigured } from '@/lib/agent'
+import { CEILING_MESSAGE, withinDailyCeiling } from '@/lib/ceiling'
 import { USER_ID } from '@/lib/ledger'
 import { isSameOrigin } from '@/lib/same-origin'
 
@@ -10,6 +11,8 @@ export async function POST(request: Request): Promise<Response> {
   if (!isSameOrigin(request.headers, request.url))
     return Response.json({ error: 'cross-origin' }, { status: 403 })
   if (!scanConfigured) return Response.json({ error: 'not configured' }, { status: 503 })
+  if (!(await withinDailyCeiling()))
+    return Response.json({ error: CEILING_MESSAGE }, { status: 429 })
   const body = (await request.json().catch(() => ({}))) as { question?: unknown }
   const question = typeof body.question === 'string' ? body.question.trim() : ''
   if (!question || question.length > 500)
