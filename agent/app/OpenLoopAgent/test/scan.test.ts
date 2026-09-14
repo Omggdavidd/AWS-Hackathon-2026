@@ -392,6 +392,104 @@ describe('runScan', () => {
       lines.find((l) => l.threadId === 'thr-newsletter' && l.evt === 'thread_skipped'),
     ).toMatchObject({ reason: 'newsletter' })
   })
+
+  it('refuses a state the loop cannot reach instead of failing the scan', async () => {
+    const store = new LocalLedgerStore()
+    await store.putLoop(
+      OpenLoop.parse({
+        id: 'loop-closed',
+        userId: 'u',
+        title: 'Housing paperwork',
+        category: 'other',
+        status: 'RESOLVED',
+        confidence: 0.9,
+        sourceRefs: [{ sourceType: 'email', sourceId: 'msg-002', threadId: 'thr-housing' }],
+        createdAt: now,
+        updatedAt: now,
+        resolvedAt: now,
+      }),
+    )
+
+    // RESOLVED -> UNCERTAIN is not in the lifecycle table, and the rest of that thread is unseen.
+    const unsure: Specialists = {
+      ...stubs,
+      async update({ newMessages }) {
+        return {
+          evidence: newMessages.map((m) => ({
+            sourceRef: { sourceType: 'email', sourceId: m.id, threadId: m.threadId },
+            observedAt: m.date,
+            excerpt: m.snippet,
+            supports: 'UPDATED',
+            confidence: 0.4,
+          })),
+          proposedStatus: 'UNCERTAIN',
+          confidence: 0.4,
+          rationale: 'stub: no longer sure where this stands.',
+        }
+      },
+    }
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: unsure,
+      now: '2026-09-11T13:00:00.000Z',
+    })
+
+    expect(summary).toMatchObject({ created: 10, updated: 0, failed: 0 })
+    expect(await store.getLoop('u', 'loop-closed')).toMatchObject({
+      status: 'RESOLVED',
+      resolvedAt: now,
+    })
+
+    // The mail is still recorded; only the state the model asked for is turned down, with a reason.
+    expect((await store.listEvidence('loop-closed')).map((e) => e.sourceId)).toEqual(['msg-003'])
+    const audit = (await store.listAudit('u', { loopId: 'loop-closed' }))[0]
+    expect(audit?.kind).toBe('evidence_added')
+    expect(audit?.reason).toContain('RESOLVED -> UNCERTAIN is not a move this loop can make')
+  })
+
+  it('finishes the scan when one thread throws, and counts it', async () => {
+    const store = new LocalLedgerStore()
+    const events: ScanEvent[] = []
+    const lines: LogLine[] = []
+    const breaking: Specialists = {
+      ...stubs,
+      async extract(input) {
+        if (input.thread[0]?.threadId === 'thr-deposit') throw new Error('stub: the model refused')
+        return stubs.extract(input)
+      },
+    }
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: breaking,
+      now,
+      concurrency: 3,
+      onEvent: (e) => events.push(e),
+      logger: (l) => lines.push(l),
+    })
+
+    expect(summary).toMatchObject({ threads: 12, created: 10, skipped: 1, failed: 1 })
+    const loops = await store.listLoops('u')
+    expect(loops).toHaveLength(10)
+    expect(loops.some((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))).toBe(false)
+    expect(loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-housing'))?.status).toBe(
+      'RESOLVED',
+    )
+
+    const audit = await store.listAudit('u')
+    expect(audit.find((a) => a.kind === 'scan_completed')).toMatchObject({
+      details: { created: 10, failed: 1 },
+    })
+    expect(events.at(-1)).toMatchObject({ type: 'done' })
+    expect(lines.find((l) => l.evt === 'thread_failed')).toEqual({
+      evt: 'thread_failed',
+      threadId: 'thr-deposit',
+      error: 'stub: the model refused',
+    })
+  })
 })
 
 /** Two threads processed at the same time whose investigations cite the same messages: one loop, not two. */
