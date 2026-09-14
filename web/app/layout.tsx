@@ -132,6 +132,15 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                 />
                 <AppearanceMenu accent={accent} density={density} home={home} />
                 <ThemeToggle initialTheme={theme} />
+                {/* Phones have no rail, so Settings (which also holds the inbox and appearance) sits here. */}
+                <Link
+                  href="/settings"
+                  className="avatar topbar-avatar"
+                  title="Settings"
+                  aria-label="Settings"
+                >
+                  {profile.name[0]}
+                </Link>
               </div>
             </header>
             <main id="main-content" className="main-content">

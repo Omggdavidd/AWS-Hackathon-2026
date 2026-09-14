@@ -99,6 +99,7 @@ body:has(.mindboard) .bottom-tabs {
   inset: 0 auto auto 0;
   width: 1400px;
   height: 1000px;
+  transform: var(--camera);
   transform-origin: 0 0;
   opacity: 0;
 }
@@ -178,6 +179,7 @@ body:has(.mindboard) .bottom-tabs {
   --note: color-mix(in srgb, var(--state-color) 6%, var(--card));
   position: absolute;
   width: 300px;
+  height: var(--group-height);
   display: flex;
   flex-direction: column;
   border: 1px solid color-mix(in srgb, var(--state-color) 24%, var(--border));
@@ -557,12 +559,96 @@ body:has(.mindboard) .bottom-tabs {
   overscroll-behavior: contain;
 }
 
+/*
+ * A phone gets the same groups as one scrolling column: no canvas to pan, no handles to drag, and
+ * the bottom tabs stay so the board is not a dead end. `STACKED` in loop-board.tsx matches this query.
+ */
 @media (max-width: 767px) {
-  .app-shell:has(.mindboard) .workspace-header {
-    padding-inline: 18px;
+  body:has(.mindboard) {
+    overflow: visible;
+  }
+  body:has(.mindboard) .bottom-tabs {
+    display: grid;
+  }
+  .app-shell:has(.mindboard) .main-content {
+    height: auto;
+    padding: 0 0 110px;
+  }
+  .mindboard {
+    height: auto;
+  }
+  .board-viewport,
+  :root[data-theme="dark"] .board-viewport {
+    overflow: visible;
+    padding: 40px 16px 0;
+    border-top: 0;
+    background: none;
+    cursor: auto;
+    touch-action: auto;
+  }
+  .board-plane {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: auto;
+    height: auto;
+    transform: none;
+  }
+  .board-connections,
+  .board-canvas-tools,
+  .board-drag-handle,
+  .board-resize {
+    display: none;
+  }
+  .board-hub {
+    position: static;
+    width: auto;
+    min-height: 0;
+    padding: 0 18px 16px;
+  }
+  /* In flow rather than absolute, still riding half out of the hub's top edge. */
+  .hub-mark {
+    position: static;
+    margin: -30px auto 10px;
+  }
+  .board-group {
+    position: static;
+    width: auto;
+    /* Heights saved from a desktop layout do not apply to a column. */
+    height: auto;
+  }
+  .board-group-head {
+    min-height: 0;
+    padding-left: 14px;
+  }
+  .board-group-body,
+  .board-group:has(.board-resize) .board-group-body {
+    overflow: visible;
+    padding-bottom: 12px;
+  }
+  .board-dock {
+    position: static;
+    width: auto;
+    margin-top: 16px;
+    transform: none;
+  }
+  .board-dock[data-open="false"] .board-dock-toggle {
+    margin-bottom: 0;
+  }
+  .board-dock .agent-panel {
+    border-bottom: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .board-dock .agent-result {
+    max-height: none;
+    overflow: visible;
+  }
+  .board-groupmenu > ul {
+    width: min(300px, calc(100vw - 32px));
   }
   .board-topline {
-    padding: 12px 18px 8px;
+    padding: 12px 16px 8px;
     gap: 8px;
   }
   .board-title h1 {
@@ -581,29 +667,14 @@ body:has(.mindboard) .bottom-tabs {
     gap: 8px;
   }
   .board-state-nav {
-    padding: 4px 12px 10px;
+    padding: 4px 16px 0;
     gap: 1px;
-    overflow: auto;
   }
   .board-save-note {
     display: none;
   }
-  .board-canvas-tools {
-    right: 12px;
-    bottom: 12px;
-  }
-  .board-canvas-tools button {
-    font-size: 11px;
-    padding-inline: 8px;
-  }
   .board-gesture-hint {
     display: none;
-  }
-  .board-dock {
-    width: calc(100% - 24px);
-  }
-  .board-dock .agent-result {
-    max-height: 52vh;
   }
 }
 @media (max-width: 360px) {
