@@ -27,7 +27,7 @@ export async function pendingDecisions(
 
 export type Proposal =
   | { kind: 'email'; to: string; subject: string; body: string }
-  | { kind: 'payment'; amount?: string; portal?: string }
+  | { kind: 'payment'; amount?: string | undefined; portal?: string | undefined }
   | { kind: 'choice'; options: string[]; free: string[] }
   | { kind: 'fields'; fields: { label: string; value: string }[] }
 

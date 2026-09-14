@@ -1,4 +1,4 @@
-import type { LoopStatus, OpenLoop } from '@openloop/shared'
+import type { FixtureFile, LoopStatus, OpenLoop } from '@openloop/shared'
 
 /** Cell value for a thread the run (or the expected ledger) produced no loop for. */
 export const MISSING = 'none'
@@ -30,10 +30,14 @@ export interface AgreementReport {
  * loops each real run produced. Rows follow the expected ledger, then any extra thread a run invented.
  * A thread with several loops in one run is read from the first one.
  */
-export function compareRuns(expected: LoopStatusRef[], runs: LoopStatusRef[][]): AgreementReport {
+export function compareRuns(
+  expected: LoopStatusRef[],
+  runs: LoopStatusRef[][],
+  threadIdsToCheck: string[] = [],
+): AgreementReport {
   const expectedByThread = byThread(expected)
   const runsByThread = runs.map(byThread)
-  const threadIds = [...expectedByThread.keys()]
+  const threadIds = [...new Set([...expectedByThread.keys(), ...threadIdsToCheck])]
   for (const run of runsByThread)
     for (const threadId of run.keys()) if (!threadIds.includes(threadId)) threadIds.push(threadId)
 
@@ -65,4 +69,40 @@ function byThread(loops: LoopStatusRef[]): Map<string, LoopStatus> {
     if (!map.has(threadId)) map.set(threadId, loop.status)
   }
   return map
+}
+
+/** Representative regression cases, selected from the showcase without copying its data. */
+export const CALIBRATION_THREADS = ['thr-club', 'thr-deposit', 'thr-issue1', 'thr-newsletter']
+
+export function agreementOptions(args: string[], rawRuns?: string) {
+  const flags = args.filter((arg) => arg !== '--')
+  for (const flag of flags) {
+    if (!['--full', '--verbose'].includes(flag)) throw new Error(`Unknown argument: ${flag}`)
+  }
+  const runs = Number(rawRuns ?? '1')
+  if (!Number.isSafeInteger(runs) || runs < 1) {
+    throw new Error('OPENLOOP_AGREEMENT_RUNS must be a positive safe integer')
+  }
+  return { runs, full: flags.includes('--full'), verbose: flags.includes('--verbose') }
+}
+
+export function calibrationInput(fixture: FixtureFile, expected: OpenLoop[], full: boolean) {
+  const available = new Set(fixture.messages.map((message) => message.threadId))
+  const threadIds = full ? [...available] : [...CALIBRATION_THREADS]
+  for (const id of threadIds) {
+    if (!available.has(id)) throw new Error(`Calibration thread missing from fixture: ${id}`)
+  }
+  return {
+    // Keep the complete calendar: conflicts outside a selected thread still matter.
+    fixture: {
+      ...fixture,
+      messages: fixture.messages.filter((m) => threadIds.includes(m.threadId)),
+    },
+    expected: full
+      ? expected
+      : expected.filter((loop) =>
+          loop.sourceRefs.some((ref) => ref.threadId && threadIds.includes(ref.threadId)),
+        ),
+    threadIds,
+  }
 }
