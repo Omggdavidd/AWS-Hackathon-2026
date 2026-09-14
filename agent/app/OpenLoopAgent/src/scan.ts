@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import {
   type AuditEvent,
   applyTransition,
+  canTransition,
   type EmailMessage,
   type Evidence,
   type IngestionSource,
@@ -46,6 +47,8 @@ export interface ScanSummary {
   skipped: number
   created: number
   updated: number
+  /** Threads whose pipeline threw. The scan carries on; the rest of the inbox still lands. */
+  failed: number
   byStatus: Record<string, number>
 }
 
@@ -73,23 +76,45 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     skipped: 0,
     created: 0,
     updated: 0,
+    failed: 0,
     byStatus: {},
   }
   const commit = mutex()
   const loopLock = keyedMutex()
+  /** Loops this scan opened, by source id: the only writes a ledger query can be too early to see. */
+  const opened = new Map<string, OpenLoop[]>()
 
-  async function findExisting(
-    threadId: string,
-    sourceIds: string[],
-  ): Promise<OpenLoop | undefined> {
-    const known = (
+  /** Loops in the ledger this thread would take over rather than open a second loop beside. */
+  async function knownFor(threadId: string, sourceIds: string[]): Promise<OpenLoop[]> {
+    return (
       await Promise.all(
         sourceIds.map(async (id) =>
           (await store.findLoopsBySource(userId, id)).filter((l) => claims(l, threadId, id)),
         ),
       )
     ).flat()
+  }
+
+  function openedFor(threadId: string, sourceIds: string[]): OpenLoop[] {
+    return sourceIds.flatMap((id) => (opened.get(id) ?? []).filter((l) => claims(l, threadId, id)))
+  }
+
+  function remember(loop: OpenLoop): void {
+    for (const ref of loop.sourceRefs) {
+      opened.set(ref.sourceId, [...(opened.get(ref.sourceId) ?? []), loop])
+    }
+  }
+
+  /** An open loop is the one to update; a resolved one still beats opening a duplicate of it. */
+  function pick(known: OpenLoop[]): OpenLoop | undefined {
     return known.find((l) => l.status !== 'RESOLVED') ?? known[0]
+  }
+
+  async function findExisting(
+    threadId: string,
+    sourceIds: string[],
+  ): Promise<OpenLoop | undefined> {
+    return pick(await knownFor(threadId, sourceIds))
   }
 
   async function takeDeltaPath(
@@ -167,10 +192,8 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     // enough to find the thread in the ledger (docs/architecture.md §4).
     log({ evt: 'thread_started', threadId, messages: thread.length })
 
-    const existing = await findExisting(
-      threadId,
-      thread.map((m) => m.id),
-    )
+    const threadIds = thread.map((m) => m.id)
+    const existing = await findExisting(threadId, threadIds)
     if (existing) return takeDeltaPath(existing, thread, threadId, threadStartedAt, record)
 
     const extracted = await timed(log, { evt: 'role', role: 'extract', threadId }, () =>
@@ -245,60 +268,75 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       resolvedAt: status === 'RESOLVED' ? now : undefined,
     })
 
+    // The thread's own ids were queried before the model ran and nothing outside this scan writes
+    // to the ledger, so only the ids the Investigator brought in are still unchecked. Query them
+    // here: `commit` is one global queue, and a query inside it makes every thread wait on every
+    // other thread's reads.
+    const cited = [...sourceIds].filter((id) => !threadIds.includes(id))
+    const known = cited.length > 0 ? await knownFor(threadId, cited) : []
+
     const claimed = await commit(async () => {
-      const duplicate = await findExisting(threadId, [...sourceIds, ...thread.map((m) => m.id)])
+      // What the queries above cannot have seen is a loop another thread opened since; `opened`
+      // holds exactly those, and is written in this same section.
+      const duplicate = pick([...known, ...openedFor(threadId, [...sourceIds, ...threadIds])])
       if (duplicate) return duplicate
       await store.putLoop(loop)
+      remember(loop)
       return undefined
     })
     if (claimed) return takeDeltaPath(claimed, thread, threadId, threadStartedAt, record)
 
-    for (const e of investigation.evidence) {
-      const evidence: Evidence = {
-        id: randomUUID(),
-        loopId,
-        sourceType: e.sourceRef.sourceType,
-        sourceId: e.sourceRef.sourceId,
-        ...(e.sourceRef.threadId ? { threadId: e.sourceRef.threadId } : {}),
-        observedAt: e.observedAt,
-        excerpt: e.excerpt,
-        supports: e.supports,
-        confidence: e.confidence,
-      }
-      await store.appendEvidence(evidence)
-    }
-
-    await store.appendAudit(
-      audit(
-        userId,
-        loopId,
-        'loop_created',
-        `${extracted.rationale} ${investigation.rationale}`.trim(),
-        now,
-      ),
-    )
-
+    // Under the loop's own lock, like every other write to a loop: `commit` published the row, so
+    // another thread can already be on the delta path for it. Outside the lock its evidence, its
+    // opening audit and its actions would land in the middle of that thread's writes.
     let actionCount = 0
-    for (const proposed of judgment.proposedActions) {
-      const action: ProposedAction = {
-        id: randomUUID(),
-        loopId,
-        userId,
-        type: proposed.type,
-        riskTier: proposed.riskTier,
-        requiresApproval: proposed.riskTier === 'high',
-        summary: proposed.summary,
-        payload: proposed.payload,
-        status: 'PROPOSED',
-        createdAt: now,
+    await loopLock(loopId, async () => {
+      for (const e of investigation.evidence) {
+        const evidence: Evidence = {
+          id: randomUUID(),
+          loopId,
+          sourceType: e.sourceRef.sourceType,
+          sourceId: e.sourceRef.sourceId,
+          ...(e.sourceRef.threadId ? { threadId: e.sourceRef.threadId } : {}),
+          observedAt: e.observedAt,
+          excerpt: e.excerpt,
+          supports: e.supports,
+          confidence: e.confidence,
+        }
+        await store.appendEvidence(evidence)
       }
-      await store.putAction(action)
-      await store.appendAudit({
-        ...audit(userId, loopId, 'action_proposed', proposed.summary, now),
-        actionId: action.id,
-      })
-      actionCount++
-    }
+
+      await store.appendAudit(
+        audit(
+          userId,
+          loopId,
+          'loop_created',
+          `${extracted.rationale} ${investigation.rationale}`.trim(),
+          now,
+        ),
+      )
+
+      for (const proposed of judgment.proposedActions) {
+        const action: ProposedAction = {
+          id: randomUUID(),
+          loopId,
+          userId,
+          type: proposed.type,
+          riskTier: proposed.riskTier,
+          requiresApproval: proposed.riskTier === 'high',
+          summary: proposed.summary,
+          payload: proposed.payload,
+          status: 'PROPOSED',
+          createdAt: now,
+        }
+        await store.putAction(action)
+        await store.appendAudit({
+          ...audit(userId, loopId, 'action_proposed', proposed.summary, now),
+          actionId: action.id,
+        })
+        actionCount++
+      }
+    })
 
     summary.created++
     summary.byStatus[status] = (summary.byStatus[status] ?? 0) + 1
@@ -325,6 +363,15 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       const buffered: ScanEvent[] = []
       try {
         await processThread(entry[0], entry[1], (event) => buffered.push(event))
+      } catch (err) {
+        // One thread's failure is not the inbox's. The id and the message only: nothing a subject
+        // or a body could travel in reaches the log (docs/architecture.md §4).
+        summary.failed++
+        log({
+          evt: 'thread_failed',
+          threadId: entry[0],
+          error: (err instanceof Error ? err.message : String(err)).slice(0, 500),
+        })
       } finally {
         for (const event of buffered) emit(event)
       }
@@ -338,10 +385,17 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       userId,
       undefined,
       'scan_completed',
-      `Scanned ${messages.length} messages in ${threads.size} threads; ${summary.created} loops created`,
+      `Scanned ${messages.length} messages in ${threads.size} threads; ${summary.created} loops created${
+        summary.failed > 0 ? `; ${summary.failed} threads failed` : ''
+      }`,
       now,
     ),
-    details: { messages: messages.length, threads: threads.size, created: summary.created },
+    details: {
+      messages: messages.length,
+      threads: threads.size,
+      created: summary.created,
+      failed: summary.failed,
+    },
   })
   emit({ type: 'done', summary })
   log({ evt: 'scan_completed', ...summary, ms: elapsed(startedAt) })
@@ -432,7 +486,12 @@ async function updateLoop(input: {
   if (result.waitingOn) next.waitingOn = result.waitingOn
   const from = loop.status
   const to = result.proposedStatus
-  const transitioned = to !== from
+  // The Investigator proposes a state; the lifecycle decides whether the loop can reach it. A
+  // resolved loop cannot go back to uncertain, and `findExisting` hands a resolved loop to a
+  // thread whose update can say exactly that. Refusing it costs one loop its state change;
+  // letting `applyTransition` throw would cost the scan every thread still in flight.
+  const transitioned = canTransition(from, to)
+  const refused = !transitioned && to !== from
   if (transitioned) {
     next = applyTransition(next, to, now)
     next.owner =
@@ -470,17 +529,29 @@ async function updateLoop(input: {
     next.nextAction = judgment.nextAction
   }
   await store.putLoop(next)
-  await store.appendAudit(
-    transitioned
-      ? {
-          ...audit(userId, loop.id, 'state_changed', `${result.rationale} ${from} -> ${to}`, now),
-          details: { from, to, messages: newMessages.map((m) => m.id) },
-        }
-      : {
-          ...audit(userId, loop.id, 'evidence_added', result.rationale, now),
-          details: { messages: newMessages.map((m) => m.id) },
-        },
-  )
+  const messageIds = newMessages.map((m) => m.id)
+  if (transitioned) {
+    await store.appendAudit({
+      ...audit(userId, loop.id, 'state_changed', `${result.rationale} ${from} -> ${to}`, now),
+      details: { from, to, messages: messageIds },
+    })
+  } else if (refused) {
+    await store.appendAudit({
+      ...audit(
+        userId,
+        loop.id,
+        'evidence_added',
+        `${result.rationale} ${from} -> ${to} is not a move this loop can make, so it stays ${from}`,
+        now,
+      ),
+      details: { from, proposed: to, messages: messageIds },
+    })
+  } else {
+    await store.appendAudit({
+      ...audit(userId, loop.id, 'evidence_added', result.rationale, now),
+      details: { messages: messageIds },
+    })
+  }
   return transitioned ? { loop: next, from, to, reason: result.rationale } : undefined
 }
 
