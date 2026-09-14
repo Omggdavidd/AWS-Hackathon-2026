@@ -17,6 +17,7 @@ These are drafts. Nothing is published yet, and `SUBMISSION.md` stays unticked u
 - **Team voice.** All three are written as "we", so any of us can publish any of them without the prose sounding wrong.
 - **Check the numbers on the day.** Each post quotes measurements — 263 to 277 seconds sequential against 95 to 105 at concurrency 3, eight loops instead of nine from the Haiku Extractor. They were true at the time of writing and are the kind of thing that drifts.
 - **Links.** Each ends with the repository. Add the live URL if the post is published after the deploy is public.
+- **Claim only what is built.** These go out under our names and the rules require the project to behave as described. Effects are simulated through `FixtureActionSink`; live Gmail and Calendar writes are #21 and the web OAuth half of #20, both open. Post 02 says so explicitly and should keep saying so until they ship.
 
 ## Why these three
 

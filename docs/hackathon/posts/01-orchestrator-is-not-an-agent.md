@@ -15,10 +15,11 @@ The obvious design is a single capable agent with a big prompt and a pile of too
 We went the other way. Seven narrow specialists, each with one job and a typed output, and an orchestrator that is ordinary TypeScript.
 
 ```ts
+// abbreviated; the full signatures are in agent/app/OpenLoopAgent/src/agents/index.ts
 export interface Specialists {
   extract(input: { thread: EmailMessage[]; now: string }): Promise<ExtractorOutput>
   investigate(input: { candidate: ...; thread: EmailMessage[]; now: string }): Promise<InvestigatorOutput>
-  judge(input: { loop: ...; evidence: ... }): Promise<JudgeOutput>
+  judge(input: { loop: ...; evidence: ... }): Promise<RiskJudgment>
   plan(input: { loop: ...; action: ProposedAction; ... }): Promise<ActionPlan>
   // update, summarize, answer
 }

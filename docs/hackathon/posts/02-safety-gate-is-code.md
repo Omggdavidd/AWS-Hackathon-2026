@@ -4,9 +4,11 @@
 
 ---
 
-Open Loops, our entry for the AWS Agents for Humans hackathon, does things to your life. It drafts replies, books calendar time, sets reminders. It can also propose paying a $200 registration deposit.
+Open Loops, our entry for the AWS Agents for Humans hackathon, decides what to do about the responsibilities it finds in your mail. It drafts replies, books calendar time, sets reminders. It can also propose paying a $200 registration deposit.
 
 The difference between those two categories is the whole product. Get it wrong and you have built something nobody should connect to their real inbox.
+
+One thing to be straight about up front, since it changes how you should read the rest: **effects are currently simulated.** Every action runs through a fixture sink that records what would have happened. Live Gmail and Calendar writes are the next step, behind the same interface. The gate described here is real and enforced today; the send is not yet wired to anything that leaves the building.
 
 ## "You are a careful assistant" is not a safety control
 
@@ -42,7 +44,9 @@ export interface ActionSink {
 }
 ```
 
-One interface, one implementation swapped by configuration: a fixture sink for the deterministic demo, Gmail and Calendar for the live path. Sinks never decide policy. They do what they are told, after the gate has already run.
+One interface. Today it has one implementation, `FixtureActionSink`, which records the effect it was asked to perform and returns a reference to it rather than contacting Google. Live Gmail and Calendar sinks are the planned second implementation behind the same interface, and are not built yet.
+
+Sinks never decide policy either way. They do what they are told, after the gate has already run — which is the property that makes swapping in a live one a configuration change rather than a rewrite of the safety model.
 
 The useful property is that "what the agent wanted to do" is durable and inspectable *before* it happens. You can show a user a list of proposed actions. You can audit what was proposed and never executed. You cannot do either if deciding and doing are the same function call.
 
@@ -84,17 +88,19 @@ if (current.status === 'RESOLVED') {
 
 Two details we argued about and would defend:
 
-**The effect stays recorded.** The draft really was written. Discarding the evidence because we discarded the status change would leave the user with a sent email and no trace of it on the loop. Only the status write is dropped.
+**The effect stays recorded.** The draft really was produced. Discarding the evidence because we discarded the status change would leave the artifact orphaned — and once a live sink is wired up, that same path would mean a genuinely sent email with no trace of it on the loop. Only the status write is dropped.
 
 **The skip is explained, not silent.** It writes an audit event the user can read: *you had already marked this done, so it stays closed*. An agent that quietly declines to do something is only marginally better than one that quietly does the wrong thing.
 
 The regression test resolves the loop from inside the `plan` stub — the exact window — and asserts the loop stays `RESOLVED` with `resolvedAt` intact. We checked that it fails against the old code before keeping it: `expected 'WAITING' to be 'RESOLVED'`. A regression test that passes with and without the fix is decoration.
 
+**What this does and does not close.** It closes the wide window: the twenty seconds spanning the model call and the sink, which is when a user is actually looking at the button. It does not make the write atomic. `getLoop` followed by an unconditional `putLoop` is still a read-modify-write, and a resolution landing between those two calls would still be overwritten. That window is microseconds rather than seconds, and no test covers it. Closing it properly means a conditional write — a version attribute and a condition expression on the update — which is the right fix for genuinely concurrent callers and which we have not done.
+
 ## What generalises
 
 - **Put the gate where prompt injection cannot reach it.** If the rule lives in the prompt, it lives in the same channel as the attacker's input.
 - **Make intent durable before it becomes action.** A row between deciding and doing gives you approval, audit and the ability to change your mind.
-- **Re-read before you write.** Any agent step that spans a model call spans real time, and the world can change inside it. The stale-snapshot write is not an exotic failure; ours took twenty seconds to open and a single click to trigger.
+- **Re-read before you write, and know what that buys you.** Any agent step spanning a model call spans real time, and the world can change inside it. The stale-snapshot write is not an exotic failure: ours took twenty seconds to open and a single click to trigger. Re-reading closes that window. It does not make the write atomic — for that you want a conditional write against a version attribute.
 - **Say no out loud.** Every refusal in our system writes an audit line. Users trust a system that explains itself; so do judges.
 
 Source and the full pipeline: <https://github.com/Omggdavidd/AWS-Hackathon-2026>
