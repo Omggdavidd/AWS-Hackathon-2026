@@ -26,7 +26,7 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 | Owner | Issues, hardest first within each row |
 |---|---|
 | Omggdavidd (hard + front end) | #20 live Gmail, #21 Google sinks (stretch); video and submission chores |
-| Ojulari123 (next hardest) | #16 scan speed (PR #121 is a draft: 2.6× faster, but it exposes a cross-thread dedup bug that drops a loop; fix that first), #31 command bar (stretch) |
+| Ojulari123 (next hardest) | #31 command bar (stretch): PR #128 conflicts with `main` after #121 and #113 and needs the `isSameOrigin` guard on `/api/ask`; #16 shipped in #121 |
 | tdare514 (medium) | #20 live Gmail: the reader and the runtime's `gmail` source kind are in, the web OAuth half is not; #111 shipped |
 | ab00bae (medium-easy) | nothing open |
 | AyomideAw (easiest) | nothing open |
