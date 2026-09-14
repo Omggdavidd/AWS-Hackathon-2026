@@ -2905,6 +2905,121 @@ body:has(.welcome) .bottom-tabs {
   padding-top: 4px;
 }
 
+/* Welcome steps: one question at a time, sliding between them (#176) */
+.welcome-progress {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.welcome-progress li {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 220ms ease;
+}
+.welcome-progress li[data-done],
+.welcome-progress li[aria-current="step"] {
+  background: var(--accent);
+}
+.welcome-viewport {
+  position: relative;
+  min-height: 212px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+.welcome-step .welcome-field {
+  margin-top: 0;
+}
+.welcome-step[data-phase="idle"] {
+  animation: welcome-step-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.welcome-step[data-phase="leaving"] {
+  animation: welcome-step-out 180ms ease-in both;
+  pointer-events: none;
+}
+.welcome-step[data-dir="-1"][data-phase="idle"] {
+  animation-name: welcome-step-in-back;
+}
+.welcome-step[data-dir="-1"][data-phase="leaving"] {
+  animation-name: welcome-step-out-back;
+}
+@keyframes welcome-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes welcome-step-out {
+  to {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
+@keyframes welcome-step-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
+@keyframes welcome-step-out-back {
+  to {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+.welcome-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.welcome-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.welcome-nav button {
+  min-height: 42px;
+  padding-inline: 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.welcome-next {
+  background: var(--foreground);
+  color: var(--background);
+}
+.welcome-next:hover {
+  opacity: 0.9;
+}
+.welcome-back {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+.welcome-back:hover:not(:disabled) {
+  background: var(--background);
+}
+.welcome-back:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-step[data-phase],
+  .welcome-step[data-dir][data-phase] {
+    animation: none;
+  }
+  .welcome-progress li {
+    transition: none;
+  }
+}
+
 /* The inbox the agent reads, in the top bar: address, what it is for, and a dot for connected */
 .inbox-chip {
   display: inline-flex;
@@ -2936,19 +3051,6 @@ body:has(.welcome) .bottom-tabs {
   background: var(--surface);
   font-size: 11px;
   color: var(--muted);
-}
-.welcome-pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.welcome-pair .welcome-field {
-  margin-top: 0;
-}
-@media (max-width: 600px) {
-  .welcome-pair {
-    grid-template-columns: 1fr;
-  }
 }
 @media (max-width: 1023px) {
   .inbox-address,
