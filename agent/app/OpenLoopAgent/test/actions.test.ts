@@ -152,9 +152,53 @@ describe('executeAction', () => {
     expect(opts.sink.log).toHaveLength(0)
   })
 
+  it('refuses a plan whose effect is not the one that was approved', async () => {
+    const opts = await setup()
+    // The gate cleared a draft. Nothing in the schemas stops the model answering with a send, so
+    // without the check in executeAction this posts mail the user never saw.
+    const sending = {
+      async plan() {
+        return {
+          effect: { kind: 'send_email', to: 'office@maplecourtpm.com', subject: 'x', body: 'y' },
+          summary: 'Sent it',
+        }
+      },
+    } as unknown as Specialists
+    await opts.store.putAction(action({ id: 'draft' }))
+
+    const out = await executeAction({ ...opts, specialists: sending }, 'draft')
+
+    expect(out.status).toBe('FAILED')
+    expect(out.summary).toContain('planned a send_email effect for a draft_email action')
+    expect(opts.sink.log).toHaveLength(0)
+    expect((await opts.store.getAction('user-1', 'draft'))?.status).toBe('FAILED')
+    expect((await opts.store.listAudit('user-1'))[0]).toMatchObject({ kind: 'action_failed' })
+  })
+
+  it('allows the pairings the Action Agent prompt offers: a follow-up sends, a payment notes', async () => {
+    const opts = await setup()
+    await opts.store.putAction(
+      action({ id: 'fu', type: 'follow_up', riskTier: 'low', status: 'APPROVED' }),
+    )
+    await opts.store.putAction(
+      action({
+        id: 'pay',
+        type: 'pay',
+        riskTier: 'high',
+        requiresApproval: true,
+        status: 'APPROVED',
+      }),
+    )
+    expect((await executeAction(opts, 'fu')).status).toBe('EXECUTED')
+    expect((await executeAction(opts, 'pay')).status).toBe('EXECUTED')
+  })
+
   it('moves the loop when the plan says who owes the next move', async () => {
     const opts = await setup()
-    await opts.store.putAction(action({ id: 'fu', type: 'follow_up', riskTier: 'low' }))
+    // A follow-up is mail to the other party, so it runs only once the user has approved it.
+    await opts.store.putAction(
+      action({ id: 'fu', type: 'follow_up', riskTier: 'low', status: 'APPROVED' }),
+    )
     await executeAction(opts, 'fu')
     expect((await opts.store.getLoop('user-1', 'loop-1'))?.status).toBe('WAITING')
   })
@@ -162,7 +206,9 @@ describe('executeAction', () => {
   it('does not reopen a loop the user resolved while the action was running', async () => {
     const opts = await setup()
     const resolvedAt = '2026-09-10T13:00:30.000Z'
-    await opts.store.putAction(action({ id: 'fu', type: 'follow_up', riskTier: 'low' }))
+    await opts.store.putAction(
+      action({ id: 'fu', type: 'follow_up', riskTier: 'low', status: 'APPROVED' }),
+    )
 
     // "I already did this", pressed while the model is planning. RESOLVED -> WAITING is an allowed
     // transition, so before #66 the stale snapshot wrote the loop back open.
