@@ -17,9 +17,10 @@ import { executeAction, handleWhatYouCan } from './src/actions'
 import { createSpecialists } from './src/agents'
 import { ask } from './src/ask'
 import { catchUp } from './src/catch-up'
+import { emitStream } from './src/emit-stream'
 import { jsonLogger } from './src/log'
 import { loadModel, loadModelsByRole } from './src/model'
-import { runScan } from './src/scan'
+import { runScan, type ScanSummary } from './src/scan'
 
 /**
  * AgentCore Runtime entry point (ADR-0008). One command today: scan a source into the ledger.
@@ -72,7 +73,14 @@ const app = new BedrockAgentCoreApp({
   invocationHandler: {
     requestSchema,
     async *process(payload) {
-      const source: IngestionSource =
+      /**
+       * Opened on first read, once. `catch_up` and `ask` read no mail, so on those commands —
+       * including the 07:00 daily catch-up — nothing here runs and the bundled demo inbox is never
+       * parsed. `source` below is the handle everything else holds; opening is its own step so the
+       * one instance is shared.
+       */
+      let opening: Promise<IngestionSource> | undefined
+      const openSource = async (): Promise<IngestionSource> =>
         payload.source.kind === 'gmail'
           ? new GoogleSource({
               accessToken: payload.source.accessToken,
@@ -83,6 +91,15 @@ const app = new BedrockAgentCoreApp({
             : payload.source.variant === 'delta'
               ? FixtureSource.fromDataWithDelta(seedInbox, seedInboxDelta)
               : FixtureSource.fromData(seedInbox)
+      const open = () => {
+        opening ??= openSource()
+        return opening
+      }
+      const source: IngestionSource = {
+        listMessages: async (query) => (await open()).listMessages(query),
+        getThread: async (threadId) => (await open()).getThread(threadId),
+        listEvents: async (range) => (await open()).listEvents(range),
+      }
       const store: LedgerStore =
         payload.ledger.kind === 'dynamo'
           ? new DynamoLedgerStore({ tableName: payload.ledger.table })
@@ -143,18 +160,28 @@ const app = new BedrockAgentCoreApp({
         }
         return
       }
-      const events: string[] = []
-      const summary = await runScan({
-        source,
-        store,
-        userId: payload.userId,
-        specialists,
-        logger,
-        ...(payload.now ? { now: payload.now } : {}),
-        onEvent: (e) => events.push(JSON.stringify(e)),
-      })
-      for (const line of events) yield { data: line }
-      yield { data: JSON.stringify({ type: 'summary', summary }) }
+      // Yielded as the scan emits them: the browser draws a hundred seconds of progress rather
+      // than a frozen screen and one burst at the end (web/components/agent-panel.tsx).
+      const scan = emitStream<string, ScanSummary>((emit) =>
+        runScan({
+          source,
+          store,
+          userId: payload.userId,
+          specialists,
+          logger,
+          ...(payload.now ? { now: payload.now } : {}),
+          // Serialized here, not at yield time, so a later write to the loop it carries cannot
+          // change what the client already saw.
+          onEvent: (e) => emit(JSON.stringify(e)),
+        }),
+      )
+      for await (const emitted of scan) {
+        if (emitted.kind === 'event') {
+          yield { data: emitted.event }
+          continue
+        }
+        yield { data: JSON.stringify({ type: 'summary', summary: emitted.result }) }
+      }
     },
   },
 })
