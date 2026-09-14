@@ -1,16 +1,20 @@
 import { fileURLToPath } from 'node:url'
 import {
+  type ActionPlan,
   applyTransition,
   FixtureActionSink,
   FixtureSource,
   LocalLedgerStore,
   type ProposedAction,
+  type ProposedActionType,
 } from '@openloop/shared'
 import { loop } from '@openloop/shared/testing'
 import { describe, expect, it } from 'vitest'
-import { executeAction, handleWhatYouCan } from '../src/actions'
+import { executeAction, handleWhatYouCan, isAllowedEffect } from '../src/actions'
 import type { Specialists } from '../src/agents'
 import type { LogLine } from '../src/log'
+
+type EffectKind = ActionPlan['effect']['kind']
 
 const seed = fileURLToPath(new URL('../../../../demo/seed-inbox.json', import.meta.url))
 const now = '2026-09-10T13:00:00.000Z'
@@ -152,9 +156,82 @@ describe('executeAction', () => {
     expect(opts.sink.log).toHaveLength(0)
   })
 
+  it('refuses a plan whose effect is not the one that was approved', async () => {
+    const opts = await setup()
+    // The gate cleared a draft. Nothing in the schemas stops the model answering with a send, so
+    // without the check in executeAction this posts mail the user never saw.
+    const sending = {
+      async plan() {
+        return {
+          effect: { kind: 'send_email', to: 'office@maplecourtpm.com', subject: 'x', body: 'y' },
+          summary: 'Sent it',
+        }
+      },
+    } as unknown as Specialists
+    await opts.store.putAction(action({ id: 'draft' }))
+
+    const out = await executeAction({ ...opts, specialists: sending }, 'draft')
+
+    expect(out.status).toBe('FAILED')
+    expect(out.summary).toContain('planned a send_email effect for a draft_email action')
+    expect(opts.sink.log).toHaveLength(0)
+    expect((await opts.store.getAction('user-1', 'draft'))?.status).toBe('FAILED')
+    expect((await opts.store.listAudit('user-1'))[0]).toMatchObject({ kind: 'action_failed' })
+  })
+
+  it('allows the pairings the Action Agent prompt offers: a follow-up sends, a payment notes', async () => {
+    const opts = await setup()
+    await opts.store.putAction(
+      action({ id: 'fu', type: 'follow_up', riskTier: 'low', status: 'APPROVED' }),
+    )
+    await opts.store.putAction(
+      action({
+        id: 'pay',
+        type: 'pay',
+        riskTier: 'high',
+        requiresApproval: true,
+        status: 'APPROVED',
+      }),
+    )
+    expect((await executeAction(opts, 'fu')).status).toBe('EXECUTED')
+    expect((await executeAction(opts, 'pay')).status).toBe('EXECUTED')
+  })
+
+  it('runs an approved payment that comes back as a reminder', async () => {
+    const opts = await setup()
+    // Observed against the real model on the demo deposit: there is no payment in the effect
+    // union, so the Action Agent plans the honest weaker thing and asks the user to pay.
+    const reminding = {
+      async plan() {
+        return {
+          effect: { kind: 'reminder', at: '2026-09-12T09:00:00.000Z', note: 'Pay the deposit' },
+          summary: 'Reminder set',
+        }
+      },
+    } as unknown as Specialists
+    await opts.store.putAction(
+      action({
+        id: 'pay',
+        type: 'pay',
+        riskTier: 'high',
+        requiresApproval: true,
+        status: 'APPROVED',
+      }),
+    )
+
+    const out = await executeAction({ ...opts, specialists: reminding }, 'pay')
+
+    expect(out.status).toBe('EXECUTED')
+    expect(opts.sink.log.map((l) => l.plan.effect.kind)).toEqual(['reminder'])
+    expect((await opts.store.listAudit('user-1'))[0]).toMatchObject({ kind: 'action_executed' })
+  })
+
   it('moves the loop when the plan says who owes the next move', async () => {
     const opts = await setup()
-    await opts.store.putAction(action({ id: 'fu', type: 'follow_up', riskTier: 'low' }))
+    // A follow-up is mail to the other party, so it runs only once the user has approved it.
+    await opts.store.putAction(
+      action({ id: 'fu', type: 'follow_up', riskTier: 'low', status: 'APPROVED' }),
+    )
     await executeAction(opts, 'fu')
     expect((await opts.store.getLoop('user-1', 'loop-1'))?.status).toBe('WAITING')
   })
@@ -162,7 +239,9 @@ describe('executeAction', () => {
   it('does not reopen a loop the user resolved while the action was running', async () => {
     const opts = await setup()
     const resolvedAt = '2026-09-10T13:00:30.000Z'
-    await opts.store.putAction(action({ id: 'fu', type: 'follow_up', riskTier: 'low' }))
+    await opts.store.putAction(
+      action({ id: 'fu', type: 'follow_up', riskTier: 'low', status: 'APPROVED' }),
+    )
 
     // "I already did this", pressed while the model is planning. RESOLVED -> WAITING is an allowed
     // transition, so before #66 the stale snapshot wrote the loop back open.
@@ -222,5 +301,49 @@ describe('handleWhatYouCan', () => {
     const result = await handleWhatYouCan(opts)
     expect(result.handled.map((h) => h.actionId)).toEqual(['draft'])
     expect(result.needsYou.map((n) => n.actionId)).toEqual(['pay'])
+  })
+})
+
+const EFFECT_KINDS: EffectKind[] = [
+  'draft_email',
+  'send_email',
+  'calendar_event',
+  'reminder',
+  'archive_thread',
+  'note',
+]
+
+/** The whole type-to-effect policy in one place; every kind not listed for a type is rejected. */
+const MATRIX: Record<ProposedActionType, EffectKind[]> = {
+  draft_email: ['draft_email', 'reminder', 'note'],
+  send_email: ['draft_email', 'send_email', 'reminder', 'note'],
+  follow_up: ['draft_email', 'send_email', 'reminder', 'note'],
+  create_calendar_event: ['calendar_event', 'reminder', 'note'],
+  book_appointment: ['draft_email', 'send_email', 'calendar_event', 'reminder', 'note'],
+  remind: ['reminder', 'note'],
+  archive_thread: ['archive_thread', 'reminder', 'note'],
+  pay: ['reminder', 'note'],
+  submit_form: ['reminder', 'note'],
+  other: EFFECT_KINDS,
+}
+
+describe('isAllowedEffect', () => {
+  for (const [type, allowed] of Object.entries(MATRIX) as [ProposedActionType, EffectKind[]][]) {
+    it(`${type} permits ${allowed.join(', ')} and nothing else`, () => {
+      for (const kind of EFFECT_KINDS)
+        expect({ kind, allowed: isAllowedEffect(type, kind) }).toEqual({
+          kind,
+          allowed: allowed.includes(kind),
+        })
+    })
+  }
+
+  it('never lets an approved draft send, whatever else it allows', () => {
+    expect(isAllowedEffect('draft_email', 'send_email')).toBe(false)
+  })
+
+  it('lets a reminder stand in for anything, because it reaches nobody but the user', () => {
+    for (const type of Object.keys(MATRIX) as ProposedActionType[])
+      expect({ type, allowed: isAllowedEffect(type, 'reminder') }).toEqual({ type, allowed: true })
   })
 })
