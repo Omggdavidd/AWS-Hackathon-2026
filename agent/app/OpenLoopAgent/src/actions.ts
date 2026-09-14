@@ -17,37 +17,46 @@ import { elapsed, type Logger, noopLogger, timed } from './log'
 type EffectKind = ActionPlan['effect']['kind']
 
 /**
- * What each approved action type is allowed to come back as. Nothing in the schemas binds a
+ * Effect kinds that reach nobody but the user: a note is text on the loop, a reminder asks the user
+ * to do the thing themselves. Neither touches a third party, moves money or leaves anything to
+ * retract, so neither can mean "did something other than what was approved", only less. Every
+ * action type may come back as one. That is what makes `pay` and `submit_form` workable at all:
+ * the effect union has no payment, so reminding the user to pay is the most the Action Agent can
+ * honestly plan for an approved deposit.
+ */
+const WEAKER_EFFECTS: ReadonlySet<EffectKind> = new Set(['note', 'reminder'])
+
+/**
+ * Beyond those, an action type permits only its own effects. Nothing in the schemas binds a
  * `ProposedAction.type` to an `ActionPlan.effect.kind`, so without this a `draft_email` the gate
  * cleared can return a `send_email` effect and the sink posts mail the user never approved.
  *
- * Read from the Action Agent prompt: `send_email` is "the shape used for follow-ups", booking a
- * slot with the other party is a reply, and `note` is what the model is told to use "when nothing
- * external is needed" — so every type may under-do its effect with a note, and `pay` and
- * `submit_form` have no effect of their own and can only ever be one. Kinds that are weaker than
- * what was approved (a draft where a send was allowed) pass; kinds that do something else do not.
+ * Read from the Action Agent prompt: `send_email` is "the shape used for follow-ups" and booking a
+ * slot with the other party is a reply. A kind weaker than what was approved (a draft where a send
+ * was allowed) passes; a kind that does more, or does something else, does not. `draft_email` and
+ * `archive_thread` are deliberately not universal: a draft is addressed to a third party and one
+ * click from delivery, and archiving takes a responsibility out of the inbox, which is a change to
+ * the mailbox rather than a smaller version of paying a deposit.
  */
-const ALLOWED_EFFECTS: Record<ProposedActionType, ReadonlySet<EffectKind>> = {
-  draft_email: new Set(['draft_email', 'note']),
-  send_email: new Set(['send_email', 'draft_email', 'note']),
-  follow_up: new Set(['send_email', 'draft_email', 'note']),
-  create_calendar_event: new Set(['calendar_event', 'note']),
+const OWN_EFFECTS: Record<ProposedActionType, ReadonlySet<EffectKind>> = {
+  draft_email: new Set(['draft_email']),
+  send_email: new Set(['send_email', 'draft_email']),
+  follow_up: new Set(['send_email', 'draft_email']),
+  create_calendar_event: new Set(['calendar_event']),
   // "Reply to Riverside Dental choosing a slot": booking the other party's time is a mail first.
-  book_appointment: new Set(['calendar_event', 'send_email', 'draft_email', 'note']),
-  remind: new Set(['reminder', 'note']),
-  archive_thread: new Set(['archive_thread', 'note']),
-  pay: new Set(['note']),
-  submit_form: new Set(['note']),
+  book_appointment: new Set(['calendar_event', 'send_email', 'draft_email']),
+  remind: new Set([]),
+  archive_thread: new Set(['archive_thread']),
+  pay: new Set([]),
+  submit_form: new Set([]),
   // The escape hatch names no effect, so no kind can contradict it, and it never runs without a
   // person (NEVER_AUTOMATIC in the shared gate).
-  other: new Set([
-    'draft_email',
-    'send_email',
-    'calendar_event',
-    'reminder',
-    'archive_thread',
-    'note',
-  ]),
+  other: new Set(['draft_email', 'send_email', 'calendar_event', 'archive_thread']),
+}
+
+/** Whether an approved action of this type may come back as this effect kind. */
+export function isAllowedEffect(type: ProposedActionType, kind: EffectKind): boolean {
+  return WEAKER_EFFECTS.has(kind) || OWN_EFFECTS[type].has(kind)
 }
 
 export interface ExecuteOptions {
@@ -120,7 +129,7 @@ export async function executeAction(
       { evt: 'role', role: 'plan', actionId, ...(threadId ? { threadId } : {}) },
       () => specialists.plan({ loop, evidence, action, thread, now }),
     )
-    if (!ALLOWED_EFFECTS[action.type].has(plan.effect.kind))
+    if (!isAllowedEffect(action.type, plan.effect.kind))
       // Thrown inside the try so it lands as a normal failure: FAILED, an action_failed audit and
       // a reason a person can read. What was approved is what runs, or nothing does.
       throw new Error(
