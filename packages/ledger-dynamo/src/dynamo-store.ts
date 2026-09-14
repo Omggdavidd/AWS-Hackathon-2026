@@ -1,4 +1,4 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { ConditionalCheckFailedException, DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import {
   BatchWriteCommand,
   type BatchWriteCommandOutput,
@@ -19,6 +19,8 @@ import {
   type OpenLoop,
   type ProposedAction,
   type ProposedActionStatus,
+  type PutLoopOptions,
+  StaleLoopWriteError,
 } from '@openloop/shared'
 
 /** Rows deleted (or, for a dry run, found) by {@link DynamoLedgerStore.purgeUser}. */
@@ -43,6 +45,7 @@ const FILTERED_PAGE_SIZE = 100
 
 type TableKey = { PK: string; SK: string }
 type WriteRequests = NonNullable<BatchWriteCommandOutput['UnprocessedItems']>[string]
+/** A server-side expression: used as a query's FilterExpression and as a put's condition. */
 type QueryFilter = {
   expression: string
   names: Record<string, string>
@@ -108,12 +111,25 @@ export class DynamoLedgerStore implements LedgerStore {
     return `${this.prefix}LOOP#${loopId}`
   }
 
-  private async put(PK: string, SK: string, kind: RowKind, record: object): Promise<void> {
+  private async put(
+    PK: string,
+    SK: string,
+    kind: RowKind,
+    record: object,
+    condition?: QueryFilter,
+  ): Promise<void> {
     const marker = ROW_MARKER[kind]
     await this.doc.send(
       new PutCommand({
         TableName: this.table,
         Item: marker === undefined ? { PK, SK, ...record } : { PK, SK, type: marker, ...record },
+        ...(condition
+          ? {
+              ConditionExpression: condition.expression,
+              ExpressionAttributeNames: condition.names,
+              ExpressionAttributeValues: condition.values,
+            }
+          : {}),
       }),
     )
   }
@@ -166,8 +182,34 @@ export class DynamoLedgerStore implements LedgerStore {
     return this.get<OpenLoop>(this.userPk(userId), `LOOP#${loopId}`, 'loop')
   }
 
-  async putLoop(loop: OpenLoop): Promise<void> {
-    await this.put(this.userPk(loop.userId), `LOOP#${loop.id}`, 'loop', loop)
+  /**
+   * With `ifUnchanged`, the row is written under a ConditionExpression on its stored version.
+   * Expecting 0 also accepts a row with no `version` attribute at all: the live table is full of
+   * rows written before the field existed, and they have to be claimable exactly once. `version`
+   * is a DynamoDB reserved word, hence the name placeholder.
+   */
+  async putLoop(loop: OpenLoop, opts: PutLoopOptions = {}): Promise<OpenLoop> {
+    if (!opts.ifUnchanged) {
+      await this.put(this.userPk(loop.userId), `LOOP#${loop.id}`, 'loop', loop)
+      return loop
+    }
+    const expected = loop.version ?? 0
+    const next = { ...loop, version: expected + 1 }
+    try {
+      await this.put(this.userPk(loop.userId), `LOOP#${loop.id}`, 'loop', next, {
+        expression:
+          expected === 0
+            ? 'attribute_not_exists(PK) OR attribute_not_exists(#version) OR #version = :expected'
+            : '#version = :expected',
+        names: { '#version': 'version' },
+        values: { ':expected': expected },
+      })
+    } catch (err) {
+      if (err instanceof ConditionalCheckFailedException)
+        throw new StaleLoopWriteError(loop.id, expected)
+      throw err
+    }
+    return next
   }
 
   async listLoops(userId: string, filter: LoopFilter = {}): Promise<OpenLoop[]> {

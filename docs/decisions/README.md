@@ -28,3 +28,4 @@ Format: MADR 4.0 minimal, see `adr-template.md`. Keep each under a page. Write i
 | [0011](0011-google-oauth-in-web-app.md) | The web app owns Google OAuth in Testing status; the agent receives tokens per invocation and polls | accepted |
 | [0012](0012-repository-layout-and-tooling.md) | pnpm workspace with web, agent, shared schemas and demo fixtures; Biome and Vitest | accepted |
 | [0013](0013-scheduled-catch-up-eventbridge-scheduler.md) | The agent checks in on its own: a daily catch-up scheduled with Amazon EventBridge Scheduler | proposed |
+| [0014](0014-optimistic-concurrency-on-loop-writes.md) | Loop writes can be compare-and-swap: a version on the record, a condition on the write | proposed |
