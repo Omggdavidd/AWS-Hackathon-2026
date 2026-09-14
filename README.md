@@ -24,6 +24,17 @@ Team entry for the AWS **Agents for Humans** hackathon, Everyday Agents track.
 - **Handles what it safely can.** *Handle what you can* drafts the replies, creates the calendar events and sets the reminders. Sending mail, paying and anything else high-risk waits for you: that gate is enforced in application code, not in a prompt.
 - **Keeps up.** A second scan of the next morning's mail updates existing loops instead of duplicating them, and *Catch me up* tells you what changed since you last looked — state changes and decisions, never "you have 6 new emails".
 
+## Who it is for
+
+Anyone whose obligations arrive as email and quietly expire there.
+
+- **Students.** A registration deposit, a form the department is waiting on, a housing fee: kept open until the receipt or confirmation shows up in your mail, with the deadline on your calendar.
+- **Applications and follow-ups.** You applied, they said thanks, and nothing since. That is a *Waiting* loop: the ledger knows who owes the next move, the agent drafts the follow-up, and the loop closes when the reply arrives.
+- **A manager buried in mail.** A hundred messages a day, six of which carry a real request. The ledger holds only what is owed and to whom, with the evidence; everything else stays quiet.
+- **Time away.** A week of leave, or a week when the inbox is too much. The agent checks in on its own every morning, *Catch me up* says what changed, and only a decision that is genuinely yours interrupts you.
+
+What is next, in the order we would build it, is on the [About page](https://openloop-neon.vercel.app/about) of the live app: your real inbox, real effects still gated, follow-ups with a clock, several inboxes, a spoken digest.
+
 Built with the **Strands Agents TypeScript SDK** on **Amazon Bedrock** (Claude Sonnet 4.6), deployed to **Amazon Bedrock AgentCore Runtime**, with the ledger in **DynamoDB** and the UI in Next.js 16.
 
 ## See it working in 60 seconds

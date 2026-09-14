@@ -3934,3 +3934,45 @@ body:has(.welcome) .site-foot,
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* About: who it is for, and what is next */
+.about-stories,
+.about-next {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.about-stories {
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+.about-stories li,
+.about-next li {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+.about-next {
+  counter-reset: next;
+  list-style: none;
+}
+.about-next li {
+  counter-increment: next;
+}
+.about-next li strong::before {
+  content: counter(next) ". ";
+  color: var(--accent);
+}
+.about-stories strong,
+.about-next strong {
+  display: block;
+  font-size: 15px;
+}
+.about-section .about-stories p,
+.about-section .about-next p {
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
