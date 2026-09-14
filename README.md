@@ -56,10 +56,10 @@ If corepack complains about pnpm, install it directly: `npm install -g pnpm@12.3
 pnpm check      # lint, typecheck, unit tests, and the repository context check
 ```
 
-This runs with no AWS account: the orchestrator is tested against stubbed specialists, so no test calls a model. Two suites need credentials and are not part of `pnpm check`:
+This runs with no AWS account: the orchestrator is tested against stubbed specialists, so no test calls a model. Continuous integration adds the DynamoDB ledger contract on top, against a DynamoDB Local container rather than the real table, so the store is proved on every pull request without credentials; a skipped test file fails that run. Two runs need credentials and are not part of `pnpm check`:
 
 ```
-OPENLOOP_DYNAMO_TEST_TABLE=openloop-ledger-test pnpm --filter @openloop/ledger-dynamo test
+OPENLOOP_DYNAMO_TEST_TABLE=openloop-ledger-test pnpm --filter @openloop/ledger-dynamo test   # the same contract against the real table
 pnpm --filter @openloop/agent scan -- --reset    # the real model over the demo inbox, about 95 to 105 seconds
 ```
 

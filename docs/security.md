@@ -17,7 +17,7 @@ Neither of those is a data-protection problem, because there is no real data and
 
 ## The real exposure: unauthenticated spend
 
-`POST /api/scan`, `/api/handle`, `/api/catch-up` and `/api/ask` each invoke the deployed AgentCore runtime, which spends real Bedrock tokens. A full scan is about 95 to 105 seconds of Claude Sonnet 4.6 across three threads at a time. The account is **self-funded with no credits left** (`STATUS.md` *Blocked*), so this is somebody's money.
+`POST /api/scan`, `/api/handle`, `/api/catch-up` and `/api/ask` each invoke the deployed AgentCore runtime, which spends real Bedrock tokens. A full scan is about 95 to 105 seconds of Claude Sonnet 4.6 across three threads at a time. The account is **self-funded with no credits left** ([`SUBMISSION.md`](hackathon/SUBMISSION.md)), so this is somebody's money.
 
 Before this review, any script that could reach the URL could run those in a loop. The guard is live: a POST without a matching `Origin` returns 403 from the deployment, checked 2026-09-13 on `/api/scan`, `/api/handle` and `/api/catch-up`; `/api/ask` was checked the same way against a production build before it shipped.
 
@@ -27,7 +27,7 @@ Before this review, any script that could reach the URL could run those in a loo
 
 **Not mitigated, and this is the honest limit:** an attacker who sets one header walks straight through. An origin check is a bill boundary against casual abuse, not a defence against anyone trying. Two things would actually bound the damage, in priority order:
 
-1. **An AWS budget alarm and a hard cap.** `SUBMISSION.md` already says to set a $25 alarm; it is still unticked. This is the single highest-value action on this page and it needs nobody's code.
+1. **A hard cap on spend.** The $25 monthly budget with email alerts exists and was verified from the CLI ([`SUBMISSION.md`](hackathon/SUBMISSION.md)), which closes what this page used to call its highest-value action. It is an alert, not a cap: it mails somebody, it does not refuse the next invocation.
 2. **A rate limit on those routes** — per-IP and a global daily ceiling. Needs shared state, so on Vercel it means a counter in DynamoDB or a managed limiter. Deliberately not attempted the day before submission: a limiter that misfires locks a judge out of the demo, which is worse than the risk it removes.
 
 ## Response headers

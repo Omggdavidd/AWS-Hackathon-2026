@@ -24,7 +24,7 @@ The core demo path is built and deployed. A real scan of the 12-thread demo inbo
 
 What a judge cannot do yet is open a URL: the web app has no public deployment, there is no demo video, and the Devpost form is untouched. That is the whole remaining gap, and most of it is not code.
 
-`pnpm check` was run on this snapshot (Node 22.23.2, pnpm 12.3.4) and is green: Biome clean across 117 files, typecheck passing in all four workspaces, 89 unit tests passing in 16 files, context check OK across 42 markdown files with no warnings. One suite is skipped by design, the DynamoDB contract suite, which runs only with `OPENLOOP_DYNAMO_TEST_TABLE` set. No test calls a model.
+`pnpm check` was run on this snapshot (Node 22.23.2, pnpm 12.3.4) and is green: Biome clean across 117 files, typecheck passing in all four workspaces, 89 unit tests passing in 16 files, context check OK across 42 markdown files with no warnings. The DynamoDB contract suite skips on a machine with neither `DYNAMODB_ENDPOINT` nor `OPENLOOP_DYNAMO_TEST_TABLE`, but no longer in CI: `workspace-checks` runs it against a DynamoDB Local container, and a skipped test file fails the run. No test calls a model.
 
 | Component | State today |
 |---|---|
