@@ -146,7 +146,7 @@ function deferred(): { promise: Promise<void>; resolve: () => void } {
 function ledgerThatFails(store: LocalLedgerStore, at: Partial<LedgerStore>): LedgerStore {
   return {
     getLoop: (u, id) => store.getLoop(u, id),
-    putLoop: (l) => store.putLoop(l),
+    putLoop: (l, o) => store.putLoop(l, o),
     listLoops: (u, f) => store.listLoops(u, f),
     findLoopsBySource: (u, id) => store.findLoopsBySource(u, id),
     appendEvidence: (e) => store.appendEvidence(e),
@@ -705,6 +705,36 @@ const quotingStubs: Specialists = {
   },
 }
 
+/**
+ * The local ledger with a rival writer that lands on one loop just before each of the first
+ * `rivals` writes to it, moving its due date — a field the delta path never writes, so whether it
+ * survives says whether the rival's write did. Stands in for the web app or a second scan writing
+ * the same row while the Investigator is thinking. The rival lands whether or not our write asks
+ * for a version check, so the same test tells the two apart.
+ */
+function ledgerWithRival(inner: LocalLedgerStore, loopId: string, rivals: number) {
+  const attempts: string[] = []
+  let landed = 0
+  const store = ledgerThatFails(inner, {
+    async putLoop(l, o) {
+      if (l.id !== loopId) return inner.putLoop(l, o)
+      attempts.push(l.status)
+      if (landed < rivals) {
+        landed++
+        const current = await inner.getLoop(l.userId, loopId)
+        if (current) {
+          await inner.putLoop(
+            { ...current, dueAt: `2026-09-2${landed}T00:00:00.000Z` },
+            { ifUnchanged: true },
+          )
+        }
+      }
+      return inner.putLoop(l, o)
+    },
+  })
+  return { store, attempts }
+}
+
 describe('runScan under concurrency', () => {
   it('produces the same loops and statuses as the sequential path', async () => {
     const sequentialStore = new LocalLedgerStore()
@@ -878,6 +908,93 @@ describe('runScan under concurrency', () => {
       'msg-001',
       'msg-014',
     ])
+  })
+
+  it('delta path: keeps a change made while the update ran, and still transitions the loop', async () => {
+    const base = (await FixtureSource.load(seed)).fixture
+    const delta = (await FixtureSource.load(deltaSeed)).fixture
+    const inner = new LocalLedgerStore()
+    await runScan({
+      source: FixtureSource.fromData(base),
+      store: inner,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 3,
+    })
+    const depositId =
+      (await inner.listLoops('u')).find((l) =>
+        l.sourceRefs.some((r) => r.threadId === 'thr-deposit'),
+      )?.id ?? ''
+    const { store, attempts } = ledgerWithRival(inner, depositId, 1)
+
+    const later = '2026-09-11T13:00:00.000Z'
+    const second = await runScan({
+      source: FixtureSource.fromDataWithDelta(base, delta),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now: later,
+      concurrency: 3,
+    })
+
+    // Two writes for one logical update: the first lost the compare-and-swap, the second won.
+    expect(attempts).toEqual(['RESOLVED', 'RESOLVED'])
+    expect(second).toMatchObject({ created: 1, updated: 2, failed: 0 })
+    const deposit = await inner.getLoop('u', depositId)
+    expect(deposit?.status).toBe('RESOLVED')
+    expect(deposit?.resolvedAt).toBe(later)
+    expect(deposit?.dueAt).toBe('2026-09-21T00:00:00.000Z')
+    expect((await inner.listEvidence(depositId)).map((e) => e.sourceId)).toEqual([
+      'msg-001',
+      'msg-014',
+    ])
+    const trail = await inner.listAudit('u', { loopId: depositId })
+    expect(trail.filter((e) => e.kind === 'state_changed')).toHaveLength(1)
+  })
+
+  it('delta path: a loop that keeps changing underneath fails its thread, not the scan', async () => {
+    const base = (await FixtureSource.load(seed)).fixture
+    const delta = (await FixtureSource.load(deltaSeed)).fixture
+    const inner = new LocalLedgerStore()
+    await runScan({
+      source: FixtureSource.fromData(base),
+      store: inner,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 3,
+    })
+    const depositId =
+      (await inner.listLoops('u')).find((l) =>
+        l.sourceRefs.some((r) => r.threadId === 'thr-deposit'),
+      )?.id ?? ''
+    const { store, attempts } = ledgerWithRival(inner, depositId, 3)
+    const lines: LogLine[] = []
+
+    const later = '2026-09-11T13:00:00.000Z'
+    const second = await runScan({
+      source: FixtureSource.fromDataWithDelta(base, delta),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now: later,
+      concurrency: 3,
+      logger: (l) => lines.push(l),
+    })
+
+    expect(attempts).toHaveLength(3)
+    // The rest of the inbox still lands; only this thread is counted lost.
+    expect(second).toMatchObject({ threads: 13, created: 1, updated: 1, failed: 1 })
+    expect(lines.find((l) => l.evt === 'thread_failed')).toMatchObject({
+      threadId: 'thr-deposit',
+      error: `loop ${depositId} changed under this update 3 times; its state was not written`,
+    })
+    const deposit = await inner.getLoop('u', depositId)
+    expect(deposit?.status).toBe('NEEDS_YOU')
+    expect(deposit?.dueAt).toBe('2026-09-23T00:00:00.000Z')
+    const trail = await inner.listAudit('u', { loopId: depositId })
+    expect(trail.some((e) => e.kind === 'state_changed')).toBe(false)
   })
 
   it('does not duplicate a loop another scan wrote while this one was still thinking', async () => {
