@@ -15,7 +15,7 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 
 - [ ] Every team member registered on Devpost; one authorized submission representative named
 - [ ] Every team member confirmed eligible (age of majority, not in an excluded territory, not a Quebec resident)
-- [x] AWS credits: none left (organizers confirmed 2026-09-11). The AWS account is self-funded; set a $25 budget alarm.
+- [x] AWS credits: none left (organizers confirmed 2026-09-11). The AWS account is self-funded; a $25 monthly cost budget exists with email alerts at 85% and 100% of actual spend and 100% forecast (verified from the CLI 2026-09-13).
 - [ ] AWS Builder ID created for the representative
 
 ## Required assets
