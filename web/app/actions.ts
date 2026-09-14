@@ -1,6 +1,6 @@
 'use server'
 
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto'
 import type { LoopStatus } from '@openloop/shared'
 import { revalidatePath } from 'next/cache'
 import { cookies, headers } from 'next/headers'
@@ -20,6 +20,12 @@ import {
 } from '@/lib/profile'
 import { resolveLoopByUser } from '@/lib/resolve'
 import { restoreLoopByUser } from '@/lib/restore'
+import {
+  lockConfigured,
+  readRuntimeMode,
+  requireRuntimeOpen,
+  writeRuntimeMode,
+} from '@/lib/runtime-lock'
 import { isSameOrigin } from '@/lib/same-origin'
 
 /**
@@ -82,7 +88,9 @@ export async function ignoreLoop(loopId: string): Promise<void> {
  */
 export async function approveAction(actionId: string): Promise<void> {
   await requireSameOrigin()
-  // Before the record moves, so a refusal leaves the approval to be made again rather than half done.
+  // Both before the record moves, so a refusal leaves the approval to be made again rather than half
+  // done. The pause comes first: a refused approval should not spend the day's allowance.
+  await requireRuntimeOpen()
   if (scanConfigured && !(await withinDailyCeiling())) throw new Error(CEILING_MESSAGE)
   const store = await getStore()
   const action = await store.getAction(USER_ID, actionId)
@@ -200,4 +208,33 @@ export async function resetDemo(): Promise<string> {
   const result = await resetLedger(USER_ID)
   revalidatePath('/', 'layout')
   return result
+}
+
+/**
+ * Anyone may make the deployment stricter. Re-enabling model calls requires the server-held key;
+ * hashing both values before timingSafeEqual keeps length and contents out of the comparison path.
+ * With no key on the server nothing could resume, so nothing may pause either: the control is inert
+ * until the deployment sets one, and a public URL cannot be wedged.
+ */
+export async function setRuntimeMode(form: FormData): Promise<void> {
+  await requireSameOrigin()
+  if (!lockConfigured) return
+  const requested = form.get('mode')
+  if (requested !== 'open' && requested !== 'demo' && requested !== 'locked') return
+
+  if (requested === 'open') {
+    const supplied = form.get('key')
+    const expected = process.env.OPENLOOP_UNLOCK_KEY
+    if (typeof supplied !== 'string' || !expected || !sameSecret(supplied, expected))
+      throw new Error('The unlock key is required to resume model calls')
+  }
+
+  // Read first so an unchanged click avoids a write; the environment floor still wins after it.
+  if ((await readRuntimeMode()) !== requested) await writeRuntimeMode(requested)
+  revalidatePath('/', 'layout')
+}
+
+function sameSecret(supplied: string, expected: string): boolean {
+  const digest = (value: string) => createHash('sha256').update(value).digest()
+  return timingSafeEqual(digest(supplied), digest(expected))
 }

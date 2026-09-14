@@ -11,6 +11,7 @@ import {
   OpenLoop,
   type ProposedAction,
   type RiskJudgment,
+  type ScanSummary,
   StaleLoopWriteError,
 } from '@openloop/shared'
 import type { Specialists } from './agents'
@@ -44,19 +45,7 @@ export type ScanEvent =
     }
   | { type: 'done'; summary: ScanSummary }
 
-export interface ScanSummary {
-  threads: number
-  skipped: number
-  created: number
-  updated: number
-  /**
-   * Threads whose pipeline threw. The scan carries on; the rest of the inbox still lands. A thread
-   * that threw after its loop reached the ledger is counted in both `created` and here, so `created`
-   * never reports fewer loops than a person can see.
-   */
-  failed: number
-  byStatus: Record<string, number>
-}
+export type { ScanSummary }
 
 /** Threads run in parallel; three keeps the Bedrock round trips overlapping without hammering it. */
 const DEFAULT_CONCURRENCY = 3
@@ -338,7 +327,7 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       // Blind rather than a compare-and-swap, unlike every other loop write here: the id is a uuid
       // minted in this process and claimed under `commit`, so no other writer can be holding this
       // row, and `ifUnchanged` is a swap and not a create-if-absent — with no prior version it
-      // would overwrite an existing row just as happily (ADR-0014). Absent counts as 0, so the
+      // would overwrite an existing row just as happily (ADR-0015). Absent counts as 0, so the
       // first conditional writer to touch this loop still claims it exactly once.
       await store.putLoop(loop)
       published = true
@@ -603,7 +592,7 @@ async function updateLoop(input: {
   }
 
   const messageIds = newMessages.map((m) => m.id)
-  // The loop write is a compare-and-swap (ADR-0014). `loopLock` already serializes this scan's own
+  // The loop write is a compare-and-swap (ADR-0015). `loopLock` already serializes this scan's own
   // writes to one loop, so a conflict here is the web app or a second scan, and the answer is the
   // same as in `web/lib/resolve.ts`: re-read and re-apply the same intent to the fresh record. Only
   // the loop row is written inside the retry — the evidence is already in the ledger and the audit

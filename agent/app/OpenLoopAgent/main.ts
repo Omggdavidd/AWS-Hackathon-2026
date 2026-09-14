@@ -1,6 +1,6 @@
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { DynamoLedgerStore } from '@openloop/ledger-dynamo'
+import { DynamoLedgerStore, getRuntimeMode, parseRuntimeMode } from '@openloop/ledger-dynamo'
 import {
   FixtureActionSink,
   FixtureSource,
@@ -18,7 +18,7 @@ import { createSpecialists } from './src/agents'
 import { ask } from './src/ask'
 import { catchUp } from './src/catch-up'
 import { emitStream } from './src/emit-stream'
-import { jsonLogger } from './src/log'
+import { googleSourceLogger, jsonLogger, timed } from './src/log'
 import { loadModel, loadModelsByRole } from './src/model'
 import { runScan, type ScanSummary } from './src/scan'
 
@@ -73,6 +73,29 @@ const app = new BedrockAgentCoreApp({
   invocationHandler: {
     requestSchema,
     async *process(payload) {
+      // Every command crosses this point before a model or specialist is created. The UI mirrors
+      // the state for clarity, but this runtime check is the enforcement boundary for every caller.
+      const lockDefault = parseRuntimeMode(process.env.OPENLOOP_LOCK_DEFAULT)
+      const runtimeMode =
+        payload.ledger.kind === 'dynamo'
+          ? await getRuntimeMode({
+              tableName: payload.ledger.table,
+              defaultMode: lockDefault,
+            })
+          : lockDefault
+      if (runtimeMode !== 'open') {
+        yield {
+          data: JSON.stringify({
+            type: 'paused',
+            mode: runtimeMode,
+            message: 'The agent is paused. Loops below are real results from the last scan.',
+          }),
+        }
+        return
+      }
+
+      // Structured pipeline lines go to stdout, which the Runtime ships to CloudWatch (#30).
+      const logger = jsonLogger()
       /**
        * Opened on first read, once. `catch_up` and `ask` read no mail, so on those commands —
        * including the 07:00 daily catch-up — nothing here runs and the bundled demo inbox is never
@@ -85,6 +108,7 @@ const app = new BedrockAgentCoreApp({
           ? new GoogleSource({
               accessToken: payload.source.accessToken,
               backfillDays: payload.source.backfillDays,
+              onEvent: googleSourceLogger(logger),
             })
           : payload.source.path
             ? await FixtureSource.load(payload.source.path)
@@ -112,16 +136,21 @@ const app = new BedrockAgentCoreApp({
         store,
         userId: payload.userId,
       })
-      // Structured pipeline lines go to stdout, which the Runtime ships to CloudWatch (#30).
-      const logger = jsonLogger()
+      /** What live ingestion lost, once it is done. A fixture source loses nothing and has no stats. */
+      const logIngestionStats = async () => {
+        const opened = await opening
+        if (opened instanceof GoogleSource) logger({ evt: 'source_stats', ...opened.stats })
+      }
       if (payload.command === 'catch_up') {
-        const summary = await catchUp({
-          store,
-          userId: payload.userId,
-          specialists,
-          ...(payload.now ? { now: payload.now } : {}),
-          ...(payload.since ? { since: payload.since } : {}),
-        })
+        const summary = await timed(logger, { evt: 'catch_up' }, () =>
+          catchUp({
+            store,
+            userId: payload.userId,
+            specialists,
+            ...(payload.now ? { now: payload.now } : {}),
+            ...(payload.since ? { since: payload.since } : {}),
+          }),
+        )
         yield { data: JSON.stringify({ type: 'catch_up', ...summary }) }
         return
       }
@@ -158,6 +187,7 @@ const app = new BedrockAgentCoreApp({
         } else {
           yield { data: JSON.stringify({ type: 'handled', ...(await handleWhatYouCan(opts)) }) }
         }
+        await logIngestionStats()
         return
       }
       // Yielded as the scan emits them: the browser draws a hundred seconds of progress rather
@@ -182,6 +212,7 @@ const app = new BedrockAgentCoreApp({
         }
         yield { data: JSON.stringify({ type: 'summary', summary: emitted.result }) }
       }
+      await logIngestionStats()
     },
   },
 })

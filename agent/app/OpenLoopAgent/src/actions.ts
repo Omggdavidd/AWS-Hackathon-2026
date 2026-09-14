@@ -242,7 +242,7 @@ const MAX_ATTEMPTS = 3
  * `loop` is the snapshot taken before the model and the sink ran, and that window is the length of
  * a real execution — about 20 seconds with "I already did this" on screen. The transition is built
  * from what the ledger says now, or a resolution made in the meantime is silently overwritten and
- * the loop reopens under the user (#66). The write is a compare-and-swap (ADR-0014), so a scan
+ * the loop reopens under the user (#66). The write is a compare-and-swap (ADR-0015), so a scan
  * landing in the same window is not overwritten either; a lost race re-reads, runs the #66 guard
  * again against the fresh record, and re-applies the plan's status to that.
  *

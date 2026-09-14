@@ -29,8 +29,8 @@ Chosen option: "a `version` counter and an opt-in compare-and-swap", because it 
 
 * Good, because a lost update is now expressible and catchable; the shared contract suite holds both stores to it (a stale write is refused, a fresh one succeeds, the version advances), and CI runs it against DynamoDB Local.
 * Good, because nothing changes for existing code: `putLoop(loop)` behaves as before, old rows stay valid, and no caller was edited in the change that added this.
-* Bad, because the guard only holds between callers that opt in. A blind `putLoop` does not touch the version, so it can still overwrite a compare-and-swap writer's row without either side noticing. The primitive is only half the fix; converting the seven read-modify-write sites, each with its own retry or user-facing conflict message, is separate work and until it is done the live race is still open.
-* Bad, because a retry loop is now a caller's problem. There is no retry helper in `@openloop/shared` yet, so the first caller to adopt this decides the shape of one.
+* Bad, because the guard only holds between callers that opt in. A blind `putLoop` does not touch the version, so it can still overwrite a compare-and-swap writer's row without either side noticing. The read-modify-write sites in the web app (done, park, restore) and the agent (the delta path and the action agent) are converted in the same change, each bounded to three attempts; a blind write elsewhere still bypasses the guard, so the invariant is only as strong as the callers that opt in.
+* Bad, because a retry loop is now a caller's problem. There is no retry helper in `@openloop/shared`; each converted caller carries its own three-attempt loop, and a shared helper is left for whoever adds the next site.
 * Neutral, because the counter is one number per loop row: no extra read, no index, no measurable cost.
 
 ## More Information

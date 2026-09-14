@@ -117,7 +117,7 @@ export function runStoreContract(name: string, make: () => Promise<LedgerStore>)
 
     it('claims a loop stored without a version exactly once', async () => {
       const store = await make()
-      // What every row written before ADR-0014 looks like, and what a blind putLoop still leaves.
+      // What every row written before ADR-0015 looks like, and what a blind putLoop still leaves.
       await store.putLoop(loop())
       const read = await mustGet(store)
       expect(read.version).toBeUndefined()

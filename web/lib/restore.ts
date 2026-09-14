@@ -19,7 +19,7 @@ const MAX_ATTEMPTS = 3
  * purpose stays declined. Returns false when the loop is not where the move left it, so a stale
  * Undo after something else changed the loop does nothing.
  *
- * The loop write is a compare-and-swap (ADR-0014). Losing to a scan re-reads and re-checks that
+ * The loop write is a compare-and-swap (ADR-0015). Losing to a scan re-reads and re-checks that
  * the loop is still somewhere other than `previous` before undoing again, so an undo the scan has
  * already made meaningless returns false rather than being forced through.
  */

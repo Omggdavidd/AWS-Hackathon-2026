@@ -24,6 +24,7 @@ import { formatDateTime } from '@/lib/format'
 import { loadAudit, loadDecisions, loadLoops, USER_ID } from '@/lib/ledger'
 import { buildNotices } from '@/lib/notifications'
 import { purposeLabel, readProfile } from '@/lib/profile'
+import { readRuntimeMode } from '@/lib/runtime-lock'
 import './globals.css'
 
 const sans = Inter({
@@ -56,7 +57,11 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const home = parseHome(jar.get(HOME_COOKIE)?.value)
   const todayHref = home === 'today' ? '/' : '/?view=list'
   const profile = readProfile(jar)
-  const [loops, audit] = await Promise.all([loadLoops(USER_ID), loadAudit(USER_ID)])
+  const [loops, audit, runtimeMode] = await Promise.all([
+    loadLoops(USER_ID),
+    loadAudit(USER_ID),
+    readRuntimeMode(),
+  ])
   const [feed, decisions] = await Promise.all([
     buildNotices(audit, loops, jar.get('openloops-seen')?.value),
     loadDecisions(USER_ID),
@@ -88,7 +93,11 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                 <span>
                   {agentName}
                   <small>
-                    {lastScan ? ` checked ${formatDateTime(lastScan.at)}` : ' has not checked yet'}
+                    {runtimeMode !== 'open'
+                      ? ` is paused (${runtimeMode})`
+                      : lastScan
+                        ? ` checked ${formatDateTime(lastScan.at)}`
+                        : ' has not checked yet'}
                   </small>
                 </span>
               </p>
@@ -115,7 +124,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                   <span className="inbox-address">{profile.inbox}</span>
                   <small>{purposeLabel(profile.purpose)}</small>
                 </Link>
-                <CommandBar configured={scanConfigured} />
+                <CommandBar configured={scanConfigured} paused={runtimeMode !== 'open'} />
                 <NotificationBell
                   notices={feed.notices}
                   unread={feed.unread}

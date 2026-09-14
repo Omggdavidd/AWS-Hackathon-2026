@@ -23,7 +23,7 @@ export type ParkKind = 'remind' | 'ignore'
  * "Tomorrow" is 24 hours out. Nothing consumes `remindAt` yet, since there is no scheduler; it
  * records the intent, the loop page shows it, and a later job can pick it up.
  *
- * The write is a compare-and-swap (ADR-0014); losing to a scan re-reads and parks the fresh
+ * The write is a compare-and-swap (ADR-0015); losing to a scan re-reads and parks the fresh
  * record instead, which keeps whatever the scan changed and still ends in Watching.
  *
  * Takes the store rather than reaching for it, so the rule is unit-testable without Next.

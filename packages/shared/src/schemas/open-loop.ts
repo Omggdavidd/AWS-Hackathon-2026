@@ -90,7 +90,7 @@ export const OpenLoop = z
     /** When the user asked to be reminded again, after parking the loop in Watching (SPEC 8B). */
     remindAt: IsoDateTime.optional(),
     /**
-     * Optimistic-concurrency counter, bumped only by a compare-and-swap write (ADR-0014). Optional
+     * Optimistic-concurrency counter, bumped only by a compare-and-swap write (ADR-0015). Optional
      * rather than defaulted: every record written before it existed, and every blind `putLoop`,
      * leaves it absent, and the stores read absent as 0.
      */

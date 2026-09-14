@@ -29,7 +29,13 @@ const EXAMPLES = [
  * bar rather than taking the screen. It asks the runtime a question and shows what came back with
  * the loops it leaned on; it never executes anything, so the policy gate stays in code.
  */
-export function CommandBar({ configured }: { configured: boolean }) {
+export function CommandBar({
+  configured,
+  paused = false,
+}: {
+  configured: boolean
+  paused?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const [question, setQuestion] = useState('')
   const [running, setRunning] = useState(false)
@@ -102,8 +108,14 @@ export function CommandBar({ configured }: { configured: boolean }) {
         type="button"
         className="ask-trigger"
         aria-expanded={open}
-        disabled={!configured}
-        title={configured ? 'Ask about your loops' : 'Available when the workspace is connected'}
+        disabled={!configured || paused}
+        title={
+          paused
+            ? 'The agent is paused in Settings'
+            : configured
+              ? 'Ask about your loops'
+              : 'Available when the workspace is connected'
+        }
         onClick={() => setOpen((was) => !was)}
       >
         Ask

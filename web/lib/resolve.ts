@@ -16,7 +16,7 @@ const MAX_ATTEMPTS = 3
  * the user already closed. APPROVED actions are left alone: the user asked for those, and one may
  * be executing on the runtime right now.
  *
- * The loop write is a compare-and-swap (ADR-0014), so a scan writing the same loop between the
+ * The loop write is a compare-and-swap (ADR-0015), so a scan writing the same loop between the
  * read and the write cannot be overwritten. A lost race is re-read and the transition re-applied
  * to the fresh record, silently: the user sees a resolved loop either way, and the scan's changes
  * survive underneath. Nothing but the loop is written until that write wins, so a retry cannot

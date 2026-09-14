@@ -13,7 +13,7 @@ export interface LoopFilter {
 
 export interface PutLoopOptions {
   /**
-   * Compare and swap instead of overwriting (ADR-0014): write only while the stored loop is still
+   * Compare and swap instead of overwriting (ADR-0015): write only while the stored loop is still
    * at the version the caller read, then bump it. A caller that lost throws StaleLoopWriteError.
    */
   ifUnchanged?: boolean
@@ -21,7 +21,7 @@ export interface PutLoopOptions {
 
 /**
  * A compare-and-swap write that lost: someone else wrote the loop between the caller's read and
- * its write (ADR-0014). Distinct from every other store failure so a caller can re-read, reapply
+ * its write (ADR-0015). Distinct from every other store failure so a caller can re-read, reapply
  * its change and try again, rather than retrying a write that will never succeed.
  */
 export class StaleLoopWriteError extends Error {
