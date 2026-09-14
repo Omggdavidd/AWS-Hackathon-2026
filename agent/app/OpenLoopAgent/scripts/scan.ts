@@ -11,7 +11,7 @@ import { handleWhatYouCan } from '../src/actions'
 import { createSpecialists } from '../src/agents'
 import { catchUp } from '../src/catch-up'
 import { jsonLogger, noopLogger } from '../src/log'
-import { loadModel } from '../src/model'
+import { loadModel, loadModelsByRole } from '../src/model'
 import { runScan } from '../src/scan'
 
 /**
@@ -50,7 +50,14 @@ const source = delta
 const store: LedgerStore = dynamoTable
   ? new DynamoLedgerStore({ tableName: dynamoTable })
   : await LocalLedgerStore.fromFile(ledgerPath)
-const specialists = createSpecialists({ model: loadModel(), source, store, userId })
+const model = loadModel()
+const specialists = createSpecialists({
+  model,
+  models: loadModelsByRole(model),
+  source,
+  store,
+  userId,
+})
 
 const started = Date.now()
 if (catchUpFlag) {

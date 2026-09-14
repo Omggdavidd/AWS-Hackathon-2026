@@ -62,7 +62,7 @@ pnpm test                          # vitest run, all workspaces (pnpm test:watch
 pnpm --filter @openloop/shared test  # one workspace
 pnpm --filter @openloop/web dev    # http://localhost:3000, seeded from demo/seed-ledger.json
 pnpm --filter @openloop/web build  # production build; run before a web PR
-pnpm --filter @openloop/agent scan -- --reset   # real model over demo inbox (~4 min, needs AWS creds)
+pnpm --filter @openloop/agent scan -- --reset   # real model over demo inbox (~95 to 105s, needs AWS creds)
 pnpm --filter @openloop/agent scan -- --delta   # next-morning batch on top; exercises the update path
 pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed action on the local ledger
 pnpm --filter @openloop/agent scan -- --catch-up  # state-change summary since the last catch-up
@@ -71,7 +71,7 @@ pnpm --filter @openloop/agent dev  # runtime server on :8080
 pnpm --filter @openloop/agent deploy-runtime  # deploy to AgentCore Runtime (never bare `agentcore deploy`, see agent/README.md)
 pnpm --filter @openloop/ledger-dynamo create-table   # idempotent; OPENLOOP_LEDGER_TABLE overrides the name
 pnpm reset-demo --dry-run          # rows a demo reset would delete for user-alex in the ledger table; deletes nothing
-pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~4 min); refuses unless --table repeats the target table
+pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~95 to 105s); refuses unless --table repeats the target table
 pnpm reset-demo --local --yes      # reseed the local JSON ledger from demo/seed-ledger.json instead; flags and limits in agent/README.md
 OPENLOOP_DYNAMO_TEST_TABLE=openloop-ledger-test pnpm --filter @openloop/ledger-dynamo test   # contract suite on real DynamoDB
 python3 scripts/check_context.py   # deterministic context check (also run by CI)

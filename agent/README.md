@@ -19,14 +19,14 @@ agent/
 ## Commands
 
 ```
-pnpm --filter @openloop/agent scan -- --reset   # real model over the demo inbox, ~4 min, writes .openloop/agent-ledger.json
+pnpm --filter @openloop/agent scan -- --reset   # real model over the demo inbox, ~95 to 105s, writes .openloop/agent-ledger.json
 pnpm --filter @openloop/agent scan -- --delta   # then the next-morning batch (demo/seed-inbox-delta.json): updates, not duplicates
 pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed action (drafts, calendar, reminders); high risk waits for approval
 pnpm --filter @openloop/agent scan -- --catch-up  # what changed since the last catch-up, written from the ledger only
 pnpm --filter @openloop/agent agreement         # 3 real scans, per-thread status against demo/seed-ledger.json (OPENLOOP_AGREEMENT_RUNS overrides)
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm reset-demo --dry-run                       # count the rows a reset would delete; deletes nothing
-pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~4 min)
+pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~95 to 105s)
 pnpm reset-demo --table openloop-ledger --yes --no-scan   # delete only, no runtime call
 pnpm reset-demo --local --yes                   # reseed .openloop/ledger.json from demo/seed-ledger.json instead
 pnpm --filter @openloop/agent dev               # runtime server on :8080 (same as agentcore dev, without the inspector)
@@ -71,7 +71,11 @@ messages and 20,000 characters of body per message, runs at most five `messages.
 
 Commands: `scan` (default), `handle` (execute every proposed action the policy allows and list the rest), `execute` with `actionId` (one action, used by the web after approval), `catch_up` (state changes since the previous catch-up or `since`; the digest is built in code, the model only writes the sentences, and a `catch_up` audit event marks the check). The policy gate is `mayExecute` in `@openloop/shared`: low risk and prepare-type medium risk run automatically; high risk only when the record is `APPROVED`. Effects go through `FixtureActionSink` today (simulated, recorded as evidence with source `action:<id>`); Gmail and Calendar sinks are the live-path stretch.
 
-Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted. `OPENLOOP_MODEL_ID` overrides the model.
+Requires AWS credentials with Bedrock access (`aws configure`, region `us-east-1`) and the account's Anthropic use-case form accepted.
+
+Models and pacing (ADR-0007): all six roles share one Claude Sonnet 4.6 instance. `OPENLOOP_MODEL_ID` overrides the shared model, `OPENLOOP_EXTRACTOR_MODEL_ID` gives the Extractor its own. `runScan` works on three threads at a time; `ScanOptions.concurrency` changes that (1 is the old sequential behaviour). Writes stay ordered within a thread, a loop is never created twice, and `onEvent` still emits one thread's events as a block. The block is held until the thread finishes rather than emitted when it starts, so the web scan log stays empty until the first thread is done and then lands in bursts of about three threads, out of inbox order; adjacency is what `AgentPanel` needs to keep a thread's lines together, so do not trade it back for a running commentary.
+
+Measured over the current 12-thread `demo/seed-inbox.json` on Claude Sonnet 4.6 in `us-east-1`: 263s, 276s and 277s sequential across three runs, and 95s, 103s and 104s at concurrency 3, so about 95 to 105 seconds. The 95s run, taken after the cross-thread claim fix in `scan.ts`, produced the 11 loops of `demo/seed-ledger.json` exactly, `thr-passport` included: 1 resolved, 6 needs you, 3 watching, 1 waiting. On the 10-thread inbox that preceded #54, a Claude Haiku 4.5 Extractor ran in 76s but read `thr-issue1` as not a responsibility and produced 8 loops instead of 9, so Haiku stays opt-in: set `OPENLOOP_EXTRACTOR_MODEL_ID=global.anthropic.claude-haiku-4-5-20251001-v1:0` if you want it.
 
 ## Structured logs
 

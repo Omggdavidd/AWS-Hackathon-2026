@@ -68,18 +68,29 @@ export interface Specialists {
   summarize(input: { digest: CatchUpDigest; now: string }): Promise<CatchUpSummary>
 }
 
+/** The keys of `Specialists`, so a caller can give a role its own model (ADR-0007). */
+export type SpecialistRole = keyof Specialists
+
 export interface SpecialistDeps {
   model: Model
+  /** Per-role models; a role without one runs on `model`. */
+  models?: Partial<Record<SpecialistRole, Model>>
   source: IngestionSource
   store: LedgerStore
   userId: string
 }
 
-export function createSpecialists({ model, source, store, userId }: SpecialistDeps): Specialists {
+export function createSpecialists({
+  model,
+  models,
+  source,
+  store,
+  userId,
+}: SpecialistDeps): Specialists {
   return {
     async extract({ thread, now }) {
       const agent = new Agent({
-        model,
+        model: models?.extract ?? model,
         systemPrompt: EXTRACTOR_PROMPT,
         structuredOutputSchema: ExtractorOutput,
         printer: false,
@@ -90,7 +101,7 @@ export function createSpecialists({ model, source, store, userId }: SpecialistDe
 
     async investigate({ candidate, thread, now }) {
       const agent = new Agent({
-        model,
+        model: models?.investigate ?? model,
         systemPrompt: INVESTIGATOR_PROMPT,
         tools: [...inboxTools(source), ...ledgerTools(store, userId)],
         structuredOutputSchema: InvestigatorOutput,
@@ -104,7 +115,7 @@ export function createSpecialists({ model, source, store, userId }: SpecialistDe
 
     async update({ loop, existingEvidence, newMessages, thread, now }) {
       const agent = new Agent({
-        model,
+        model: models?.update ?? model,
         systemPrompt: UPDATE_PROMPT,
         tools: [...inboxTools(source), ...ledgerTools(store, userId)],
         structuredOutputSchema: InvestigatorOutput,
@@ -121,7 +132,7 @@ export function createSpecialists({ model, source, store, userId }: SpecialistDe
 
     async plan({ loop, evidence, action, thread, now }) {
       const agent = new Agent({
-        model,
+        model: models?.plan ?? model,
         systemPrompt: ACTION_PROMPT,
         structuredOutputSchema: ActionPlan,
         printer: false,
@@ -134,7 +145,7 @@ export function createSpecialists({ model, source, store, userId }: SpecialistDe
 
     async summarize({ digest, now }) {
       const agent = new Agent({
-        model,
+        model: models?.summarize ?? model,
         systemPrompt: CATCH_UP_PROMPT,
         structuredOutputSchema: CatchUpSummary,
         printer: false,
@@ -147,7 +158,7 @@ export function createSpecialists({ model, source, store, userId }: SpecialistDe
 
     async judge({ loop, evidence, now }) {
       const agent = new Agent({
-        model,
+        model: models?.judge ?? model,
         systemPrompt: RISK_JUDGE_PROMPT,
         structuredOutputSchema: RiskJudgment,
         printer: false,

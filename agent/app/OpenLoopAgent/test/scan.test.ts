@@ -1,9 +1,14 @@
 import { fileURLToPath } from 'node:url'
-import { FixtureSource, LocalLedgerStore } from '@openloop/shared'
+import {
+  FixtureSource,
+  type InvestigatorOutput,
+  LocalLedgerStore,
+  OpenLoop,
+} from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
 import type { Specialists } from '../src/agents'
 import type { LogLine } from '../src/log'
-import { runScan } from '../src/scan'
+import { runScan, type ScanEvent } from '../src/scan'
 
 const seed = fileURLToPath(new URL('../../../../demo/seed-inbox.json', import.meta.url))
 const deltaSeed = fileURLToPath(new URL('../../../../demo/seed-inbox-delta.json', import.meta.url))
@@ -86,6 +91,42 @@ const stubs: Specialists = {
       rationale: 'stub',
     }
   },
+}
+
+/** An Extractor that opens a loop for one thread and turns every other thread down. */
+function onlyThread(threadId: string): Specialists['extract'] {
+  return async ({ thread }) => {
+    const root = thread[0]
+    if (!root || root.threadId !== threadId) {
+      return { isResponsibility: false, confidence: 0.95, rationale: 'not a responsibility' }
+    }
+    return {
+      isResponsibility: true,
+      candidate: {
+        title: root.subject,
+        category: 'other',
+        area: 'other',
+        actionType: 'none',
+        sourceRef: { sourceType: 'email', sourceId: root.id, threadId: root.threadId },
+      },
+      confidence: 0.9,
+      rationale: 'stub',
+    }
+  }
+}
+
+function cite(
+  sourceId: string,
+  threadId: string,
+  supports: InvestigatorOutput['evidence'][number]['supports'],
+): InvestigatorOutput['evidence'][number] {
+  return {
+    sourceRef: { sourceType: 'email', sourceId, threadId },
+    observedAt: now,
+    excerpt: `stub excerpt for ${sourceId}`,
+    supports,
+    confidence: 0.9,
+  }
 }
 
 describe('runScan', () => {
@@ -189,6 +230,44 @@ describe('runScan', () => {
       now: later,
     })
     expect(third).toMatchObject({ created: 0, updated: 0, skipped: 13 })
+  })
+
+  it('lets a later thread resolve a loop it did not open', async () => {
+    const source = await FixtureSource.load(seed)
+    const store = new LocalLedgerStore()
+    const opening: Specialists = { ...stubs, extract: onlyThread('thr-deposit') }
+    await runScan({ source, store, userId: 'u', specialists: opening, now, concurrency: 3 })
+    expect(await store.listLoops('u')).toHaveLength(1)
+
+    // The receipt lands in another thread and its investigation points at the mail the loop was
+    // opened from, so it closes that loop instead of opening a second one (SPEC \u00a74).
+    const receipt: Specialists = {
+      ...stubs,
+      extract: onlyThread('thr-housing'),
+      async investigate({ thread }) {
+        return {
+          evidence: [
+            ...thread.map((m) => cite(m.id, m.threadId, 'RESOLVED')),
+            cite('msg-001', 'thr-deposit', 'RESOLVED'),
+          ],
+          proposedStatus: 'RESOLVED',
+          confidence: 0.9,
+          rationale: 'stub: the deposit was paid',
+        }
+      },
+    }
+    const later = '2026-09-11T13:00:00.000Z'
+    await runScan({ source, store, userId: 'u', specialists: receipt, now: later, concurrency: 3 })
+
+    const loops = await store.listLoops('u')
+    expect(loops).toHaveLength(1)
+    expect(loops[0]).toMatchObject({ status: 'RESOLVED', resolvedAt: later })
+    expect(loops[0]?.sourceRefs.map((r) => r.threadId)).toContain('thr-housing')
+    const evidence = await store.listEvidence(loops[0]?.id ?? '')
+    expect(evidence.filter((e) => e.threadId === 'thr-housing').map((e) => e.sourceId)).toEqual([
+      'msg-002',
+      'msg-003',
+    ])
   })
 
   it('re-judges a loop that becomes the user\u2019s move, so it can interrupt', async () => {
@@ -309,5 +388,261 @@ describe('runScan', () => {
     expect(
       lines.find((l) => l.threadId === 'thr-newsletter' && l.evt === 'thread_skipped'),
     ).toMatchObject({ reason: 'newsletter' })
+  })
+})
+
+/** Two threads processed at the same time whose investigations cite the same messages: one loop, not two. */
+const crossCitingStubs: Specialists = {
+  ...stubs,
+  async extract({ thread }) {
+    const root = thread[0]
+    if (!root || (root.threadId !== 'thr-deposit' && root.threadId !== 'thr-flight')) {
+      return { isResponsibility: false, confidence: 0.95, rationale: 'not a responsibility' }
+    }
+    return {
+      isResponsibility: true,
+      candidate: {
+        title: root.subject,
+        category: 'other',
+        area: 'other',
+        actionType: 'none',
+        sourceRef: { sourceType: 'email', sourceId: root.id, threadId: root.threadId },
+      },
+      confidence: 0.9,
+      rationale: 'stub',
+    }
+  },
+  async investigate() {
+    return {
+      evidence: [
+        {
+          sourceRef: { sourceType: 'email', sourceId: 'msg-001', threadId: 'thr-deposit' },
+          observedAt: now,
+          excerpt: 'deposit',
+          supports: 'OPEN',
+          confidence: 0.9,
+        },
+        {
+          sourceRef: { sourceType: 'email', sourceId: 'msg-008', threadId: 'thr-flight' },
+          observedAt: now,
+          excerpt: 'the flight is part of the same obligation',
+          supports: 'OPEN',
+          confidence: 0.9,
+        },
+      ],
+      proposedStatus: 'NEEDS_YOU',
+      confidence: 0.9,
+      rationale: 'stub: cites both threads',
+    }
+  },
+}
+
+/** One investigation quotes a message from a thread it does not own; the quote is not a claim on it. */
+const quotingStubs: Specialists = {
+  ...stubs,
+  async extract({ thread }) {
+    const root = thread[0]
+    if (!root || (root.threadId !== 'thr-deposit' && root.threadId !== 'thr-housing')) {
+      return { isResponsibility: false, confidence: 0.95, rationale: 'not a responsibility' }
+    }
+    return {
+      isResponsibility: true,
+      candidate: {
+        title: root.subject,
+        category: 'other',
+        area: 'other',
+        actionType: 'none',
+        sourceRef: { sourceType: 'email', sourceId: root.id, threadId: root.threadId },
+      },
+      confidence: 0.9,
+      rationale: 'stub',
+    }
+  },
+  async investigate({ thread }) {
+    const root = thread[0]
+    const own = thread.map((m) => cite(m.id, m.threadId, 'OPEN'))
+    return {
+      evidence:
+        root?.threadId === 'thr-deposit' ? [...own, cite('msg-003', 'thr-housing', 'OPEN')] : own,
+      proposedStatus: 'NEEDS_YOU',
+      confidence: 0.9,
+      rationale: 'stub: the deposit quotes the housing thread',
+    }
+  },
+}
+
+describe('runScan under concurrency', () => {
+  it('produces the same loops and statuses as the sequential path', async () => {
+    const sequentialStore = new LocalLedgerStore()
+    const sequential = await runScan({
+      source: await FixtureSource.load(seed),
+      store: sequentialStore,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 1,
+    })
+    const concurrentStore = new LocalLedgerStore()
+    const concurrent = await runScan({
+      source: await FixtureSource.load(seed),
+      store: concurrentStore,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 3,
+    })
+
+    expect(concurrent).toEqual(sequential)
+    expect(concurrent.created).toBe(11)
+    const identify = (loops: OpenLoop[]) => loops.map((l) => [l.title, l.status, l.priority]).sort()
+    expect(identify(await concurrentStore.listLoops('u'))).toEqual(
+      identify(await sequentialStore.listLoops('u')),
+    )
+  })
+
+  it('creates one loop when two threads in flight claim the same message', async () => {
+    const store = new LocalLedgerStore()
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: crossCitingStubs,
+      now,
+      concurrency: 10,
+    })
+
+    expect(summary.created).toBe(1)
+    const loops = await store.listLoops('u')
+    expect(loops).toHaveLength(1)
+    const refs = loops[0]?.sourceRefs.map((r) => r.sourceId) ?? []
+    expect(refs).toContain('msg-001')
+    expect(refs).toContain('msg-008')
+    expect(summary.skipped).toBe(11)
+  })
+
+  it('still opens a loop for a thread another investigation only quoted', async () => {
+    const store = new LocalLedgerStore()
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: quotingStubs,
+      now,
+      concurrency: 10,
+    })
+
+    expect(summary.created).toBe(2)
+    expect(summary.skipped).toBe(10)
+    const loops = await store.listLoops('u')
+    expect(loops).toHaveLength(2)
+    const deposit = loops.find((l) => l.sourceRefs.some((r) => r.sourceId === 'msg-001'))
+    const housing = loops.find((l) => l.sourceRefs.some((r) => r.sourceId === 'msg-002'))
+    expect(housing?.sourceRefs.map((r) => r.threadId)).toContain('thr-housing')
+    // The quote is still evidence on the loop that made it, it just does not own the thread.
+    expect((await store.listEvidence(deposit?.id ?? '')).map((e) => e.sourceId)).toContain(
+      'msg-003',
+    )
+  })
+
+  it('keeps the events of one thread adjacent', async () => {
+    const store = new LocalLedgerStore()
+    const events: ScanEvent[] = []
+    await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 3,
+      onEvent: (e) => events.push(e),
+    })
+
+    let current: string | undefined
+    const blocks: string[] = []
+    for (const event of events) {
+      if (event.type === 'thread') {
+        current = event.threadId
+        blocks.push(event.threadId)
+      } else if (event.type === 'skipped') {
+        expect(event.threadId).toBe(current)
+      } else if (event.type === 'loop' || event.type === 'updated') {
+        expect(event.loop.sourceRefs.map((r) => r.threadId)).toContain(current)
+      }
+    }
+    expect(blocks).toHaveLength(12)
+    expect(new Set(blocks).size).toBe(12)
+    expect(events.at(-1)?.type).toBe('done')
+  })
+
+  it('does not lose an update when two threads land on the same loop', async () => {
+    const store = new LocalLedgerStore()
+    await store.putLoop(
+      OpenLoop.parse({
+        id: 'loop-shared',
+        userId: 'u',
+        title: 'Tracked across two threads',
+        category: 'other',
+        status: 'NEEDS_YOU',
+        confidence: 0.9,
+        sourceRefs: [
+          { sourceType: 'email', sourceId: 'msg-002', threadId: 'thr-housing' },
+          { sourceType: 'email', sourceId: 'msg-008', threadId: 'thr-flight' },
+        ],
+        createdAt: now,
+        updatedAt: now,
+      }),
+    )
+    await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 10,
+    })
+
+    const shared = await store.getLoop('u', 'loop-shared')
+    const refs = shared?.sourceRefs.map((r) => r.sourceId) ?? []
+    expect(refs).toContain('msg-003')
+    expect(refs).toContain('msg-009')
+    expect((await store.listEvidence('loop-shared')).map((e) => e.sourceId).sort()).toEqual([
+      'msg-003',
+      'msg-009',
+    ])
+  })
+
+  it('delta path: concurrent threads update their own loops', async () => {
+    const base = (await FixtureSource.load(seed)).fixture
+    const delta = (await FixtureSource.load(deltaSeed)).fixture
+    const store = new LocalLedgerStore()
+    await runScan({
+      source: FixtureSource.fromData(base),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 3,
+    })
+
+    const later = '2026-09-11T13:00:00.000Z'
+    const second = await runScan({
+      source: FixtureSource.fromDataWithDelta(base, delta),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now: later,
+      concurrency: 3,
+    })
+
+    expect(second).toMatchObject({ threads: 13, created: 1, updated: 2 })
+    const loops = await store.listLoops('u')
+    expect(loops).toHaveLength(12)
+    const deposit = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))
+    expect(deposit?.status).toBe('RESOLVED')
+    expect(deposit?.resolvedAt).toBe(later)
+    expect((await store.listEvidence(deposit?.id ?? '')).map((e) => e.sourceId)).toEqual([
+      'msg-001',
+      'msg-014',
+    ])
   })
 })

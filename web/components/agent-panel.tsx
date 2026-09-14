@@ -69,7 +69,7 @@ const LABEL: Record<Op, { idle: string; busy: string; title: string; hint: strin
     idle: 'Scan inbox',
     busy: 'Scanning…',
     title: 'Scan',
-    hint: 'Read the whole inbox from the start. About four minutes.',
+    hint: 'Read the whole inbox from the start. A minute and a half to two minutes.',
   },
 }
 

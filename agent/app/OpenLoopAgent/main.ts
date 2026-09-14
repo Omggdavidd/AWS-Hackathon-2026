@@ -17,7 +17,7 @@ import { executeAction, handleWhatYouCan } from './src/actions'
 import { createSpecialists } from './src/agents'
 import { catchUp } from './src/catch-up'
 import { jsonLogger } from './src/log'
-import { loadModel } from './src/model'
+import { loadModel, loadModelsByRole } from './src/model'
 import { runScan } from './src/scan'
 
 /**
@@ -85,7 +85,13 @@ const app = new BedrockAgentCoreApp({
           ? new DynamoLedgerStore({ tableName: payload.ledger.table })
           : await LocalLedgerStore.fromFile(payload.ledger.path)
       const model = loadModel()
-      const specialists = createSpecialists({ model, source, store, userId: payload.userId })
+      const specialists = createSpecialists({
+        model,
+        models: loadModelsByRole(model),
+        source,
+        store,
+        userId: payload.userId,
+      })
       // Structured pipeline lines go to stdout, which the Runtime ships to CloudWatch (#30).
       const logger = jsonLogger()
       if (payload.command === 'catch_up') {

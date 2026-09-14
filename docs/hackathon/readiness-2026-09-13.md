@@ -20,7 +20,7 @@ Stack, per ADRs 0003 to 0012: Strands Agents TypeScript SDK on Amazon Bedrock (C
 
 ## Current state of the repository
 
-The core demo path is built and deployed. A real scan of the 12-thread demo inbox produces 11 loops with the expected states in four to five and a half minutes, writing evidence, proposed actions (high-risk ones gated) and audit events through the shared ledger into DynamoDB. The runtime `AgentCore-OpenLoop-default` is live in `us-east-1` and has been invoked end to end from the AWS CLI and from the web app's Scan button. A second scan of the next morning's mail updates existing loops instead of duplicating them, and *Catch me up* reports what changed since the last check.
+The core demo path is built and deployed. A real scan of the 12-thread demo inbox produces 11 loops with the expected states in about 95 to 105 seconds, three threads at a time, writing evidence, proposed actions (high-risk ones gated) and audit events through the shared ledger into DynamoDB. The runtime `AgentCore-OpenLoop-default` is live in `us-east-1` and has been invoked end to end from the AWS CLI and from the web app's Scan button. A second scan of the next morning's mail updates existing loops instead of duplicating them, and *Catch me up* reports what changed since the last check.
 
 What a judge cannot do yet is open a URL: the web app has no public deployment, there is no demo video, and the Devpost form is untouched. That is the whole remaining gap, and most of it is not code.
 
@@ -53,7 +53,7 @@ Counted from merged pull requests on `main` as of 2026-09-13. Work in progress o
 
 Ordered by what the demo needs first. The first four are the must-ship issues named in `STATUS.md` *Next up*; the rest are submission work that has no issue.
 
-1. **Demo reset script, clean table, fresh base scan** (#29, Ojulari123, must-ship). Everything downstream depends on putting the ledger into a known state on demand. A full scan takes four to five and a half minutes, so the demo must open on a warm ledger and reset between takes.
+1. **Demo reset script, clean table, fresh base scan** (#29, Ojulari123, must-ship). Everything downstream depends on putting the ledger into a known state on demand. A full scan takes about 95 to 105 seconds, so the demo must open on a warm ledger and reset between takes.
 2. **Failure paths: duplicates, resolved loops, vague deadlines, unsafe actions** (#14, Ojulari123, must-ship). This is where judges poke. The claim that the agent is trustworthy rests on it behaving correctly when the input is messy, not only on the happy path we rehearse.
 3. **Deploy the web app to Vercel with a least-privilege IAM user** (#19, Omggdavidd, must-ship). Without a public URL a judge can only read our README. The Vercel project does not exist yet and no one is named as its creator; that call is still open in the MVP plan and should be made today.
 4. **Demo script, rehearsed and timed** (#22, AyomideAw, must-ship). The video cannot be recorded without it and the five-minute limit is unforgiving. Follow the timing table in `SPEC.md` §14 and stay off the subject of how the models work.
@@ -69,7 +69,7 @@ Ordered by what the demo needs first. The first four are the must-ship issues na
 |---|---|---|
 | No public URL, and no owner for the Vercel project | High | The live demo is an optional booster on the checklist, but a judge who cannot click anything is judging a README. #19 is assigned; the account that hosts it does not exist. Decide who creates it today. |
 | Two must-ship agent issues with nothing merged | High | #29 and #14 sit with one person. If they are not close, reassign or cut scope while a day remains. The reset script is worth more to the recording than the failure-path work, so it goes first. |
-| A live scan is too slow to demo | Medium | Four to five and a half minutes for 12 threads, measured across four runs. The video must open on a pre-scanned ledger and show the backfill only in compressed form. Do not plan a take around a cold scan. |
+| A live scan is too slow to demo | Medium | About 95 to 105 seconds for 12 threads at concurrency 3, measured across three runs (263s to 277s sequential). The video must open on a pre-scanned ledger and show the backfill only in compressed form; a cold scan on camera is now possible but has not been rehearsed. |
 | One known calibration flake, visible on camera | Medium | The Investigator marks the rescheduled club meeting *Needs you* instead of *Watching* in roughly one run out of two. Harmless on the page, distracting in a recording that narrates the states. |
 | `STATUS.md` still reports Phase 2 while the work is at Phase 4 to 5 | Low | The phase line has said Foundation since Sep 10, though the MVP plan puts us at polish, deployment and submission. Only the team advances a phase, but the line should be corrected before a judge reads it as our own account of where we are. |
 | Node version trips the clean-machine test | Low | The repository needs Node 22; an older Node in the shell fails at corepack before any project code runs, with a message that looks like a broken repository. The README's pnpm note covers part of this. Confirm during the clean-machine pass. |
