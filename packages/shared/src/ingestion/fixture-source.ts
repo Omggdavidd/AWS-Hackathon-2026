@@ -1,6 +1,13 @@
 import { readFile } from 'node:fs/promises'
 import { z } from 'zod'
-import { CalendarEvent, EmailMessage, type IngestionSource, type MessageQuery } from './source'
+import {
+  byDateAscending,
+  CalendarEvent,
+  EmailMessage,
+  type IngestionSource,
+  type MessageQuery,
+  matchesMessageQuery,
+} from './source'
 
 const FixtureFile = z.object({
   persona: z.object({ name: z.string(), email: z.string(), now: z.string() }),
@@ -39,16 +46,7 @@ export class FixtureSource implements IngestionSource {
   }
 
   async listMessages(query: MessageQuery = {}): Promise<EmailMessage[]> {
-    const text = query.text?.toLowerCase()
-    return this.fixture.messages
-      .filter(
-        (m) =>
-          (query.after === undefined || m.date >= query.after) &&
-          (query.before === undefined || m.date <= query.before) &&
-          (query.threadId === undefined || m.threadId === query.threadId) &&
-          (text === undefined || `${m.subject} ${m.from} ${m.body}`.toLowerCase().includes(text)),
-      )
-      .sort((a, b) => a.date.localeCompare(b.date))
+    return this.fixture.messages.filter((m) => matchesMessageQuery(m, query)).sort(byDateAscending)
   }
 
   async getThread(threadId: string): Promise<EmailMessage[]> {

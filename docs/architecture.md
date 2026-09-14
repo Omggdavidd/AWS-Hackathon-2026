@@ -1,6 +1,6 @@
 # Architecture
 
-Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `packages/ledger-dynamo/`, `demo/`, `web/` (local or DynamoDB ledger, Scan button invoking the deployed runtime), `agent/` deployed to AgentCore Runtime writing to DynamoDB. Not yet: live Gmail and Calendar sinks (effects are simulated by `FixtureActionSink`). Update this file as the rest lands; rationale lives in the ADRs, not here.
+Status: **accepted design** (ADRs 0003 to 0012, accepted 2026-09-10). Implemented so far: `packages/shared/`, `packages/ledger-dynamo/`, `demo/`, `web/` (local or DynamoDB ledger, Scan button invoking the deployed runtime), `agent/` deployed to AgentCore Runtime writing to DynamoDB. Reading a live inbox exists as `GoogleSource` but no OAuth flow mints its token yet, so only the seeded path runs end to end (#20). Not yet: live Gmail and Calendar sinks (effects are simulated by `FixtureActionSink`). Update this file as the rest lands; rationale lives in the ADRs, not here.
 
 ![Open Loops architecture: the browser talks only to the Next.js app on Vercel, which invokes the AgentCore Runtime; inside the runtime the Extractor, Investigator and Risk Judge scan each thread and the mayExecute gate stands between a proposed action and the Action Agent; Bedrock, the ingestion source, the action sink and the DynamoDB ledger sit outside it.](architecture/openloop-architecture.png)
 
