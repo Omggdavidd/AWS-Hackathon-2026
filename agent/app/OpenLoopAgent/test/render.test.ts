@@ -1,6 +1,6 @@
 import type { CalendarEvent, EmailMessage } from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
-import { renderEvent, renderMessage, renderThread } from '../src/render'
+import { renderEvent, renderMessage, renderMessageSummary, renderThread } from '../src/render'
 
 const message: EmailMessage = {
   id: 'msg-1',
@@ -78,6 +78,29 @@ describe('renderMessage', () => {
   it('renders one envelope per message in a thread', () => {
     const rendered = renderThread([message, { ...message, id: 'msg-2' }])
     expect(envelopes(rendered)).toEqual({ open: 2, close: 2 })
+  })
+})
+
+describe('renderMessageSummary', () => {
+  it('keeps search hits to one line and leaves the body for get_thread', () => {
+    const rendered = renderMessageSummary({
+      ...message,
+      subject: 'Deposit\n"urgent"',
+      body: 'A long private body that must not ride along with every search result.',
+    })
+    expect(rendered.split('\n')).toHaveLength(1)
+    expect(JSON.parse(rendered)).toMatchObject({
+      id: 'msg-1',
+      threadId: 'thr-1',
+      subject: 'Deposit\n"urgent"',
+    })
+    expect(rendered).not.toContain('long private body')
+  })
+
+  it('caps the snippet carried in a search result', () => {
+    const rendered = JSON.parse(renderMessageSummary({ ...message, snippet: 'x'.repeat(500) }))
+    expect(rendered.snippet).toHaveLength(161)
+    expect(rendered.snippet.endsWith('…')).toBe(true)
   })
 })
 

@@ -25,7 +25,6 @@ export const ExtractorOutput = z.object({
       requestedBy: z.string().optional(),
       dueAt: IsoDateTime.optional(),
       amount: Money.optional(),
-      consequence: z.string().max(200).optional(),
       sourceRef: SourceRef,
     })
     .optional(),
@@ -69,7 +68,6 @@ export const RiskJudgment = z.object({
     )
     .default([]),
   interruptUser: z.boolean(),
-  rationale: z.string().max(300),
 })
 export type RiskJudgment = z.infer<typeof RiskJudgment>
 

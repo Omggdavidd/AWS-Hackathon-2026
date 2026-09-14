@@ -39,6 +39,23 @@ export function renderMessage(m: EmailMessage): string {
   ].join('\n')
 }
 
+/**
+ * Search results are leads, not evidence. Keep them to one JSON line without a body; a specialist
+ * can call get_thread for the full text when the hit is relevant. JSON.stringify also keeps
+ * attacker-authored newlines and quotes inside the value instead of inventing prompt structure.
+ */
+export function renderMessageSummary(m: EmailMessage): string {
+  const snippet = m.snippet.length > 160 ? `${m.snippet.slice(0, 160)}…` : m.snippet
+  return JSON.stringify({
+    id: m.id,
+    threadId: m.threadId,
+    date: m.date,
+    from: m.from,
+    subject: m.subject,
+    snippet,
+  })
+}
+
 export function renderThread(messages: EmailMessage[]): string {
   return messages.map(renderMessage).join('\n\n')
 }

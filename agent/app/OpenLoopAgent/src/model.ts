@@ -3,6 +3,7 @@ import type { SpecialistRole } from './agents'
 
 /** ADR-0007: Claude Sonnet 4.6 on Bedrock for every role; override per environment. */
 export const DEFAULT_MODEL_ID = 'global.anthropic.claude-sonnet-4-6'
+export const DEFAULT_EXTRACTOR_MODEL_ID = 'global.anthropic.claude-haiku-4-5-20251001-v1:0'
 
 /**
  * Ceiling on one model response, so a role that starts rambling fails fast instead of burning the
@@ -22,10 +23,10 @@ export function loadModel(
   })
 }
 
-/** One model per specialist role: all seven share `model` unless the Extractor is overridden. */
+/** The Extractor defaults to Haiku; reasoning roles stay on the primary model. */
 export function loadModelsByRole(
   model: BedrockModel = loadModel(),
-  extractorModelId = process.env.OPENLOOP_EXTRACTOR_MODEL_ID,
+  extractorModelId = process.env.OPENLOOP_EXTRACTOR_MODEL_ID ?? DEFAULT_EXTRACTOR_MODEL_ID,
 ): Record<SpecialistRole, BedrockModel> {
   const extract = extractorModelId ? loadModel(extractorModelId) : model
   return {

@@ -1,17 +1,23 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_MODEL_ID, loadModel, loadModelsByRole, MAX_OUTPUT_TOKENS } from '../src/model'
+import {
+  DEFAULT_EXTRACTOR_MODEL_ID,
+  DEFAULT_MODEL_ID,
+  loadModel,
+  loadModelsByRole,
+  MAX_OUTPUT_TOKENS,
+} from '../src/model'
 
 describe('loadModelsByRole', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  it('runs all seven roles on one shared model', () => {
+  it('uses Haiku for extraction and the primary model for reasoning', () => {
     const model = loadModel(DEFAULT_MODEL_ID)
     const models = loadModelsByRole(model)
 
-    expect(models.extract.getConfig().modelId).toBe(DEFAULT_MODEL_ID)
-    expect(models.extract).toBe(model)
+    expect(models.extract.getConfig().modelId).toBe(DEFAULT_EXTRACTOR_MODEL_ID)
+    expect(models.extract).not.toBe(model)
     expect(models.investigate).toBe(model)
     expect(models.update).toBe(model)
     expect(models.plan).toBe(model)

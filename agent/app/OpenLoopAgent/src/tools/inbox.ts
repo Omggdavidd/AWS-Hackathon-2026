@@ -1,7 +1,7 @@
 import type { IngestionSource } from '@openloop/shared'
 import { tool } from '@strands-agents/sdk'
 import { z } from 'zod'
-import { renderEvent, renderMessage } from '../render'
+import { renderEvent, renderMessage, renderMessageSummary } from '../render'
 
 /** Read-only tools over the ingestion source (fixtures today, Gmail later; ADR-0006, ADR-0011). */
 export function inboxTools(source: IngestionSource) {
@@ -23,7 +23,7 @@ export function inboxTools(source: IngestionSource) {
       if (input.threadId) query.threadId = input.threadId
       const hits = await source.listMessages(query)
       if (hits.length === 0) return 'No messages matched.'
-      return hits.slice(0, 10).map(renderMessage).join('\n\n')
+      return hits.slice(0, 10).map(renderMessageSummary).join('\n\n')
     },
   })
 
