@@ -23,8 +23,8 @@ import { isSameOrigin } from '@/lib/same-origin'
 
 /**
  * Next checks a Server Action's Origin against Host only when Origin is present, and lets a request
- * with no Origin through. The actions that spend Bedrock or wipe the demo table refuse those; a
- * browser always sends Origin on the POST behind a button, so the app is unchanged.
+ * with no Origin through. Every server action in this file that writes refuses those; a browser
+ * always sends Origin on the POST behind a button or a form, so the app is unchanged.
  */
 async function requireSameOrigin(): Promise<void> {
   if (!isSameOrigin(await headers(), ''))
@@ -33,6 +33,7 @@ async function requireSameOrigin(): Promise<void> {
 
 /** "I already did this": the user closes a loop by hand, cancelling what it leaves behind (SPEC §8B). */
 export async function markDone(loopId: string): Promise<void> {
+  await requireSameOrigin()
   const store = await getStore()
   if (!(await resolveLoopByUser(store, USER_ID, loopId))) return
   revalidatePath('/')
@@ -54,6 +55,7 @@ async function park(loopId: string, kind: ParkKind): Promise<void> {
 
 /** Undo for a swipe or a hover move: back to the state before, proposals restored (SPEC §8B). */
 export async function undoMove(loopId: string, previous: LoopStatus, since: string): Promise<void> {
+  await requireSameOrigin()
   const store = await getStore()
   if (!(await restoreLoopByUser(store, USER_ID, loopId, previous, since))) return
   revalidatePath('/')
@@ -63,10 +65,12 @@ export async function undoMove(loopId: string, previous: LoopStatus, since: stri
 }
 
 export async function remindTomorrow(loopId: string): Promise<void> {
+  await requireSameOrigin()
   await park(loopId, 'remind')
 }
 
 export async function ignoreLoop(loopId: string): Promise<void> {
+  await requireSameOrigin()
   await park(loopId, 'ignore')
 }
 
@@ -119,6 +123,7 @@ export async function approveAction(actionId: string): Promise<void> {
 }
 
 export async function cancelAction(actionId: string): Promise<void> {
+  await requireSameOrigin()
   const store = await getStore()
   const action = await store.getAction(USER_ID, actionId)
   if (action?.status !== 'PROPOSED') return
@@ -145,6 +150,7 @@ export async function cancelAction(actionId: string): Promise<void> {
  * and replaces "Your agent" everywhere; Today then opens with the tour.
  */
 export async function nameAgent(form: FormData): Promise<void> {
+  await requireSameOrigin()
   const raw = form.get('name')
   const name = cleanAgentName(typeof raw === 'string' ? raw : undefined) ?? 'Loop'
   const jar = await cookies()
@@ -155,6 +161,7 @@ export async function nameAgent(form: FormData): Promise<void> {
 
 /** The person's name, the inbox the agent reads and what it is for (#150); a bad value keeps the old one. */
 export async function updateProfile(form: FormData): Promise<void> {
+  await requireSameOrigin()
   setProfileCookies(await cookies(), form)
   revalidatePath('/', 'layout')
 }
@@ -175,6 +182,7 @@ function setProfileCookies(jar: Awaited<ReturnType<typeof cookies>>, form: FormD
 
 /** Rename the agent from Settings: same cookie as the welcome screen, no redirect. */
 export async function renameAgent(form: FormData): Promise<void> {
+  await requireSameOrigin()
   const raw = form.get('name')
   const name = cleanAgentName(typeof raw === 'string' ? raw : undefined)
   if (!name) return
