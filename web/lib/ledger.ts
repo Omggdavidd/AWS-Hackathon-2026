@@ -22,6 +22,7 @@ let storePromise: Promise<LedgerStore> | undefined
 /**
  * The ledger the UI reads and writes. DynamoDB when OPENLOOP_LEDGER_TABLE is set; otherwise a local
  * JSON file seeded from the expected demo ledger so the dashboard is populated without the agent.
+ * On a Vercel production deployment the local file is not an option: an unset table throws.
  */
 export function getStore(): Promise<LedgerStore> {
   storePromise ??= open()
@@ -49,6 +50,14 @@ export async function resetLedger(userId: string): Promise<string> {
 
 async function open(): Promise<LedgerStore> {
   if (LEDGER_TABLE) return new DynamoLedgerStore({ tableName: LEDGER_TABLE })
+  // A production deployment with no table would serve the seeded demo ledger and look healthy.
+  // VERCEL_ENV, not NODE_ENV: `next build` and `next start` set NODE_ENV=production locally too.
+  if (process.env.VERCEL_ENV === 'production')
+    throw new Error(
+      'OPENLOOP_LEDGER_TABLE is not set. In production the app reads the DynamoDB ledger it shares ' +
+        'with the agent and never falls back to the demo file. Set OPENLOOP_LEDGER_TABLE (and ' +
+        'OPENLOOP_RUNTIME_ARN) in the Vercel project environment and redeploy.',
+    )
   const exists = await access(ledgerFile).then(
     () => true,
     () => false,
