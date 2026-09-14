@@ -30,6 +30,7 @@ Check before you hit record:
 - [ ] The ledger has been reset and freshly scanned, not left mid-demo. The bar under the greeting should read **6 need you, 1 waiting on others, 3 on your radar, 1 of 11 closed**. (As of 2026-09-13 the deployed ledger is mid-demo — 3 need you, 5 of 12 closed, a delta already run — so it *must* be reset before a take. That is #29.)
 - [ ] Decide whether the take opens on the welcome screen. A fresh browser profile shows it on every route (your name, what the inbox is for, the inbox, the agent's name, then the five-stop tour); a profile that has visited before goes straight to Today. Either is fine; do not let the tour run mid-scene.
 - [ ] Light theme, browser at 1440 wide, bookmarks bar hidden, notifications silenced.
+- [ ] The agent's own daily catch-up fires at 07:00 ET and moves the *Catch me up* baseline. If a take could span that time, run `pnpm --filter @openloop/agent create-schedule -- --disable` first and re-run it without the flag afterwards.
 - [ ] A second browser tab already open on `docs/architecture/openloop-architecture.png` and one on the CloudWatch log group, for scene 7.
 
 **The dates move.** The fixtures are anchored to `persona.now = 2026-09-10` but the app renders against the real clock, so the relative dates change every day. On **Monday Sep 14**, recording day, the overview reads:

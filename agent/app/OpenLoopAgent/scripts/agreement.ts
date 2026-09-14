@@ -7,15 +7,16 @@ import { loadModel } from '../src/model'
 import { runScan } from '../src/scan'
 
 /**
- * Calibration harness: scan the demo inbox several times with the real model and compare each
- * thread's status with demo/seed-ledger.json. Needs AWS credentials; each scan costs about 95 to 105
- * seconds, so the default three runs take about five minutes.
- *   pnpm --filter @openloop/agent agreement                 # 3 runs
- *   OPENLOOP_AGREEMENT_RUNS=5 pnpm --filter @openloop/agent agreement
+ * Calibration harness: scan the demo inbox with the real model and compare each thread's status
+ * with demo/seed-ledger.json. Needs AWS credentials; each scan costs about 95 to 105 seconds and
+ * about fifty cents of Bedrock, so the default is one run. Ask for three only for a final check
+ * before recording.
+ *   pnpm --filter @openloop/agent agreement                 # 1 run
+ *   OPENLOOP_AGREEMENT_RUNS=3 pnpm --filter @openloop/agent agreement
  *   pnpm --filter @openloop/agent agreement -- --verbose    # print every loop as the scan produces it
  */
 const repoRoot = path.resolve(import.meta.dirname, '../../../..')
-const runCount = Number(process.env.OPENLOOP_AGREEMENT_RUNS ?? '3')
+const runCount = Number(process.env.OPENLOOP_AGREEMENT_RUNS ?? '1')
 const verbose = process.argv.includes('--verbose')
 const userId = 'user-alex'
 

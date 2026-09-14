@@ -13,11 +13,14 @@
     "scan": "tsx scripts/scan.ts",
     "agreement": "tsx scripts/agreement.ts",
     "reset-demo": "tsx scripts/reset-demo.ts",
+    "create-schedule": "tsx scripts/create-schedule.ts",
     "prepare-deploy": "node scripts/prepare-deploy.mjs",
     "deploy-runtime": "node scripts/deploy-runtime.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-agentcore": "^3.1131.0",
+    "@aws-sdk/client-iam": "^3.1131.0",
+    "@aws-sdk/client-scheduler": "^3.1131.0",
     "@openloop/ledger-dynamo": "workspace:*",
     "@openloop/shared": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
