@@ -5,7 +5,7 @@ import { LEDGER_TABLE } from './ledger'
 /**
  * How many runtime invocations the deployment will pay for in a UTC day, across Scan, Check for new
  * mail, Handle, Catch me up and Approve together. `isSameOrigin` is a bill boundary anyone willing
- * to set one header walks through, and the $25 budget alarm mails somebody rather than refusing the
+ * to set one header walks through, and the $60 budget alarm mails somebody rather than refusing the
  * next call (`docs/security.md`), so this is the only thing that bounds a script.
  *
  * 500 is deliberately far above any human. A scan is a minute and a half on the runtime, so one

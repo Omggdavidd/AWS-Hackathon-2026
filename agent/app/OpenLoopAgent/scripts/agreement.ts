@@ -27,12 +27,14 @@ console.log(
 const model = loadModel()
 
 const results: OpenLoop[][] = []
+/** A thread that threw reads as a disagreement in the table below, so it has to be called out. */
+let failedThreads = 0
 for (let run = 1; run <= runCount; run++) {
   const source = FixtureSource.fromData(input.fixture)
   const store = new LocalLedgerStore()
   const specialists = createSpecialists({ model, source, store, userId })
   const started = Date.now()
-  await runScan({
+  const summary = await runScan({
     source,
     store,
     userId,
@@ -43,7 +45,10 @@ for (let run = 1; run <= runCount; run++) {
     },
   })
   results.push(await store.listLoops(userId))
-  console.log(`run ${run}/${runCount} done in ${Math.round((Date.now() - started) / 1000)}s`)
+  if (summary.failed > 0) failedThreads += summary.failed
+  console.log(
+    `run ${run}/${runCount} done in ${Math.round((Date.now() - started) / 1000)}s${summary.failed > 0 ? `, ${summary.failed} threads failed` : ''}`,
+  )
 }
 
 const report = compareRuns(input.expected, results, input.threadIds)
@@ -55,5 +60,9 @@ for (const row of report.rows)
     `${row.threadId.padEnd(width)}  ${row.expected.padEnd(10)}${row.runs.map((c) => c.padEnd(10)).join('')}${row.agrees ? '✓' : '✗'}`,
   )
 console.log(`\nagreement ${report.agreed}/${report.total} threads over ${report.runs} runs`)
+if (failedThreads > 0)
+  process.stderr.write(
+    `${failedThreads} threads failed across ${runCount} runs; the agreement above is not calibration data\n`,
+  )
 
-if (report.agreed !== report.total) process.exitCode = 1
+if (failedThreads > 0 || report.agreed !== report.total) process.exitCode = 1

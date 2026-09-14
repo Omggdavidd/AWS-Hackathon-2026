@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import {
   FixtureSource,
   type InvestigatorOutput,
+  type LedgerStore,
   LocalLedgerStore,
   OpenLoop,
 } from '@openloop/shared'
@@ -129,6 +130,24 @@ function cite(
     excerpt: `stub excerpt for ${sourceId}`,
     supports,
     confidence: 0.9,
+  }
+}
+
+/** The local ledger with one write replaced, so a thread can be made to die partway through. */
+function ledgerThatFails(store: LocalLedgerStore, at: Partial<LedgerStore>): LedgerStore {
+  return {
+    getLoop: (u, id) => store.getLoop(u, id),
+    putLoop: (l) => store.putLoop(l),
+    listLoops: (u, f) => store.listLoops(u, f),
+    findLoopsBySource: (u, id) => store.findLoopsBySource(u, id),
+    appendEvidence: (e) => store.appendEvidence(e),
+    listEvidence: (id) => store.listEvidence(id),
+    putAction: (a) => store.putAction(a),
+    getAction: (u, id) => store.getAction(u, id),
+    listActions: (u, f) => store.listActions(u, f),
+    appendAudit: (e) => store.appendAudit(e),
+    listAudit: (u, o) => store.listAudit(u, o),
+    ...at,
   }
 }
 
@@ -391,6 +410,209 @@ describe('runScan', () => {
     expect(
       lines.find((l) => l.threadId === 'thr-newsletter' && l.evt === 'thread_skipped'),
     ).toMatchObject({ reason: 'newsletter' })
+  })
+
+  it('refuses a state the loop cannot reach instead of failing the scan', async () => {
+    const store = new LocalLedgerStore()
+    await store.putLoop(
+      OpenLoop.parse({
+        id: 'loop-closed',
+        userId: 'u',
+        title: 'Housing paperwork',
+        category: 'other',
+        status: 'RESOLVED',
+        confidence: 0.9,
+        sourceRefs: [{ sourceType: 'email', sourceId: 'msg-002', threadId: 'thr-housing' }],
+        createdAt: now,
+        updatedAt: now,
+        resolvedAt: now,
+      }),
+    )
+
+    // RESOLVED -> UNCERTAIN is not in the lifecycle table, and the rest of that thread is unseen.
+    const unsure: Specialists = {
+      ...stubs,
+      async update({ newMessages }) {
+        return {
+          evidence: newMessages.map((m) => ({
+            sourceRef: { sourceType: 'email', sourceId: m.id, threadId: m.threadId },
+            observedAt: m.date,
+            excerpt: m.snippet,
+            supports: 'UPDATED',
+            confidence: 0.4,
+          })),
+          proposedStatus: 'UNCERTAIN',
+          confidence: 0.4,
+          rationale: 'stub: no longer sure where this stands.',
+        }
+      },
+    }
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: unsure,
+      now: '2026-09-11T13:00:00.000Z',
+    })
+
+    expect(summary).toMatchObject({ created: 10, updated: 0, failed: 0 })
+    expect(await store.getLoop('u', 'loop-closed')).toMatchObject({
+      status: 'RESOLVED',
+      resolvedAt: now,
+    })
+
+    // The mail is still recorded; only the state the model asked for is turned down, with a reason.
+    expect((await store.listEvidence('loop-closed')).map((e) => e.sourceId)).toEqual(['msg-003'])
+    const audit = (await store.listAudit('u', { loopId: 'loop-closed' }))[0]
+    expect(audit?.kind).toBe('evidence_added')
+    expect(audit?.reason).toContain('RESOLVED -> UNCERTAIN is not a move this loop can make')
+  })
+
+  it('finishes the scan when one thread throws, and counts it', async () => {
+    const store = new LocalLedgerStore()
+    const events: ScanEvent[] = []
+    const lines: LogLine[] = []
+    const breaking: Specialists = {
+      ...stubs,
+      async extract(input) {
+        if (input.thread[0]?.threadId === 'thr-deposit') throw new Error('stub: the model refused')
+        return stubs.extract(input)
+      },
+    }
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: breaking,
+      now,
+      concurrency: 3,
+      onEvent: (e) => events.push(e),
+      logger: (l) => lines.push(l),
+    })
+
+    expect(summary).toMatchObject({ threads: 12, created: 10, skipped: 1, failed: 1 })
+    const loops = await store.listLoops('u')
+    expect(loops).toHaveLength(10)
+    expect(loops.some((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))).toBe(false)
+    expect(loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-housing'))?.status).toBe(
+      'RESOLVED',
+    )
+
+    const audit = await store.listAudit('u')
+    expect(audit.find((a) => a.kind === 'scan_completed')).toMatchObject({
+      details: { created: 10, failed: 1 },
+    })
+    expect(events.at(-1)).toMatchObject({ type: 'done' })
+    expect(lines.find((l) => l.evt === 'thread_failed')).toEqual({
+      evt: 'thread_failed',
+      threadId: 'thr-deposit',
+      error: 'stub: the model refused',
+    })
+  })
+
+  it('publishes no loop for a thread that dies while writing one', async () => {
+    const inner = new LocalLedgerStore()
+    const events: ScanEvent[] = []
+    const store = ledgerThatFails(inner, {
+      async appendEvidence(evidence) {
+        if (evidence.threadId === 'thr-deposit') throw new Error('stub: the ledger refused')
+        return inner.appendEvidence(evidence)
+      },
+    })
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 3,
+      onEvent: (e) => events.push(e),
+    })
+
+    expect(summary).toMatchObject({ threads: 12, created: 10, skipped: 1, failed: 1 })
+
+    // The row is written after the records it hangs from, so the failed thread left nothing behind.
+    const loops = await inner.listLoops('u')
+    expect(loops).toHaveLength(10)
+    expect(loops.some((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))).toBe(false)
+    expect(summary.created).toBe(loops.length)
+
+    // No loop a person can open has an empty evidence panel or an empty history.
+    for (const loop of loops) {
+      expect((await inner.listEvidence(loop.id)).length).toBeGreaterThan(0)
+      expect(await inner.listAudit('u', { loopId: loop.id })).not.toHaveLength(0)
+    }
+
+    const audit = await inner.listAudit('u')
+    expect(audit.find((a) => a.kind === 'scan_completed')).toMatchObject({
+      details: { created: 10, failed: 1 },
+    })
+    expect(events.at(-1)).toMatchObject({ type: 'done' })
+  })
+
+  it('counts a loop that reached the ledger before its thread failed, and says so in its history', async () => {
+    const inner = new LocalLedgerStore()
+    const store = ledgerThatFails(inner, {
+      async putAction() {
+        throw new Error('stub: the ledger refused')
+      },
+    })
+    const summary = await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: stubs,
+      now,
+      concurrency: 3,
+    })
+
+    // Only the deposit thread proposes an action, and it failed after its row was already visible.
+    expect(summary).toMatchObject({ threads: 12, created: 11, skipped: 1, failed: 1 })
+    const loops = await inner.listLoops('u')
+    expect(loops).toHaveLength(11)
+    expect(summary.created).toBe(loops.length)
+
+    const deposit = loops.find((l) => l.sourceRefs.some((r) => r.threadId === 'thr-deposit'))
+    expect((await inner.listEvidence(deposit?.id ?? '')).length).toBeGreaterThan(0)
+    expect(await inner.listActions('u', { loopId: deposit?.id ?? '' })).toHaveLength(0)
+    const reasons = (await inner.listAudit('u', { loopId: deposit?.id ?? '' })).map((a) => a.reason)
+    expect(reasons.some((r) => r.includes('failed after the loop was opened'))).toBe(true)
+  })
+
+  it('gives a thread its own resolved loop rather than one it only cited', async () => {
+    const store = new LocalLedgerStore()
+    // Both are RESOLVED and both are claimed by thr-housing: one carries the thread, the other was
+    // opened elsewhere from a message this thread also contains. Query order puts the cited one
+    // first, so only the stated precedence keeps the thread's mail on the thread's own loop.
+    const resolved = (id: string, refs: OpenLoop['sourceRefs']) =>
+      OpenLoop.parse({
+        id,
+        userId: 'u',
+        title: id,
+        category: 'other',
+        status: 'RESOLVED',
+        confidence: 0.9,
+        sourceRefs: refs,
+        createdAt: now,
+        updatedAt: now,
+        resolvedAt: now,
+      })
+    await store.putLoop(resolved('loop-cited', [{ sourceType: 'email', sourceId: 'msg-002' }]))
+    await store.putLoop(
+      resolved('loop-own', [{ sourceType: 'email', sourceId: 'msg-003', threadId: 'thr-housing' }]),
+    )
+
+    await runScan({
+      source: await FixtureSource.load(seed),
+      store,
+      userId: 'u',
+      specialists: { ...stubs, extract: onlyThread('thr-none') },
+      now: '2026-09-11T13:00:00.000Z',
+    })
+
+    expect((await store.listEvidence('loop-own')).map((e) => e.sourceId)).toEqual(['msg-002'])
+    expect(await store.listEvidence('loop-cited')).toHaveLength(0)
+    expect(await store.listLoops('u')).toHaveLength(2)
   })
 })
 
