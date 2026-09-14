@@ -88,8 +88,8 @@ export function TodayList({
           <p className="empty-title">Nothing tracked yet.</p>
           <p>
             Scan inbox reads the mail and the calendar, keeps every responsibility that is still
-            open, and sorts it by when it matters. The first scan takes about four minutes; after
-            that, Check for new mail is a few seconds.
+            open, and sorts it by when it matters. The first scan takes a minute and a half to two
+            minutes; after that, Check for new mail is a few seconds.
           </p>
         </div>
       </div>

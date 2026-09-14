@@ -26,7 +26,7 @@ export function ResetDemo({ shared }: { shared: boolean }) {
         <p className="setting-name">Reset the demo</p>
         <p className="setting-hint">
           {shared
-            ? 'Deletes every loop, action and note for the demo user from the shared table. Then run Scan inbox to rebuild them from the seeded mail, about four minutes.'
+            ? 'Deletes every loop, action and note for the demo user from the shared table. Then run Scan inbox to rebuild them from the seeded mail, a minute and a half to two minutes.'
             : 'Puts the local ledger back to the seeded eleven loops.'}
         </p>
         {done && <p className="setting-done">{done}</p>}

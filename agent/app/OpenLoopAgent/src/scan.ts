@@ -21,6 +21,8 @@ export interface ScanOptions {
   now?: string
   /** Bounded backfill window start (SPEC §11). Messages before it are ignored. */
   after?: string
+  /** Threads processed at the same time; writes stay ordered within a thread and within a loop. */
+  concurrency?: number
   onEvent?: (event: ScanEvent) => void
   /** Structured pipeline logging (#30). Defaults to silence. */
   logger?: Logger
@@ -47,10 +49,15 @@ export interface ScanSummary {
   byStatus: Record<string, number>
 }
 
+/** Threads run in parallel; three keeps the Bedrock round trips overlapping without hammering it. */
+const DEFAULT_CONCURRENCY = 3
+
 /**
  * The Orchestrator (ADR-0003): groups messages by thread, runs Extractor, Investigator and Risk Judge
  * per new thread, and writes the ledger. A thread that already has a loop takes the delta path: only
  * messages the loop has not seen go to the Investigator, which may transition the loop with a reason.
+ * Threads run concurrently, so the ledger writes are guarded: `commit` keeps the duplicate check and
+ * the loop it creates atomic, and `loopLock` serializes the read-modify-write of one loop.
  */
 export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
   const { source, store, userId, specialists } = opts
@@ -68,21 +75,32 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
     updated: 0,
     byStatus: {},
   }
+  const commit = mutex()
+  const loopLock = keyedMutex()
 
-  for (const [threadId, thread] of threads) {
-    const root = thread[0]
-    if (!root) continue
-    const threadStartedAt = Date.now()
-    emit({ type: 'thread', threadId, subject: root.subject })
-    // The thread id, not the subject: subject lines are often the sensitive part, and the id is
-    // enough to find the thread in the ledger (docs/architecture.md §4).
-    log({ evt: 'thread_started', threadId, messages: thread.length })
-
+  async function findExisting(
+    threadId: string,
+    sourceIds: string[],
+  ): Promise<OpenLoop | undefined> {
     const known = (
-      await Promise.all(thread.map((m) => store.findLoopsBySource(userId, m.id)))
+      await Promise.all(
+        sourceIds.map(async (id) =>
+          (await store.findLoopsBySource(userId, id)).filter((l) => claims(l, threadId, id)),
+        ),
+      )
     ).flat()
-    const existing = known.find((l) => l.status !== 'RESOLVED') ?? known[0]
-    if (existing) {
+    return known.find((l) => l.status !== 'RESOLVED') ?? known[0]
+  }
+
+  async function takeDeltaPath(
+    match: OpenLoop,
+    thread: EmailMessage[],
+    threadId: string,
+    threadStartedAt: number,
+    record: (event: ScanEvent) => void,
+  ): Promise<void> {
+    await loopLock(match.id, async () => {
+      const existing = (await store.getLoop(userId, match.id)) ?? match
       const seen = new Set<string>([
         ...existing.sourceRefs.map((r) => r.sourceId),
         ...(await store.listEvidence(existing.id)).map((e) => e.sourceId),
@@ -90,14 +108,14 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       const newMessages = thread.filter((m) => !seen.has(m.id))
       if (newMessages.length === 0) {
         summary.skipped++
-        emit({ type: 'skipped', threadId, reason: 'already tracked' })
+        record({ type: 'skipped', threadId, reason: 'already tracked' })
         log({
           evt: 'thread_skipped',
           threadId,
           reason: 'already tracked',
           ms: elapsed(threadStartedAt),
         })
-        continue
+        return
       }
       const changed = await updateLoop({
         store,
@@ -111,7 +129,7 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       })
       if (changed) {
         summary.updated++
-        emit({ type: 'updated', ...changed })
+        record({ type: 'updated', ...changed })
         log({
           evt: 'loop_updated',
           threadId,
@@ -125,7 +143,7 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
         })
       } else {
         summary.skipped++
-        emit({ type: 'skipped', threadId, reason: 'new messages recorded; state unchanged' })
+        record({ type: 'skipped', threadId, reason: 'new messages recorded; state unchanged' })
         log({
           evt: 'thread_skipped',
           threadId,
@@ -133,22 +151,41 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
           ms: elapsed(threadStartedAt),
         })
       }
-      continue
-    }
+    })
+  }
+
+  async function processThread(
+    threadId: string,
+    thread: EmailMessage[],
+    record: (event: ScanEvent) => void,
+  ): Promise<void> {
+    const root = thread[0]
+    if (!root) return
+    const threadStartedAt = Date.now()
+    record({ type: 'thread', threadId, subject: root.subject })
+    // The thread id, not the subject: subject lines are often the sensitive part, and the id is
+    // enough to find the thread in the ledger (docs/architecture.md §4).
+    log({ evt: 'thread_started', threadId, messages: thread.length })
+
+    const existing = await findExisting(
+      threadId,
+      thread.map((m) => m.id),
+    )
+    if (existing) return takeDeltaPath(existing, thread, threadId, threadStartedAt, record)
 
     const extracted = await timed(log, { evt: 'role', role: 'extract', threadId }, () =>
       specialists.extract({ thread, now }),
     )
     if (!extracted.isResponsibility || !extracted.candidate) {
       summary.skipped++
-      emit({ type: 'skipped', threadId, reason: extracted.rationale })
+      record({ type: 'skipped', threadId, reason: extracted.rationale })
       log({
         evt: 'thread_skipped',
         threadId,
         reason: extracted.rationale,
         ms: elapsed(threadStartedAt),
       })
-      continue
+      return
     }
     const candidate = extracted.candidate
 
@@ -197,15 +234,24 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       waitingOn: investigation.waitingOn,
       sourceRefs: [...sourceIds].map((id) => {
         const m = messages.find((x) => x.id === id)
-        return m
+        if (!m) return { sourceType: 'calendar', sourceId: id }
+        // A quoted message keeps its id but not its thread: see `claims`.
+        return m.threadId === threadId
           ? { sourceType: 'email', sourceId: id, threadId: m.threadId }
-          : { sourceType: 'calendar', sourceId: id }
+          : { sourceType: 'email', sourceId: id }
       }),
       createdAt: now,
       updatedAt: now,
       resolvedAt: status === 'RESOLVED' ? now : undefined,
     })
-    await store.putLoop(loop)
+
+    const claimed = await commit(async () => {
+      const duplicate = await findExisting(threadId, [...sourceIds, ...thread.map((m) => m.id)])
+      if (duplicate) return duplicate
+      await store.putLoop(loop)
+      return undefined
+    })
+    if (claimed) return takeDeltaPath(claimed, thread, threadId, threadStartedAt, record)
 
     for (const e of investigation.evidence) {
       const evidence: Evidence = {
@@ -256,7 +302,7 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
 
     summary.created++
     summary.byStatus[status] = (summary.byStatus[status] ?? 0) + 1
-    emit({ type: 'loop', loop, actions: actionCount })
+    record({ type: 'loop', loop, actions: actionCount })
     log({
       evt: 'loop_created',
       threadId,
@@ -269,6 +315,23 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
       ms: elapsed(threadStartedAt),
     })
   }
+
+  const queue = [...threads]
+  let cursor = 0
+  const worker = async () => {
+    while (cursor < queue.length) {
+      const entry = queue[cursor++]
+      if (!entry) continue
+      const buffered: ScanEvent[] = []
+      try {
+        await processThread(entry[0], entry[1], (event) => buffered.push(event))
+      } finally {
+        for (const event of buffered) emit(event)
+      }
+    }
+  }
+  const workers = Math.max(1, Math.min(opts.concurrency ?? DEFAULT_CONCURRENCY, queue.length))
+  await Promise.all(Array.from({ length: workers }, worker))
 
   await store.appendAudit({
     ...audit(
@@ -283,6 +346,43 @@ export async function runScan(opts: ScanOptions): Promise<ScanSummary> {
   emit({ type: 'done', summary })
   log({ evt: 'scan_completed', ...summary, ms: elapsed(startedAt) })
   return summary
+}
+
+/**
+ * Whether a loop belongs to this thread, and so whether the thread updates it instead of opening one
+ * of its own. A shared source id is not enough: the Investigator reads the whole inbox and may quote
+ * mail from anywhere, and a quote must leave the quoted thread free to open its own loop. Ownership
+ * is a ref carrying this thread's id, or a match on the source the loop was opened from (its first
+ * ref) — which is how a receipt arriving in another thread still closes it.
+ */
+function claims(loop: OpenLoop, threadId: string, matchedSourceId: string): boolean {
+  return (
+    loop.sourceRefs.some((r) => r.threadId === threadId) ||
+    loop.sourceRefs[0]?.sourceId === matchedSourceId
+  )
+}
+
+/** Runs sections one after another: a section holding an `await` would otherwise interleave. */
+function mutex() {
+  let tail: Promise<unknown> = Promise.resolve()
+  return <T>(section: () => Promise<T>): Promise<T> => {
+    const next = tail.then(section)
+    tail = next.catch(() => {})
+    return next
+  }
+}
+
+/** One queue per key, so unrelated keys still run in parallel. */
+function keyedMutex() {
+  const tails = new Map<string, Promise<unknown>>()
+  return <T>(key: string, section: () => Promise<T>): Promise<T> => {
+    const next = (tails.get(key) ?? Promise.resolve()).then(section)
+    tails.set(
+      key,
+      next.catch(() => {}),
+    )
+    return next
+  }
 }
 
 /** Delta path: record evidence for unseen messages and transition the loop if the Investigator says so. */
