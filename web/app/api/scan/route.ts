@@ -1,5 +1,6 @@
 import { invokeScan, scanConfigured } from '@/lib/agent'
 import { USER_ID } from '@/lib/ledger'
+import { isSameOrigin } from '@/lib/same-origin'
 
 export const dynamic = 'force-dynamic'
 /** A full scan of the demo inbox takes about 95 to 105 seconds on the runtime. */
@@ -7,6 +8,8 @@ export const maxDuration = 300
 
 /** Proxies the runtime's SSE progress stream to the browser (SPEC §8A "first-use scan"). */
 export async function POST(request: Request): Promise<Response> {
+  if (!isSameOrigin(request.headers, request.url))
+    return new Response('Cross-origin requests are not accepted', { status: 403 })
   if (!scanConfigured)
     return new Response('Scan is not configured; see web/.env.example', { status: 503 })
   try {

@@ -48,6 +48,8 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 - 2026-09-13 Front-end revamp, first tier: rail of routes and a split Today view (#105), rows in fixed columns and one Group by menu (#106), Decisions with a review sheet that confirms in place (#107), welcome screen, agent name and a five-stop tour (#108); Today fills the screen until a loop is chosen (#120). Re-judge on the delta path (#111, tdare514). Demo reset script (#29), Investigator calibration with an agreement harness (#15) and failure-path tests (#14), all Ojulari123.
 - 2026-09-13 Demo script for the five-minute video, written against the app as built and walked twice against the running app (#22, ab00bae, taken over from AyomideAw).
 
+- 2026-09-13 Security review of the deployed app and ledger: origin check on the three agent routes so an unauthenticated stranger cannot spend Bedrock tokens, response headers, and `docs/security.md` recording what is deliberately open (ab00bae).
+
 ## Blocked
 
 - Nothing external. AWS is ready: personal account, `openloop-dev` IAM user with AdministratorAccess, CLI configured on David's machine in `us-east-1`, Bedrock use-case form accepted, Claude Sonnet 4.6 answers. Google Cloud project not yet created (needed for the live-Gmail stretch, #20). The Vercel project exists.
