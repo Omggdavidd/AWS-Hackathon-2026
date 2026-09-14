@@ -5,6 +5,7 @@ import { ignoreLoop, markDone, remindTomorrow } from '@/app/actions'
 import { ActionEffect } from '@/components/action-effect'
 import { StatusChip } from '@/components/status-chip'
 import { SubmitButton } from '@/components/submit-button'
+import { decisionHref } from '@/lib/decisions'
 import { parseEffect, STATUS_TEXT, terminalReason } from '@/lib/effects'
 import {
   AREA_LABEL,
@@ -145,7 +146,10 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
                     </p>
                   )}
                 </div>
-                <Link href={`/decisions?action=${lead.id}`} className="decision-review">
+                <Link
+                  href={decisionHref(lead.id, { from: 'loop', loopId: loop.id })}
+                  className="decision-review"
+                >
                   Review
                 </Link>
               </div>
@@ -217,7 +221,10 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
                       </p>
                     </div>
                     {pending && (
-                      <Link href={`/decisions?action=${action.id}`} className="decision-review">
+                      <Link
+                        href={decisionHref(action.id, { from: 'loop', loopId: loop.id })}
+                        className="decision-review"
+                      >
                         Review
                       </Link>
                     )}

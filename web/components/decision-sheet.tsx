@@ -33,7 +33,11 @@ export async function DecisionSheet({ actionId }: { actionId: string }) {
     <article className="decision-sheet" data-status={action.status}>
       <header className="decision-head">
         <p className="decision-kicker">
-          {open ? 'Needs your decision' : STATUS_TEXT[action.status]}
+          {open
+            ? 'Needs your decision'
+            : action.status === 'PROPOSED'
+              ? 'Your agent can do this'
+              : STATUS_TEXT[action.status]}
           <span className="decision-risk">{action.riskTier} risk</span>
         </p>
         <h1>{action.summary}</h1>
@@ -120,13 +124,15 @@ export async function DecisionSheet({ actionId }: { actionId: string }) {
         <DecisionButtons actionId={action.id} />
       ) : (
         <p className="decision-done">
-          {action.status === 'APPROVED'
-            ? 'Approved. The agent is carrying it out.'
-            : action.status === 'EXECUTED'
-              ? `Done${action.executedAt ? ` ${formatDate(action.executedAt, now)}` : ''}.`
-              : action.status === 'CANCELLED'
-                ? 'Declined. The agent will not do this.'
-                : 'This action did not complete.'}
+          {action.status === 'PROPOSED'
+            ? 'Nothing to approve: this is safe for your agent to do on its own. Handle what you can on Today carries it out.'
+            : action.status === 'APPROVED'
+              ? 'Approved. The agent is carrying it out.'
+              : action.status === 'EXECUTED'
+                ? `Done${action.executedAt ? ` ${formatDate(action.executedAt, now)}` : ''}.`
+                : action.status === 'CANCELLED'
+                  ? 'Declined. The agent will not do this.'
+                  : 'This action did not complete.'}
         </p>
       )}
     </article>

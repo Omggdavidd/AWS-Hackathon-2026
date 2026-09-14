@@ -31,6 +31,45 @@ export async function pendingDecisions(
     .map((action) => ({ action, loop: byId.get(action.loopId) }))
 }
 
+/**
+ * Where a decision was opened from. Review sits on a loop and on Today as well as on Decisions, and
+ * a Back link that always led to the Decisions list stranded someone who came from a responsibility
+ * in a list they had never seen, often one that did not even hold the action they were reading.
+ */
+export type DecisionOrigin =
+  | { from: 'decisions' }
+  | { from: 'today' }
+  | { from: 'loop'; loopId: string }
+
+/** Loop ids are slugs or UUIDs; anything else in the query string is ignored rather than linked. */
+const LOOP_ID = /^[\w.:-]{1,200}$/
+
+export function decisionHref(actionId: string, origin: DecisionOrigin): string {
+  const query = new URLSearchParams({ action: actionId })
+  if (origin.from === 'today') query.set('from', 'today')
+  if (origin.from === 'loop') query.set('loop', origin.loopId)
+  return `/decisions?${query}`
+}
+
+/** The origin a Decisions URL carries, read back from its search params. */
+export function readDecisionOrigin(params: { from?: unknown; loop?: unknown }): DecisionOrigin {
+  if (typeof params.loop === 'string' && LOOP_ID.test(params.loop))
+    return { from: 'loop', loopId: params.loop }
+  if (params.from === 'today') return { from: 'today' }
+  return { from: 'decisions' }
+}
+
+/** Back from a decision goes where the person came from: the responsibility in its list, Today, or Decisions. */
+export function decisionBack(origin: DecisionOrigin): { href: string; label: string } {
+  if (origin.from === 'loop')
+    return {
+      href: `/?loop=${encodeURIComponent(origin.loopId)}`,
+      label: 'Back to responsibilities',
+    }
+  if (origin.from === 'today') return { href: '/?view=list', label: 'Back to responsibilities' }
+  return { href: '/decisions', label: 'Back to the list' }
+}
+
 export type Proposal =
   | { kind: 'email'; to: string; subject: string; body: string }
   | { kind: 'payment'; amount?: string | undefined; portal?: string | undefined }

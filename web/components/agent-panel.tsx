@@ -6,21 +6,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { StateIcon } from '@/components/loop-mark'
+import { type CatchUpItem, type GroupedCatchUp, URGENCY_LABEL } from '@/lib/catch-up'
 import { DEMO_TIME_ZONE } from '@/lib/format'
 import { formatScanCounts, formatScanStatus } from '@/lib/scan-summary'
 
 type Op = 'catch_up' | 'handle' | 'delta' | 'scan'
-
-type CatchUp = {
-  headline: string
-  items: {
-    loopId: string
-    title: string
-    kind: 'resolved' | 'needs_you' | 'deadline' | 'waiting' | 'fyi'
-    text: string
-  }[]
-  nothingElse: boolean
-}
 
 type Handled = {
   handled: { status: string; summary: string }[]
@@ -42,7 +32,7 @@ type ScanState = {
 }
 
 type Result =
-  | { op: 'catch_up'; at: Date; summary?: CatchUp }
+  | { op: 'catch_up'; at: Date; summary?: GroupedCatchUp }
   | { op: 'handle'; at: Date; handled: Handled }
   | { op: 'scan' | 'delta'; at: Date; scan: ScanState }
 
@@ -80,7 +70,7 @@ const ICON: Record<Op, string> = {
   scan: 'refresh',
 }
 
-const KIND: Record<CatchUp['items'][number]['kind'], { label: string; state: string }> = {
+const KIND: Record<CatchUpItem['kind'], { label: string; state: string }> = {
   needs_you: { label: 'Needs you', state: 'needs-you' },
   deadline: { label: 'Due soon', state: 'waiting' },
   waiting: { label: 'Waiting', state: 'waiting' },
@@ -117,7 +107,7 @@ export function AgentPanel({
       if (op === 'catch_up') {
         setResult({ op, at: new Date() })
         const res = await fetch('/api/catch-up', { method: 'POST' })
-        const body = (await res.json()) as CatchUp & { error?: string }
+        const body = (await res.json()) as GroupedCatchUp & { error?: string }
         if (!res.ok) throw new Error(body.error ?? 'The agent could not catch you up.')
         setResult({ op, at: new Date(), summary: body })
       } else if (op === 'handle') {
@@ -275,27 +265,40 @@ export function AgentPanel({
   )
 }
 
-function Digest({ summary }: { summary: CatchUp }) {
+/** The digest in urgency groups, most pressing first; the chip on each line still says what kind of change it was. */
+function Digest({ summary }: { summary: GroupedCatchUp }) {
   return (
     <div className="digest">
       <p className="digest-headline">{summary.headline}</p>
-      {summary.items.length > 0 && (
-        <ul className="digest-list">
-          {summary.items.map((item) => (
-            <li key={`${item.loopId}-${item.kind}`}>
-              <span className="status-chip" data-state={KIND[item.kind].state}>
-                {KIND[item.kind].label}
-              </span>
-              <div>
-                <Link href={`/loops/${item.loopId}`} className="digest-title">
-                  {item.title}
-                </Link>
-                <p className="digest-text">{item.text}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      {summary.groups.map((group) => (
+        <section
+          key={group.urgency}
+          className="digest-group"
+          data-urgency={group.urgency}
+          aria-labelledby={`digest-${group.urgency}`}
+        >
+          <h3 id={`digest-${group.urgency}`} className="digest-group-head">
+            {URGENCY_LABEL[group.urgency]}
+            <span className="handled-count">{group.items.length}</span>
+          </h3>
+          <ul className="digest-list">
+            {group.items.map((item) => (
+              <li key={`${item.loopId}-${item.kind}`}>
+                <span className="status-chip" data-state={KIND[item.kind].state}>
+                  {KIND[item.kind].label}
+                </span>
+                <div>
+                  <Link href={`/loops/${item.loopId}`} className="digest-title">
+                    {item.title}
+                  </Link>
+                  {item.due && <span className="digest-due">{item.due}</span>}
+                  <p className="digest-text">{item.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
       {summary.nothingElse && (
         <p className="digest-footer">
           <span className="digest-check" aria-hidden="true">
