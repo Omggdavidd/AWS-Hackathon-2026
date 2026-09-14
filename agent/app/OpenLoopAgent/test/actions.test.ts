@@ -4,6 +4,7 @@ import {
   applyTransition,
   FixtureActionSink,
   FixtureSource,
+  type LedgerStore,
   LocalLedgerStore,
   type ProposedAction,
   type ProposedActionType,
@@ -71,6 +72,46 @@ async function setup() {
     loop({ sourceRefs: [{ sourceType: 'email', sourceId: 'msg-004', threadId: 'thr-insurance' }] }),
   )
   return { store, source, sink, userId: 'user-1', specialists, now }
+}
+
+/**
+ * The local ledger with a rival writer that lands on one loop just before each of the first
+ * `rivals` writes to it, moving its due date — a field nothing in `executeAction` touches, so
+ * whether it survives says whether the rival's write did. Stands in for the web app or a scan
+ * writing the same row while the Action Agent is planning. The rival lands whether or not our
+ * write asks for a version check, so the same test tells the two apart.
+ */
+function ledgerWithRival(inner: LocalLedgerStore, loopId: string, rivals: number) {
+  const attempts: string[] = []
+  let landed = 0
+  const store: LedgerStore = {
+    getLoop: (u, id) => inner.getLoop(u, id),
+    async putLoop(l, o) {
+      if (l.id !== loopId) return inner.putLoop(l, o)
+      attempts.push(l.status)
+      if (landed < rivals) {
+        landed++
+        const current = await inner.getLoop(l.userId, loopId)
+        if (current) {
+          await inner.putLoop(
+            { ...current, dueAt: `2026-09-2${landed}T00:00:00.000Z` },
+            { ifUnchanged: true },
+          )
+        }
+      }
+      return inner.putLoop(l, o)
+    },
+    listLoops: (u, f) => inner.listLoops(u, f),
+    findLoopsBySource: (u, id) => inner.findLoopsBySource(u, id),
+    appendEvidence: (e) => inner.appendEvidence(e),
+    listEvidence: (id) => inner.listEvidence(id),
+    putAction: (a) => inner.putAction(a),
+    getAction: (u, id) => inner.getAction(u, id),
+    listActions: (u, f) => inner.listActions(u, f),
+    appendAudit: (e) => inner.appendAudit(e),
+    listAudit: (u, o) => inner.listAudit(u, o),
+  }
+  return { store, attempts }
 }
 
 describe('executeAction', () => {
@@ -270,6 +311,52 @@ describe('executeAction', () => {
     const trail = await opts.store.listAudit('user-1')
     expect(trail.some((e) => e.kind === 'state_changed')).toBe(false)
     expect(trail.find((e) => e.kind === 'notification')?.reason).toContain('stays closed')
+  })
+
+  it('keeps a change made while the action ran, and still applies the status the plan asked for', async () => {
+    const opts = await setup()
+    const { store, attempts } = ledgerWithRival(opts.store, 'loop-1', 1)
+    await opts.store.putAction(
+      action({ id: 'fu', type: 'follow_up', riskTier: 'low', status: 'APPROVED' }),
+    )
+
+    const out = await executeAction({ ...opts, store }, 'fu')
+
+    expect(out.status).toBe('EXECUTED')
+    // Two writes for one logical transition: the first lost the compare-and-swap, the second won.
+    expect(attempts).toEqual(['WAITING', 'WAITING'])
+    const after = await opts.store.getLoop('user-1', 'loop-1')
+    expect(after?.status).toBe('WAITING')
+    expect(after?.dueAt).toBe('2026-09-21T00:00:00.000Z')
+    const trail = await opts.store.listAudit('user-1')
+    expect(trail.filter((e) => e.kind === 'state_changed')).toHaveLength(1)
+  })
+
+  it('leaves the loop alone, without failing the action, when it keeps losing the write', async () => {
+    const opts = await setup()
+    const before = await opts.store.getLoop('user-1', 'loop-1')
+    const { store, attempts } = ledgerWithRival(opts.store, 'loop-1', 3)
+    await opts.store.putAction(
+      action({ id: 'fu', type: 'follow_up', riskTier: 'low', status: 'APPROVED' }),
+    )
+    const lines: LogLine[] = []
+
+    const out = await executeAction({ ...opts, store, logger: (l) => lines.push(l) }, 'fu')
+
+    // The effect happened, so the action stays EXECUTED; only the status write is given up on.
+    expect(out.status).toBe('EXECUTED')
+    expect((await opts.store.getAction('user-1', 'fu'))?.status).toBe('EXECUTED')
+    expect(attempts).toHaveLength(3)
+    const after = await opts.store.getLoop('user-1', 'loop-1')
+    expect(after?.status).toBe(before?.status)
+    expect(after?.dueAt).toBe('2026-09-23T00:00:00.000Z')
+
+    const trail = await opts.store.listAudit('user-1')
+    expect(trail.some((e) => e.kind === 'state_changed')).toBe(false)
+    expect(trail.find((e) => e.kind === 'notification')?.reason).toContain('left alone')
+    expect(lines.find((l) => l.evt === 'transition_skipped')).toMatchObject({
+      reason: 'lost to concurrent writes',
+    })
   })
 })
 
