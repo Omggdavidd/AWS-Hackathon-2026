@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { AuditEvent, Evidence, LedgerStore, OpenLoop, ProposedAction } from '../src/index'
+import {
+  type AuditEvent,
+  type Evidence,
+  type LedgerStore,
+  type OpenLoop,
+  type ProposedAction,
+  StaleLoopWriteError,
+} from '../src/index'
 
 const now = '2026-09-10T13:00:00.000Z'
 
@@ -22,6 +29,12 @@ export function loop(overrides: Partial<OpenLoop> = {}): OpenLoop {
     updatedAt: now,
     ...overrides,
   }
+}
+
+async function mustGet(store: LedgerStore, loopId = 'loop-1'): Promise<OpenLoop> {
+  const found = await store.getLoop('user-1', loopId)
+  if (!found) throw new Error(`${loopId} is not in the store`)
+  return found
 }
 
 /** Every LedgerStore implementation runs this suite (ADR-0004). */
@@ -59,6 +72,66 @@ export function runStoreContract(name: string, make: () => Promise<LedgerStore>)
       await store.putLoop(loop())
       await store.putLoop(loop({ status: 'RESOLVED', resolvedAt: now }))
       expect((await store.listLoops('user-1'))[0]?.status).toBe('RESOLVED')
+    })
+
+    it('advances the version on a compare-and-swap write and refuses a stale one', async () => {
+      const store = await make()
+      const created = await store.putLoop(loop(), { ifUnchanged: true })
+      expect(created.version).toBe(1)
+      expect(await store.getLoop('user-1', 'loop-1')).toMatchObject({ version: 1 })
+
+      // Both writers work from the same read; the second one has to lose.
+      const read = await mustGet(store)
+      expect(
+        await store.putLoop({ ...read, title: 'Winner' }, { ifUnchanged: true }),
+      ).toMatchObject({ version: 2 })
+      await expect(
+        store.putLoop({ ...read, title: 'Loser' }, { ifUnchanged: true }),
+      ).rejects.toBeInstanceOf(StaleLoopWriteError)
+      expect(await store.getLoop('user-1', 'loop-1')).toMatchObject({ title: 'Winner', version: 2 })
+
+      // Re-reading is the whole retry: the same change lands on top of the winner.
+      const retried = await store.putLoop(
+        { ...(await mustGet(store)), title: 'Loser' },
+        {
+          ifUnchanged: true,
+        },
+      )
+      expect(retried).toMatchObject({ title: 'Loser', version: 3 })
+      expect(await store.getLoop('user-1', 'loop-1')).toMatchObject({ title: 'Loser', version: 3 })
+    })
+
+    it('lets exactly one of two writers fired at once from the same read win', async () => {
+      const store = await make()
+      await store.putLoop(loop(), { ifUnchanged: true })
+      const read = await mustGet(store)
+      const both = await Promise.allSettled([
+        store.putLoop({ ...read, title: 'writer A' }, { ifUnchanged: true }),
+        store.putLoop({ ...read, title: 'writer B' }, { ifUnchanged: true }),
+      ])
+      expect(both.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+      const rejected = both.find((r) => r.status === 'rejected')
+      expect(rejected?.status === 'rejected' && rejected.reason).toBeInstanceOf(StaleLoopWriteError)
+      expect(await store.getLoop('user-1', 'loop-1')).toMatchObject({ version: 2 })
+    })
+
+    it('claims a loop stored without a version exactly once', async () => {
+      const store = await make()
+      // What every row written before ADR-0014 looks like, and what a blind putLoop still leaves.
+      await store.putLoop(loop())
+      const read = await mustGet(store)
+      expect(read.version).toBeUndefined()
+
+      expect(
+        await store.putLoop({ ...read, title: 'Claimed' }, { ifUnchanged: true }),
+      ).toMatchObject({ version: 1 })
+      await expect(
+        store.putLoop({ ...read, title: 'Also claimed' }, { ifUnchanged: true }),
+      ).rejects.toBeInstanceOf(StaleLoopWriteError)
+      expect(await store.getLoop('user-1', 'loop-1')).toMatchObject({
+        title: 'Claimed',
+        version: 1,
+      })
     })
 
     it('appends and lists evidence per loop in observed order', async () => {
