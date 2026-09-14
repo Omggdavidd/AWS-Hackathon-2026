@@ -17,9 +17,9 @@ Neither of those is a data-protection problem, because there is no real data and
 
 ## The real exposure: unauthenticated spend
 
-`POST /api/scan`, `/api/handle` and `/api/catch-up` each invoke the deployed AgentCore runtime, which spends real Bedrock tokens. A full scan is four to five and a half minutes of Claude Sonnet 4.6. The account is **self-funded with no credits left** (`STATUS.md` *Blocked*), so this is somebody's money.
+`POST /api/scan`, `/api/handle` and `/api/catch-up` each invoke the deployed AgentCore runtime, which spends real Bedrock tokens. A full scan is about 95 to 105 seconds of Claude Sonnet 4.6 across three threads at a time. The account is **self-funded with no credits left** (`STATUS.md` *Blocked*), so this is somebody's money.
 
-Before this review, any script that could reach the URL could run those in a loop.
+Before this review, any script that could reach the URL could run those in a loop. The guard is live: a POST to any of the three without a matching `Origin` returns 403 from the deployment, checked 2026-09-13.
 
 **Mitigated:** every route handler that invokes the runtime (`/api/scan`, `/api/handle`, `/api/catch-up` today) now rejects any request that did not come from the app's own origin (`web/lib/same-origin.ts`). Browsers always send `Origin` on a POST, so the app works unchanged; `curl` and most bots send nothing and get a 403. This also closes the CSRF hole — before it, any page a teammate visited could have fired a scan from their browser. Next's Server Actions check `Origin` against `Host` only when an `Origin` header is present; a handcrafted POST with no `Origin` is let through with a logged warning (`action-handler.js` in Next 16). So the server actions that reach the runtime or the table are **not** covered by this guard: `approveAction` in `web/app/actions.ts` spends Bedrock through `execute`, and `resetDemo` wipes the demo user's rows. Action ids are in the public HTML. Adding `isSameOrigin` at the top of both is the follow-up; it was not done here because the buttons were not re-tested in a browser after that change.
 
