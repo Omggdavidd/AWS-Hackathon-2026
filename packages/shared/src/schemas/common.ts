@@ -25,7 +25,7 @@ export const SourceRef = z.object({
 export type SourceRef = z.infer<typeof SourceRef>
 
 export const Money = z.object({
-  value: z.number(),
+  value: z.number().min(0),
   currency: z.string().length(3).default('USD'),
 })
 export type Money = z.infer<typeof Money>
