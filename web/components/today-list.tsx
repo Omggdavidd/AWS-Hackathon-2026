@@ -78,7 +78,7 @@ export function TodayList({
 }: {
   loops: OpenLoop[]
   now: Date
-  selected?: string
+  selected?: string | undefined
 }) {
   const groups = groupByTime(loops, now)
   if (loops.length === 0) {

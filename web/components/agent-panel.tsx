@@ -99,8 +99,8 @@ export function AgentPanel({
   name = 'Your agent',
 }: {
   configured: boolean
-  checked?: string
-  name?: string
+  checked?: string | undefined
+  name?: string | undefined
 }) {
   const router = useRouter()
   const [running, setRunning] = useState<Op>()

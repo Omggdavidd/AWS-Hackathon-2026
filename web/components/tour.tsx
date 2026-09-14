@@ -67,7 +67,7 @@ export function Tour() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: finish and steps are stable for the life of the tour.
   useLayoutEffect(() => {
-    if (done) return
+    if (done || !step) return
     const el = findTarget(step.target)
     if (!el) {
       if (index < steps.length - 1) setIndex(index + 1)
@@ -86,7 +86,7 @@ export function Tour() {
       window.removeEventListener('resize', measure)
       window.removeEventListener('scroll', measure, true)
     }
-  }, [index, done, step.target])
+  }, [index, done, step?.target])
 
   useEffect(() => {
     card.current?.querySelector<HTMLButtonElement>('button[data-next]')?.focus()
@@ -115,7 +115,7 @@ export function Tour() {
     if (index > 0) setIndex(index - 1)
   }
 
-  if (done || !box) return null
+  if (done || !box || !step) return null
   const below = box.top + box.height + GAP + 180 < window.innerHeight
   const cardTop = below ? box.top + box.height + GAP : Math.max(12, box.top - GAP - 180)
   const cardLeft = Math.max(12, Math.min(box.left, window.innerWidth - CARD_WIDTH - 12))

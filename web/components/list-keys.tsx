@@ -25,6 +25,7 @@ export function ListKeys() {
       const current = all.findIndex((row) => row.contains(document.activeElement))
       const focusRow = (index: number) => {
         const row = all[Math.max(0, Math.min(all.length - 1, index))]
+        if (!row) return
         row.tabIndex = -1
         row.focus({ preventScroll: false })
         row.scrollIntoView({ block: 'nearest' })
@@ -47,7 +48,7 @@ export function ListKeys() {
         case 'Enter':
           if (current >= 0 && target?.classList.contains('tl-row')) {
             event.preventDefault()
-            all[current].querySelector<HTMLAnchorElement>('.tl-title')?.click()
+            all[current]?.querySelector<HTMLAnchorElement>('.tl-title')?.click()
           }
           break
         default:

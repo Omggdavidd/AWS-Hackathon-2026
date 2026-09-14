@@ -37,12 +37,12 @@ export function SwipeRow({
   status: LoopStatus
   closed: boolean
   openHref: string
-  sourceHref?: string
+  sourceHref?: string | undefined
   className: string
   /** Position in the list, for the stagger when several rows land together. */
   index?: number
   children: React.ReactNode
-} & Record<`data-${string}`, string | undefined> & { 'aria-current'?: 'true' }) {
+} & Record<`data-${string}`, string | undefined> & { 'aria-current'?: 'true' | undefined }) {
   const row = useRef<HTMLLIElement>(null)
   const start = useRef<{ x: number; y: number; id: number } | null>(null)
   const wheel = useRef({ x: 0, timer: undefined as ReturnType<typeof setTimeout> | undefined })
