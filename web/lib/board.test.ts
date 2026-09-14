@@ -23,7 +23,7 @@ describe('whiteboard layout', () => {
       x: 1,
       y: 2,
     })
-    expect(restorePositions('{"needs":{"x":1,"y":2,"h":99999}}', defaults).needs.h).toBe(2400)
+    expect(restorePositions('{"needs":{"x":1,"y":2,"h":99999}}', defaults).needs?.h).toBe(2400)
   })
   it('fits a moved board, including negative positions, within the viewport', () => {
     const bounds = { x: -500, y: -200, width: 1400, height: 700 }
