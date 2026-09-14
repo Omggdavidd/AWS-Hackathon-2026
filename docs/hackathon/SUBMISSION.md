@@ -29,8 +29,8 @@ Living checklist for the Agents for Humans hackathon submission. Detail and rati
 - [ ] Demo video, 5 minutes maximum, showing the working project, hosted public on YouTube or Vimeo, visibility verified
 - [ ] Pitch in the video covers the problem, who it is for and why it matters
 - [x] Testing access or instructions; credentials if any site is private (the deployed app is public and needs none; `README.md` carries both the no-AWS local run and the full setup)
-- [x] Project uses Strands Agents meaningfully and runs on AWS (verified 2026-09-14: `@strands-agents/sdk` across five files — seven specialist roles as structured-output Agents and four custom tools; deployed to AgentCore Runtime `AgentCore-OpenLoop-default` in `us-east-1` on Bedrock)
-- [x] No secrets or credentials anywhere in the repo history (audited 2026-09-14 across all 235 commits: no AWS access keys, private keys or tokens, and no `.env`, `.pem`, `.key` or credentials file was ever added — only `.env.example`. `gitleaks` also runs on every push and pull request)
+- [x] Project uses Strands Agents meaningfully and runs on AWS (verified 2026-09-14: `@strands-agents/sdk` across five files — seven specialist roles as structured-output Agents and five custom tools; deployed to AgentCore Runtime `AgentCore-OpenLoop-default` in `us-east-1` on Bedrock)
+- [x] No secrets or credentials anywhere in the repo history (audited 2026-09-14 across the entire history — no commit count stated, because it moves hourly: no AWS or Google keys, session or refresh tokens, private keys, and no `.env`, `.pem`, `.p12`, `.key` or credentials file was ever added, only `.env.example`. Re-run it with the two commands in the PR that ticked this. `gitleaks` also runs on every push and pull request, but it guards new commits rather than certifying old ones, which is why this was done by hand)
 - [x] Disclosure of any pre-existing code incorporated (`README.md` *Originality*)
 
 ## Optional boosters
