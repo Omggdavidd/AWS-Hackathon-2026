@@ -2658,8 +2658,8 @@ body:has(.welcome) .bottom-tabs {
   height: 16px;
 }
 .welcome-form {
-  margin-top: 30px;
-  padding-top: 24px;
+  margin-top: 24px;
+  padding-top: 20px;
   border-top: 1px solid var(--border);
 }
 .welcome-form label {
@@ -2695,6 +2695,131 @@ body:has(.welcome) .bottom-tabs {
   min-height: 42px;
   padding-inline: 18px;
   font-size: 15px;
+}
+
+.welcome-field + .welcome-field {
+  margin-top: 16px;
+}
+.welcome-field legend {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+.welcome-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.welcome-form .welcome-choice,
+.setting-choices .welcome-choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  cursor: pointer;
+}
+.welcome-choice input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.welcome-choice-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.welcome-choice-hint {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.welcome-choice:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.welcome-choice:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.welcome-choice.compact {
+  padding: 6px 10px;
+}
+.welcome-choice.compact .welcome-choice-label {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.setting-choices {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.setting-actions {
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+/* The inbox the agent reads, in the top bar: address, what it is for, and a dot for connected */
+.inbox-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--foreground);
+  text-decoration: none;
+}
+.inbox-chip:hover {
+  border-color: var(--accent);
+}
+.inbox-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--resolved);
+}
+.inbox-chip svg {
+  color: var(--muted);
+}
+.inbox-chip small {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 11px;
+  color: var(--muted);
+}
+.welcome-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.welcome-pair .welcome-field {
+  margin-top: 0;
+}
+@media (max-width: 600px) {
+  .welcome-pair {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 1023px) {
+  .inbox-address,
+  .inbox-chip small {
+    display: none;
+  }
+  .inbox-chip {
+    padding: 0 9px;
+  }
 }
 
 /* Tour: five stops over the real page */
