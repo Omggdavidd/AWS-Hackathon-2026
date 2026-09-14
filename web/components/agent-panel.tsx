@@ -1,6 +1,6 @@
 'use client'
 
-import { ScanSummary } from '@openloop/shared/schemas'
+import type { ScanSummary } from '@openloop/shared'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -410,13 +410,11 @@ function formatTime(at: Date): string {
   })
 }
 
+/** `/api/scan` has already put the summary through its schema, so the lines arrive as plain data. */
 function parseEvent(raw: string): ScanEvent | undefined {
   try {
     const first = JSON.parse(raw)
-    const event = (typeof first === 'string' ? JSON.parse(first) : first) as ScanEvent
-    if (event.type !== 'summary') return event
-    const summary = ScanSummary.safeParse(event.summary)
-    return summary.success ? { type: 'summary', summary: summary.data } : undefined
+    return typeof first === 'string' ? (JSON.parse(first) as ScanEvent) : (first as ScanEvent)
   } catch {
     return undefined
   }
