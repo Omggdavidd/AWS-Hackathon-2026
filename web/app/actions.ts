@@ -7,6 +7,7 @@ import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { invokeCommand, scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
+import { CEILING_MESSAGE, withinDailyCeiling } from '@/lib/ceiling'
 import { getStore, resetLedger, USER_ID } from '@/lib/ledger'
 import { type ParkKind, parkLoopByUser } from '@/lib/park'
 import {
@@ -77,6 +78,8 @@ export async function ignoreLoop(loopId: string): Promise<void> {
  */
 export async function approveAction(actionId: string): Promise<void> {
   await requireSameOrigin()
+  // Before the record moves, so a refusal leaves the approval to be made again rather than half done.
+  if (scanConfigured && !(await withinDailyCeiling())) throw new Error(CEILING_MESSAGE)
   const store = await getStore()
   const action = await store.getAction(USER_ID, actionId)
   if (action?.status !== 'PROPOSED') return
