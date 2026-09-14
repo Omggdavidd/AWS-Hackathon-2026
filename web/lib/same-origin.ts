@@ -21,6 +21,7 @@ export function isSameOrigin(headers: Headers, url: string): boolean {
 
   // Behind Vercel the Host header is the deployment host, which is not always the host the browser
   // typed; x-forwarded-host is. Accept either, plus the URL the handler itself was reached on.
+  // Safety rests on the proxy overwriting this header: Vercel does, a bare `next start` does not.
   const allowed = new Set(
     [headers.get('x-forwarded-host'), headers.get('host'), safeHost(url)].filter((h): h is string =>
       Boolean(h),
