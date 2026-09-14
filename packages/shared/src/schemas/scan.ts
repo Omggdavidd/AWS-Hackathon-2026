@@ -1,10 +1,12 @@
 import { z } from 'zod'
 
 /**
- * What a scan reports when it finishes, as the runtime sends it to the web app. `failed` counts
- * threads whose pipeline threw: the scan carries on, so a run can finish while the ledger is
- * missing what those threads held. A runtime that predates the count sends nothing, which reads
- * as none failed.
+ * What a scan reports when it finishes: the agent's return value and, as JSON over the runtime's
+ * event stream, what the web app reads. `failed` counts threads whose pipeline threw. The scan
+ * carries on, so the run can finish with the ledger missing what those threads held; a thread that
+ * threw after its loop reached the ledger is counted in both `created` and here, so `created` never
+ * reports fewer loops than a person can see. A runtime deployed before the count sends no `failed`,
+ * which reads as none.
  */
 export const ScanSummary = z.object({
   threads: z.number().int().nonnegative(),
