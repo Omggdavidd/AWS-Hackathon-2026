@@ -1446,74 +1446,36 @@ body::before {
 .hero-date {
   display: flex;
   align-items: baseline;
-  gap: 14px;
+  gap: 12px;
   color: var(--muted);
-  font-size: 13px;
-}
-/* The greeting island: one sentence in the middle of the day, edged in a neon glow of the chosen accent */
-.greeting-island {
-  --glow: color-mix(in srgb, var(--accent) 60%, transparent);
-  width: fit-content;
-  max-width: 100%;
-  margin: 18px auto 4px;
-  padding: 13px 28px;
-  border: 1px solid color-mix(in srgb, var(--accent) 70%, var(--card));
-  border-radius: 999px;
-  background: radial-gradient(
-    120% 160% at 50% 0%,
-    color-mix(in srgb, var(--accent) 10%, var(--card)),
-    var(--card) 70%
-  );
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent),
-    0 0 18px -2px var(--glow),
-    0 0 46px -10px var(--glow),
-    inset 0 0 14px -6px var(--glow);
-  text-align: center;
-  animation: island-glow 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-:root:is([data-theme="dark"], [data-theme="midnight"]) .greeting-island {
-  --glow: color-mix(in srgb, var(--accent) 75%, transparent);
-  background: radial-gradient(
-    120% 160% at 50% 0%,
-    color-mix(in srgb, var(--accent) 16%, var(--card)),
-    var(--card) 72%
-  );
-}
-.greeting-line {
-  margin: 0;
-  font-size: 19px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.35;
-  letter-spacing: -0.015em;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/*
+ * The greeting as a large title (Apple's Today and Summary, Google's Material display type): a
+ * heavy face at a size that reads before anything else, tracked in as Inter's own metrics ask at
+ * that size, and one quiet line of body type under it. Inter's optical size axis draws the title
+ * from its display cut, so it tightens without a second family.
+ */
+.hero-greeting {
+  margin-top: 8px;
+  font-size: clamp(1.875rem, 1.1rem + 1.6vw, 2.5rem);
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -0.024em;
   color: var(--foreground);
   text-wrap: balance;
 }
-.greeting-rest {
-  color: var(--accent);
-}
-@keyframes island-glow {
-  from {
-    opacity: 0;
-    transform: translateY(4px) scale(0.98);
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-@media (max-width: 767px) {
-  .greeting-island {
-    width: auto;
-    margin-top: 14px;
-    padding: 12px 18px;
-    border-radius: 18px;
-  }
-  .greeting-line {
-    font-size: 17px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .greeting-island {
-    animation: none;
-  }
+.hero-sub {
+  margin-top: 6px;
+  font-size: 17px;
+  line-height: 1.45;
+  letter-spacing: -0.012em;
+  color: var(--muted);
+  text-wrap: pretty;
 }
 .sr-only {
   position: absolute;
@@ -1529,14 +1491,11 @@ body::before {
 
 /* The day bar: the loops by state, one segment each, widest where there are most */
 .daybar {
-  padding: 6px 0 24px;
+  padding: 4px 0 32px;
 }
 .daybar-top {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
 }
 .daybar-empty {
   margin-top: 18px;
@@ -1547,7 +1506,25 @@ body::before {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 18px;
+  margin-top: 30px;
+}
+/* After the rules they adjust, so a phone's sizes win */
+@media (max-width: 767px) {
+  .daybar {
+    padding-bottom: 24px;
+  }
+  .hero-date {
+    gap: 2px 12px;
+  }
+  .hero-greeting {
+    font-size: 1.75rem;
+  }
+  .hero-sub {
+    font-size: 15.5px;
+  }
+  .daybar-track {
+    margin-top: 22px;
+  }
 }
 .daybar-seg {
   flex: var(--n, 1) 1 0;
@@ -1725,12 +1702,48 @@ body::before {
 }
 
 /* Agent panel: the four operations and one place for their results */
+/*
+ * The agent's panel is textured like fine sandpaper: a soft tonal gradient, lit faintly in the
+ * accent at the top left and settling darker toward the bottom right, under a fine grit that is
+ * denser and higher in contrast than the page grain. The grit sits beneath the content, so the
+ * buttons stay smooth cards on top of it.
+ */
 .agent-panel {
+  position: relative;
+  isolation: isolate;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--card);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 7%, var(--card)) 0%,
+    var(--card) 42%,
+    color-mix(in srgb, var(--foreground) 6%, var(--card)) 100%
+  );
   box-shadow: 0 1px 2px rgb(16 24 32 / 4%);
   overflow: hidden;
+}
+.agent-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='1.6' intercept='-0.3'/%3E%3CfeFuncG type='linear' slope='1.6' intercept='-0.3'/%3E%3CfeFuncB type='linear' slope='1.6' intercept='-0.3'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+  opacity: 0.28;
+  mix-blend-mode: multiply;
+}
+:root:is([data-theme="dark"], [data-theme="midnight"]) .agent-panel {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 10%, var(--card)) 0%,
+    var(--card) 45%,
+    color-mix(in srgb, black 22%, var(--card)) 100%
+  );
+}
+:root:is([data-theme="dark"], [data-theme="midnight"]) .agent-panel::before {
+  opacity: 0.15;
+  mix-blend-mode: screen;
 }
 .agent-head {
   display: flex;
