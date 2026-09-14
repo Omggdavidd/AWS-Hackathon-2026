@@ -12,7 +12,8 @@ import {
   type ProposedAction,
   RiskJudgment,
 } from '@openloop/shared'
-import { Agent, type Model } from '@strands-agents/sdk'
+import { Agent, type Model, type ToolList } from '@strands-agents/sdk'
+import type { z } from 'zod'
 import type { AskContext } from '../ask'
 import type { CatchUpDigest } from '../catch-up'
 import { renderThread } from '../render'
@@ -85,6 +86,16 @@ export interface SpecialistDeps {
   userId: string
 }
 
+/**
+ * Paths and issue codes only. These messages end up in CloudWatch and the model's output carries
+ * the user's mail, so the rejected value itself is never named.
+ */
+function describeIssues(error: z.ZodError): string {
+  return error.issues
+    .map((issue) => `${issue.path.join('.') || '(root)'} (${issue.code})`)
+    .join(', ')
+}
+
 export function createSpecialists({
   model,
   models,
@@ -92,100 +103,99 @@ export function createSpecialists({
   store,
   userId,
 }: SpecialistDeps): Specialists {
+  /** Every role is the same shape: one agent, one prompt, one schema. Generation config lives here. */
+  async function run<Schema extends z.ZodType>(
+    role: SpecialistRole,
+    systemPrompt: string,
+    schema: Schema,
+    prompt: string,
+    tools?: ToolList,
+  ): Promise<z.infer<Schema>> {
+    const agent = new Agent({
+      model: models?.[role] ?? model,
+      systemPrompt,
+      structuredOutputSchema: schema,
+      printer: false,
+      ...(tools ? { tools } : {}),
+    })
+    const result = await agent.invoke(prompt)
+    const parsed = schema.safeParse(result.structuredOutput)
+    if (!parsed.success) {
+      throw new Error(
+        `${role} returned output its schema rejected: ${describeIssues(parsed.error)}`,
+      )
+    }
+    return parsed.data
+  }
+
   return {
     async extract({ thread, now }) {
-      const agent = new Agent({
-        model: models?.extract ?? model,
-        systemPrompt: EXTRACTOR_PROMPT,
-        structuredOutputSchema: ExtractorOutput,
-        printer: false,
-      })
-      const result = await agent.invoke(`Today is ${now}.\n\nThread:\n${renderThread(thread)}`)
-      return ExtractorOutput.parse(result.structuredOutput)
+      return run(
+        'extract',
+        EXTRACTOR_PROMPT,
+        ExtractorOutput,
+        `Today is ${now}.\n\nThread:\n${renderThread(thread)}`,
+      )
     },
 
     async investigate({ candidate, thread, now }) {
-      const agent = new Agent({
-        model: models?.investigate ?? model,
-        systemPrompt: INVESTIGATOR_PROMPT,
-        tools: [...inboxTools(source), ...ledgerTools(store, userId)],
-        structuredOutputSchema: InvestigatorOutput,
-        printer: false,
-      })
-      const result = await agent.invoke(
+      return run(
+        'investigate',
+        INVESTIGATOR_PROMPT,
+        InvestigatorOutput,
         `Today is ${now}.\n\nCandidate responsibility:\n${JSON.stringify(candidate, null, 2)}\n\nOriginating thread:\n${renderThread(thread)}`,
+        [...inboxTools(source), ...ledgerTools(store, userId)],
       )
-      return InvestigatorOutput.parse(result.structuredOutput)
     },
 
     async update({ loop, existingEvidence, newMessages, thread, now }) {
-      const agent = new Agent({
-        model: models?.update ?? model,
-        systemPrompt: UPDATE_PROMPT,
-        tools: [...inboxTools(source), ...ledgerTools(store, userId)],
-        structuredOutputSchema: InvestigatorOutput,
-        printer: false,
-      })
       const known = existingEvidence
         .map((e) => `${e.sourceId} (${e.supports}): ${e.excerpt}`)
         .join('\n')
-      const result = await agent.invoke(
+      return run(
+        'update',
+        UPDATE_PROMPT,
+        InvestigatorOutput,
         `Today is ${now}.\n\nTracked responsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence already recorded:\n${known || '(none)'}\n\nNew messages in the thread:\n${renderThread(newMessages)}\n\nFull thread for context:\n${renderThread(thread)}`,
+        [...inboxTools(source), ...ledgerTools(store, userId)],
       )
-      return InvestigatorOutput.parse(result.structuredOutput)
     },
 
     async plan({ loop, evidence, action, thread, now }) {
-      const agent = new Agent({
-        model: models?.plan ?? model,
-        systemPrompt: ACTION_PROMPT,
-        structuredOutputSchema: ActionPlan,
-        printer: false,
-      })
-      const result = await agent.invoke(
+      return run(
+        'plan',
+        ACTION_PROMPT,
+        ActionPlan,
         `Today is ${now}. The user is Alex Rivera <alex.rivera@student.northgate.edu>.\n\nResponsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence:\n${JSON.stringify(evidence, null, 2)}\n\nProposed action:\n${JSON.stringify(action, null, 2)}\n\nThread:\n${renderThread(thread)}`,
       )
-      return ActionPlan.parse(result.structuredOutput)
     },
 
     async summarize({ digest, now }) {
-      const agent = new Agent({
-        model: models?.summarize ?? model,
-        systemPrompt: CATCH_UP_PROMPT,
-        structuredOutputSchema: CatchUpSummary,
-        printer: false,
-      })
-      const result = await agent.invoke(
+      return run(
+        'summarize',
+        CATCH_UP_PROMPT,
+        CatchUpSummary,
         `Now is ${now}. Digest since ${digest.since}:\n${JSON.stringify(digest, null, 2)}`,
       )
-      return CatchUpSummary.parse(result.structuredOutput)
     },
 
     async answer({ question, context, now }) {
-      const agent = new Agent({
-        model: models?.answer ?? model,
-        systemPrompt: ASK_PROMPT,
-        tools: [...ledgerTools(store, userId), loopEvidenceTool(store, userId)],
-        structuredOutputSchema: AskAnswer,
-        printer: false,
-      })
-      const result = await agent.invoke(
+      return run(
+        'answer',
+        ASK_PROMPT,
+        AskAnswer,
         `Now is ${now}.\n\nLedger:\n${JSON.stringify(context, null, 2)}\n\nQuestion:\n${question}`,
+        [...ledgerTools(store, userId), loopEvidenceTool(store, userId)],
       )
-      return AskAnswer.parse(result.structuredOutput)
     },
 
     async judge({ loop, evidence, now }) {
-      const agent = new Agent({
-        model: models?.judge ?? model,
-        systemPrompt: RISK_JUDGE_PROMPT,
-        structuredOutputSchema: RiskJudgment,
-        printer: false,
-      })
-      const result = await agent.invoke(
+      return run(
+        'judge',
+        RISK_JUDGE_PROMPT,
+        RiskJudgment,
         `Today is ${now}.\n\nResponsibility:\n${JSON.stringify(loop, null, 2)}\n\nEvidence:\n${JSON.stringify(evidence, null, 2)}`,
       )
-      return RiskJudgment.parse(result.structuredOutput)
     },
   }
 }
