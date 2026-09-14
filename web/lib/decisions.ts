@@ -1,10 +1,16 @@
-import type { LedgerStore, OpenLoop, ProposedAction } from '@openloop/shared'
+import { type LedgerStore, mayExecute, type OpenLoop, type ProposedAction } from '@openloop/shared'
 
 export type Decision = { action: ProposedAction; loop: OpenLoop | undefined }
 
-/** An action the agent will not take on its own: proposed, and either gated or high risk (ADR-0005). */
+/**
+ * An action the agent will not take on its own (ADR-0005). The rule is `mayExecute`, not a copy of
+ * it: the gate also refuses types no tier makes safe, so a low-risk `follow_up` that Handle pushes
+ * to "needs you" has to be askable here or it is handled by nothing and shown nowhere. The PROPOSED
+ * test comes first because `mayExecute` refuses executed, cancelled and failed actions too, and
+ * those are finished, not pending.
+ */
 export function needsDecision(action: ProposedAction): boolean {
-  return action.status === 'PROPOSED' && (action.requiresApproval || action.riskTier === 'high')
+  return action.status === 'PROPOSED' && !mayExecute(action).ok
 }
 
 /**

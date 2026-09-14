@@ -44,8 +44,22 @@ describe('needsDecision', () => {
   it('is true for a gated or high-risk proposal and false otherwise', () => {
     expect(needsDecision(action('a', { requiresApproval: true }))).toBe(true)
     expect(needsDecision(action('b', { riskTier: 'high' }))).toBe(true)
-    expect(needsDecision(action('c', {}))).toBe(false)
+    expect(needsDecision(action('c', { type: 'draft_email' }))).toBe(false)
     expect(needsDecision(action('d', { requiresApproval: true, status: 'APPROVED' }))).toBe(false)
+  })
+
+  it('asks the policy gate, so a type no tier makes safe is a decision', () => {
+    // A low-risk `pay` passes both of the old tests and is still refused by `mayExecute`, which
+    // reads the action type before the tier (#163): before this it fell through Handle into
+    // "needs you" and out of the Decisions list, so it was handled by nothing and shown nowhere.
+    expect(needsDecision(action('pay', { type: 'pay', riskTier: 'low' }))).toBe(true)
+    expect(needsDecision(action('se', { type: 'send_email', riskTier: 'low' }))).toBe(true)
+    expect(needsDecision(action('rm', { type: 'remind', riskTier: 'medium' }))).toBe(false)
+  })
+
+  it('is false once an action is finished: the gate refuses those too, but nobody is waiting', () => {
+    for (const status of ['EXECUTED', 'CANCELLED', 'FAILED'] as const)
+      expect(needsDecision(action(status, { type: 'follow_up', status }))).toBe(false)
   })
 })
 
@@ -57,7 +71,7 @@ describe('pendingDecisions', () => {
       action('old', { requiresApproval: true, createdAt: '2026-09-12T00:00:00.000Z' }),
     )
     await store.putAction(action('new', { riskTier: 'high' }))
-    await store.putAction(action('auto', {}))
+    await store.putAction(action('auto', { type: 'draft_email' }))
     const decisions = await pendingDecisions(store, 'u')
     expect(decisions.map((d) => d.action.id)).toEqual(['new', 'old'])
     expect(decisions[0]?.loop?.title).toBe('loop-a')

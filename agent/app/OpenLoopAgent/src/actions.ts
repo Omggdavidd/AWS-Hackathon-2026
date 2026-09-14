@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import {
+  type ActionPlan,
   type ActionSink,
   type AuditEvent,
   applyTransition,
@@ -8,9 +9,46 @@ import {
   type LedgerStore,
   mayExecute,
   type ProposedAction,
+  type ProposedActionType,
 } from '@openloop/shared'
 import type { Specialists } from './agents'
 import { elapsed, type Logger, noopLogger, timed } from './log'
+
+type EffectKind = ActionPlan['effect']['kind']
+
+/**
+ * What each approved action type is allowed to come back as. Nothing in the schemas binds a
+ * `ProposedAction.type` to an `ActionPlan.effect.kind`, so without this a `draft_email` the gate
+ * cleared can return a `send_email` effect and the sink posts mail the user never approved.
+ *
+ * Read from the Action Agent prompt: `send_email` is "the shape used for follow-ups", booking a
+ * slot with the other party is a reply, and `note` is what the model is told to use "when nothing
+ * external is needed" — so every type may under-do its effect with a note, and `pay` and
+ * `submit_form` have no effect of their own and can only ever be one. Kinds that are weaker than
+ * what was approved (a draft where a send was allowed) pass; kinds that do something else do not.
+ */
+const ALLOWED_EFFECTS: Record<ProposedActionType, ReadonlySet<EffectKind>> = {
+  draft_email: new Set(['draft_email', 'note']),
+  send_email: new Set(['send_email', 'draft_email', 'note']),
+  follow_up: new Set(['send_email', 'draft_email', 'note']),
+  create_calendar_event: new Set(['calendar_event', 'note']),
+  // "Reply to Riverside Dental choosing a slot": booking the other party's time is a mail first.
+  book_appointment: new Set(['calendar_event', 'send_email', 'draft_email', 'note']),
+  remind: new Set(['reminder', 'note']),
+  archive_thread: new Set(['archive_thread', 'note']),
+  pay: new Set(['note']),
+  submit_form: new Set(['note']),
+  // The escape hatch names no effect, so no kind can contradict it, and it never runs without a
+  // person (NEVER_AUTOMATIC in the shared gate).
+  other: new Set([
+    'draft_email',
+    'send_email',
+    'calendar_event',
+    'reminder',
+    'archive_thread',
+    'note',
+  ]),
+}
 
 export interface ExecuteOptions {
   store: LedgerStore
@@ -82,6 +120,12 @@ export async function executeAction(
       { evt: 'role', role: 'plan', actionId, ...(threadId ? { threadId } : {}) },
       () => specialists.plan({ loop, evidence, action, thread, now }),
     )
+    if (!ALLOWED_EFFECTS[action.type].has(plan.effect.kind))
+      // Thrown inside the try so it lands as a normal failure: FAILED, an action_failed audit and
+      // a reason a person can read. What was approved is what runs, or nothing does.
+      throw new Error(
+        `planned a ${plan.effect.kind} effect for a ${action.type} action; that is not what was approved`,
+      )
     const result = await timed(
       log,
       // The effect kind only: a draft_email effect carries the recipient, subject and body.
