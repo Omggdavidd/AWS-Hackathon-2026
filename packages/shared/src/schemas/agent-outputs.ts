@@ -88,14 +88,20 @@ export const ActionPlan = z.object({
       subject: z.string().max(200),
       body: z.string().max(4000),
     }),
-    z.object({
-      kind: z.literal('calendar_event'),
-      title: z.string().max(200),
-      start: IsoDateTime,
-      end: IsoDateTime,
-      location: z.string().max(200).optional(),
-      eventId: z.string().optional(),
-    }),
+    z
+      .object({
+        kind: z.literal('calendar_event'),
+        title: z.string().max(200),
+        start: IsoDateTime,
+        end: IsoDateTime,
+        location: z.string().max(200).optional(),
+        eventId: z.string().optional(),
+      })
+      // An event that ends before it starts is a model slip, not a booking a sink can make.
+      .refine((e) => Date.parse(e.end) >= Date.parse(e.start), {
+        message: 'end cannot precede start',
+        path: ['end'],
+      }),
     z.object({ kind: z.literal('reminder'), at: IsoDateTime, note: z.string().max(300) }),
     z.object({ kind: z.literal('archive_thread'), threadId: z.string() }),
     z.object({ kind: z.literal('note'), text: z.string().max(500) }),
