@@ -1,11 +1,14 @@
 import { invokeCommand, scanConfigured } from '@/lib/agent'
 import { USER_ID } from '@/lib/ledger'
+import { isSameOrigin } from '@/lib/same-origin'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
 /** Ask (SPEC §8G): one question answered from the ledger. The runtime only reads; nothing here executes. */
 export async function POST(request: Request): Promise<Response> {
+  if (!isSameOrigin(request.headers, request.url))
+    return Response.json({ error: 'cross-origin' }, { status: 403 })
   if (!scanConfigured) return Response.json({ error: 'not configured' }, { status: 503 })
   const body = (await request.json().catch(() => ({}))) as { question?: unknown }
   const question = typeof body.question === 'string' ? body.question.trim() : ''
