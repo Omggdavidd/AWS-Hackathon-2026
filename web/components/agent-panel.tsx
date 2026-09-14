@@ -1,5 +1,6 @@
 'use client'
 
+import type { RuntimeMode } from '@openloop/ledger-dynamo'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -97,10 +98,12 @@ export function AgentPanel({
   configured,
   checked,
   name = 'Your agent',
+  runtimeMode = 'open',
 }: {
   configured: boolean
   checked?: string | undefined
   name?: string | undefined
+  runtimeMode?: RuntimeMode
 }) {
   const router = useRouter()
   const [running, setRunning] = useState<Op>()
@@ -182,6 +185,7 @@ export function AgentPanel({
   }
 
   const ops: Op[] = ['catch_up', 'handle', 'delta', 'scan']
+  const paused = runtimeMode !== 'open'
   const busy = running !== undefined
 
   return (
@@ -202,6 +206,7 @@ export function AgentPanel({
                   ? `Last checked ${checked}`
                   : 'Has not checked yet'
                 : 'Sample loops. Connect the workspace to run it.'}
+              {paused && ' The agent is paused. Loops below are real results from the last scan.'}
             </p>
           </div>
         </div>
@@ -211,11 +216,17 @@ export function AgentPanel({
               <button
                 type="button"
                 onClick={() => run(op)}
-                disabled={!configured || busy}
+                disabled={!configured || busy || paused}
                 aria-busy={running === op || undefined}
                 aria-describedby={`agent-op-${op}`}
                 data-primary={op === 'scan' || undefined}
-                title={configured ? undefined : 'Available when the workspace is connected'}
+                title={
+                  paused
+                    ? 'The agent is paused in Settings'
+                    : configured
+                      ? undefined
+                      : 'Available when the workspace is connected'
+                }
               >
                 <span className="agent-op-icon">
                   <StateIcon name={ICON[op]} />

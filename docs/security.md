@@ -33,6 +33,15 @@ Before this review, any script that could reach the URL could run those in a loo
    - **It is per deployment, not per IP.** There is no principal to count against, so one caller can spend the day's allowance and everyone else gets a refusal until midnight UTC. That turns unbounded spend into a denial of service against ourselves, which is the better of the two and still not good.
    - **It bounds runaway spend; it does not enforce the budget.** 500 invocations at the price of a scan is roughly $250 against a $60 alert. It stops a runaway script, not the bill. And nothing has yet read a `RATE#` row back from the deployment: if `openloop-web` could not `UpdateItem`, the ceiling would fail open on every request with no symptom. Confirm a `PK = RATE#<today>` row exists after the app has been used before trusting it.
 
+3. **A deliberate runtime lock.** `CONFIG / RUNTIME_LOCK` has three states: `open`,
+   `demo`, and `locked`. The last two keep the ledger and every evidence page readable but stop
+   before command dispatch in `agent/app/OpenLoopAgent/main.ts`, so a caller that bypasses the web
+   UI still cannot reach a model. `OPENLOOP_LOCK_DEFAULT` is the safety floor and a table row may
+   only tighten it; a failed read falls back to the floor. Reads are cached for ten seconds.
+   Anyone with the public URL may pause the agent. Resuming `open` requires
+   `OPENLOOP_UNLOCK_KEY`, compared server-side in constant time and never stored in the client or
+   table.
+
 ## Response headers
 
 `web/next.config.ts` now sends `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` and a `Permissions-Policy` denying camera, microphone, geolocation and payment. Vercel already sends HSTS with a two-year max-age and preload.

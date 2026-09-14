@@ -3,6 +3,7 @@ import { renameAgent, updateProfile } from '@/app/actions'
 import { AppearanceControls } from '@/components/appearance-menu'
 import { NotificationSetting } from '@/components/notification-setting'
 import { ResetDemo } from '@/components/reset-demo'
+import { RuntimeLockControl } from '@/components/runtime-lock-control'
 import { SubmitButton } from '@/components/submit-button'
 import { AGENT_COOKIE, cleanAgentName, NAME_MAX } from '@/lib/agent-name'
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/lib/appearance'
 import { LEDGER_TABLE } from '@/lib/ledger'
 import { EMAIL_MAX, PURPOSES, purposeLabel, readProfile } from '@/lib/profile'
+import { readRuntimeMode } from '@/lib/runtime-lock'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +28,7 @@ export default async function SettingsPage() {
   const density = parseDensity(jar.get(DENSITY_COOKIE)?.value)
   const home = parseHome(jar.get(HOME_COOKIE)?.value)
   const profile = readProfile(jar)
+  const runtimeMode = await readRuntimeMode()
   return (
     <div className="page-column settings">
       <header className="page-head">
@@ -177,6 +180,11 @@ export default async function SettingsPage() {
           </div>
           <span className="setting-state">Simulated</span>
         </div>
+      </section>
+
+      <section className="setting-section" aria-labelledby="s-runtime">
+        <h2 id="s-runtime">Runtime</h2>
+        <RuntimeLockControl mode={runtimeMode} />
       </section>
 
       <section className="setting-section" aria-labelledby="s-demo">

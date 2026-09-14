@@ -5,6 +5,7 @@ import {
   InvokeAgentRuntimeCommand,
 } from '@aws-sdk/client-bedrock-agentcore'
 import { LEDGER_TABLE } from './ledger'
+import { requireRuntimeOpen } from './runtime-lock'
 
 /** Deployed AgentCore runtime (ADR-0008). Both values must be set for the Scan button to work. */
 export const RUNTIME_ARN = process.env.OPENLOOP_RUNTIME_ARN
@@ -34,6 +35,7 @@ export async function invokeScan(
 ): Promise<ReadableStream<Uint8Array>> {
   if (!RUNTIME_ARN || !LEDGER_TABLE)
     throw new Error('OPENLOOP_RUNTIME_ARN and OPENLOOP_LEDGER_TABLE must be set')
+  await requireRuntimeOpen()
   const res = await getClient().send(
     new InvokeAgentRuntimeCommand({
       agentRuntimeArn: RUNTIME_ARN,
@@ -66,6 +68,7 @@ export async function invokeCommand(
 ): Promise<Record<string, unknown>> {
   if (!RUNTIME_ARN || !LEDGER_TABLE)
     throw new Error('OPENLOOP_RUNTIME_ARN and OPENLOOP_LEDGER_TABLE must be set')
+  await requireRuntimeOpen()
   const res = await getClient().send(
     new InvokeAgentRuntimeCommand({
       agentRuntimeArn: RUNTIME_ARN,

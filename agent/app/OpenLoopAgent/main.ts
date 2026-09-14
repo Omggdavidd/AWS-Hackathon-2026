@@ -1,6 +1,6 @@
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { DynamoLedgerStore } from '@openloop/ledger-dynamo'
+import { DynamoLedgerStore, getRuntimeMode, parseRuntimeMode } from '@openloop/ledger-dynamo'
 import {
   FixtureActionSink,
   FixtureSource,
@@ -73,6 +73,27 @@ const app = new BedrockAgentCoreApp({
   invocationHandler: {
     requestSchema,
     async *process(payload) {
+      // Every command crosses this point before a model or specialist is created. The UI mirrors
+      // the state for clarity, but this runtime check is the enforcement boundary for every caller.
+      const lockDefault = parseRuntimeMode(process.env.OPENLOOP_LOCK_DEFAULT)
+      const runtimeMode =
+        payload.ledger.kind === 'dynamo'
+          ? await getRuntimeMode({
+              tableName: payload.ledger.table,
+              defaultMode: lockDefault,
+            })
+          : lockDefault
+      if (runtimeMode !== 'open') {
+        yield {
+          data: JSON.stringify({
+            type: 'paused',
+            mode: runtimeMode,
+            message: 'The agent is paused. Loops below are real results from the last scan.',
+          }),
+        }
+        return
+      }
+
       /**
        * Opened on first read, once. `catch_up` and `ask` read no mail, so on those commands —
        * including the 07:00 daily catch-up — nothing here runs and the bundled demo inbox is never

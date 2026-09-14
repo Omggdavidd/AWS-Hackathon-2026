@@ -1,6 +1,6 @@
 'use server'
 
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto'
 import type { LoopStatus } from '@openloop/shared'
 import { revalidatePath } from 'next/cache'
 import { cookies, headers } from 'next/headers'
@@ -20,6 +20,7 @@ import {
 } from '@/lib/profile'
 import { resolveLoopByUser } from '@/lib/resolve'
 import { restoreLoopByUser } from '@/lib/restore'
+import { readRuntimeMode, writeRuntimeMode } from '@/lib/runtime-lock'
 import { isSameOrigin } from '@/lib/same-origin'
 
 /**
@@ -200,4 +201,30 @@ export async function resetDemo(): Promise<string> {
   const result = await resetLedger(USER_ID)
   revalidatePath('/', 'layout')
   return result
+}
+
+/**
+ * Anyone may make the deployment stricter. Re-enabling model calls requires the server-held key;
+ * hashing both values before timingSafeEqual keeps length and contents out of the comparison path.
+ */
+export async function setRuntimeMode(form: FormData): Promise<void> {
+  await requireSameOrigin()
+  const requested = form.get('mode')
+  if (requested !== 'open' && requested !== 'demo' && requested !== 'locked') return
+
+  if (requested === 'open') {
+    const supplied = form.get('key')
+    const expected = process.env.OPENLOOP_UNLOCK_KEY
+    if (typeof supplied !== 'string' || !expected || !sameSecret(supplied, expected))
+      throw new Error('The unlock key is required to resume model calls')
+  }
+
+  // Read first so an unchanged click avoids a write; the environment floor still wins after it.
+  if ((await readRuntimeMode()) !== requested) await writeRuntimeMode(requested)
+  revalidatePath('/', 'layout')
+}
+
+function sameSecret(supplied: string, expected: string): boolean {
+  const digest = (value: string) => createHash('sha256').update(value).digest()
+  return timingSafeEqual(digest(supplied), digest(expected))
 }
