@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { Decision } from '@/lib/decisions'
+import { type Decision, decisionHref } from '@/lib/decisions'
 
 const SHOWN = 3
 
@@ -22,7 +22,7 @@ export function DecisionStrip({ decisions }: { decisions: Decision[] }) {
               <p className="strip-summary">{action.summary}</p>
               {loop && <p className="strip-loop">{loop.title}</p>}
             </div>
-            <Link href={`/decisions?action=${action.id}`} className="decision-review">
+            <Link href={decisionHref(action.id, { from: 'today' })} className="decision-review">
               Review
             </Link>
           </li>

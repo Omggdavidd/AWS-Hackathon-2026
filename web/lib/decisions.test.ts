@@ -1,6 +1,13 @@
 import { LocalLedgerStore, type OpenLoop, type ProposedAction } from '@openloop/shared'
 import { describe, expect, it } from 'vitest'
-import { describeProposal, needsDecision, pendingDecisions } from './decisions'
+import {
+  decisionBack,
+  decisionHref,
+  describeProposal,
+  needsDecision,
+  pendingDecisions,
+  readDecisionOrigin,
+} from './decisions'
 
 const now = '2026-09-13T12:00:00.000Z'
 
@@ -119,5 +126,29 @@ describe('describeProposal', () => {
     )
     expect(p).toEqual({ kind: 'fields', fields: [{ label: 'After', value: '2026-09-11' }] })
     expect(describeProposal(action('e', { type: 'other', payload: {} }))).toBeUndefined()
+  })
+})
+
+describe('decision origin', () => {
+  it('sends Back from a Review opened on a responsibility to that responsibility in its list', () => {
+    const href = decisionHref('act-1', { from: 'loop', loopId: 'loop-insurance' })
+    expect(href).toBe('/decisions?action=act-1&loop=loop-insurance')
+    const origin = readDecisionOrigin(Object.fromEntries(new URL(href, 'http://x').searchParams))
+    expect(decisionBack(origin)).toEqual({
+      href: '/?loop=loop-insurance',
+      label: 'Back to responsibilities',
+    })
+  })
+
+  it('sends Back from Today to the list, and from Decisions to Decisions', () => {
+    expect(decisionHref('act-1', { from: 'today' })).toBe('/decisions?action=act-1&from=today')
+    expect(decisionBack(readDecisionOrigin({ from: 'today' })).href).toBe('/?view=list')
+    expect(decisionHref('act-1', { from: 'decisions' })).toBe('/decisions?action=act-1')
+    expect(decisionBack(readDecisionOrigin({})).href).toBe('/decisions')
+  })
+
+  it('ignores a loop id that is not a plain id instead of linking to it', () => {
+    for (const loop of ['javascript:alert(1)//x y', '../x/y', ['loop-a'], ''])
+      expect(readDecisionOrigin({ loop })).toEqual({ from: 'decisions' })
   })
 })

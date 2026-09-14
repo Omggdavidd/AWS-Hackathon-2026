@@ -29,10 +29,11 @@ const SEGMENTS: Segment[] = [
 ]
 
 /**
- * The top of a day: the date and clock, a greeting, and the day's loops as one bar, a segment per
- * state, widest where there are most (SPEC §8A). The number under each segment is the headline;
- * what needs you is first and heaviest, what is closed trails off. The full sentence is kept for
- * screen readers. Each segment jumps to its part of the list.
+ * The top of a day: the date and clock, then the greeting as one sentence on an island in the
+ * middle, lit in the accent the person chose in Appearance, then the day's loops as one bar, a
+ * segment per state, widest where there are most (SPEC §8A). What needs you is first and heaviest,
+ * what is closed trails off. The counts as a sentence are kept for screen readers, since the bar
+ * is hidden from them. Each segment jumps to its part of the list.
  */
 export function Headline({
   groups,
@@ -69,13 +70,16 @@ export function Headline({
           </span>
           <LiveClock timeZone={DEMO_TIME_ZONE} />
         </p>
-        <p className="hero-greeting">
-          {greeting}, {name}.
-        </p>
       </div>
-      <h1 id="headline" className="sr-only">
-        {summarize(groups)}
-      </h1>
+      <div className="greeting-island">
+        <h1 id="headline" className="greeting-line">
+          {greeting}, {name}.{' '}
+          <span className="greeting-rest">
+            {total === 0 ? 'Nothing needs you yet.' : 'Here’s everything that needs you so far.'}
+          </span>
+        </h1>
+        <p className="sr-only">{summarize(groups)}</p>
+      </div>
       {total === 0 ? (
         <p className="daybar-empty">Nothing tracked yet. Scan the inbox to find what is open.</p>
       ) : (

@@ -23,7 +23,7 @@ export const STATUS_LABEL: Record<LoopStatus, string> = {
   UNCERTAIN: 'Uncertain',
 }
 
-const PRIORITY_RANK: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3 }
+export const PRIORITY_RANK: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3 }
 
 /** Needs-you first, then by priority, then by due date. Deterministic for the demo. */
 export function sortLoops(loops: OpenLoop[]): OpenLoop[] {

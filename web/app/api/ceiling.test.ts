@@ -30,6 +30,7 @@ vi.mock('@/lib/ledger', () => ({
   USER_ID: 'user-alex',
   LEDGER_TABLE: 'openloop-ledger-test',
   getStore: async () => ({ getAction: async () => undefined }),
+  loadLoops: async () => [],
 }))
 
 vi.mock('next/headers', () => ({
@@ -78,7 +79,14 @@ function ask(): Request {
 beforeEach(() => {
   aws.send.mockReset()
   agent.invokeScan.mockReset().mockResolvedValue(new ReadableStream())
-  agent.invokeCommand.mockReset().mockResolvedValue({ ok: true })
+  // Catch-up parses what the runtime returns, so its reply has to be a real (empty) digest.
+  agent.invokeCommand
+    .mockReset()
+    .mockImplementation(async (_user: string, body: { command: string }) =>
+      body.command === 'catch_up'
+        ? { headline: 'Quiet.', items: [], nothingElse: true }
+        : { ok: true },
+    )
 })
 
 afterEach(() => {

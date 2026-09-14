@@ -35,6 +35,7 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 
 ## Recently completed
 
+- 2026-09-14 Five fixes from walking the app: a swipe holds where it is held and stays open on its button when let go part of the way, and a move that lands no longer slides the row back; arrow keys move the focus without opening the loop, Enter opens it; Back from a decision reached through Review returns to the responsibility and its list rather than to Decisions, and a proposal the agent may do alone no longer says it "did not complete"; Today and Calendar open on a greeting island lit in the chosen accent; Catch me up is grouped by urgency (`lib/catch-up.ts`) (#205).
 - 2026-09-13 Calibration harness defaults to one representative subset run, retains full-demo verification and fails on disagreement (#153).
 - 2026-09-14 `book_appointment` joins the type floor in `isAutoExecutable`: booking a paid service never executes unattended whatever tier the Risk Judge assigned, which is what ADR-0005's tier table already said. Approval still runs it. The seeded demo is unchanged because the dentist action already required approval; a freshly scanned live table gains one Decisions card (#199, ab00bae, closes #169).
 - 2026-09-14 The scan no longer loses work silently: one bad thread is caught and counted rather than aborting the run, a loop row appears only once its evidence is there, and a run that lost threads exits non-zero instead of printing a tidy summary (#175, Ojulari123).

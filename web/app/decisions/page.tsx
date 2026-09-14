@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { DecisionSheet } from '@/components/decision-sheet'
+import { decisionBack, decisionHref, readDecisionOrigin } from '@/lib/decisions'
 import { formatDue, formatMoney } from '@/lib/format'
 import { loadDecisions, USER_ID } from '@/lib/ledger'
 
@@ -11,8 +12,12 @@ export const dynamic = 'force-dynamic'
  * Today; a sheet over the list on a phone.
  */
 export default async function DecisionsPage({ searchParams }: PageProps<'/decisions'>) {
-  const { action: raw } = await searchParams
+  const params = await searchParams
+  const raw = params.action
   const selected = typeof raw === 'string' && raw ? raw : undefined
+  // Kept on every Review link here, so moving between decisions never loses the way back.
+  const origin = readDecisionOrigin(params)
+  const back = decisionBack(origin)
   const decisions = await loadDecisions(USER_ID)
   const now = new Date()
   const n = decisions.length
@@ -62,7 +67,7 @@ export default async function DecisionsPage({ searchParams }: PageProps<'/decisi
                     </p>
                   </div>
                   <Link
-                    href={`/decisions?action=${action.id}`}
+                    href={decisionHref(action.id, origin)}
                     className="decision-review"
                     scroll={false}
                   >
@@ -78,8 +83,8 @@ export default async function DecisionsPage({ searchParams }: PageProps<'/decisi
         <aside className="pane" aria-label="Decision">
           <div className="pane-inner">
             <div className="pane-bar">
-              <Link href="/decisions" className="pane-close" scroll={false}>
-                ← Back to the list
+              <Link href={back.href} className="pane-close" scroll={false}>
+                ← {back.label}
               </Link>
             </div>
             <DecisionSheet actionId={selected} />
