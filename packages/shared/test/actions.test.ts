@@ -24,10 +24,10 @@ describe('action policy (ADR-0005)', () => {
     ).toBe(false)
   })
 
-  // The Risk Judge assigns the tier, so the tier is model output. These four types must not be
+  // The Risk Judge assigns the tier, so the tier is model output. These five types must not be
   // reachable without a person no matter what it assigns (#163): a `pay` rated `low` used to
   // auto-execute, because the low branch returned before the type was ever looked at.
-  it.each(['send_email', 'pay', 'submit_form', 'other'] as const)(
+  it.each(['send_email', 'pay', 'submit_form', 'other', 'book_appointment'] as const)(
     'never auto-executes %s, at any tier',
     (type) => {
       for (const riskTier of ['low', 'medium', 'high'] as const) {

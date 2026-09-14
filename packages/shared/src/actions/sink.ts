@@ -15,20 +15,23 @@ export interface ActionSink {
  * money moving: a `pay` rated `low` would otherwise run unattended. `other` is here because an effect
  * nothing recognises is exactly the one not to carry out on a guess.
  */
-const NEVER_AUTOMATIC: ProposedActionType[] = ['send_email', 'pay', 'submit_form', 'other']
+const NEVER_AUTOMATIC: ProposedActionType[] = [
+  'send_email',
+  'pay',
+  'submit_form',
+  'other',
+  // ADR-0005 puts "book a paid service" under High and "suggest slots" under Medium. The type
+  // says book, so it is the booking (#173). Proposing a time is what the demo's dentist action
+  // actually does, and that is a `remind` or a draft, not this.
+  'book_appointment',
+]
 
 /** Effects a sink can carry out without a person: everything except sending mail or paying (SPEC §12). */
 export function isAutoExecutable(action: ProposedAction): boolean {
   if (NEVER_AUTOMATIC.includes(action.type)) return false
   if (action.riskTier === 'high') return false
   if (action.riskTier === 'low') return true
-  return [
-    'draft_email',
-    'create_calendar_event',
-    'remind',
-    'follow_up',
-    'book_appointment',
-  ].includes(action.type)
+  return ['draft_email', 'create_calendar_event', 'remind', 'follow_up'].includes(action.type)
 }
 
 /** Policy gate applied by the orchestrator before any effect runs. */
