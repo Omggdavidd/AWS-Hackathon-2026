@@ -22,7 +22,7 @@ import { loadModel, loadModelsByRole } from './src/model'
 import { runScan } from './src/scan'
 
 /**
- * AgentCore Runtime entry point (ADR-0008). One command today: scan a source into the ledger.
+ * AgentCore Runtime entry point (ADR-0008). Five commands today, named on `command` below.
  * Sources and ledgers are chosen by the payload so the same runtime serves the seeded demo and,
  * later, live Gmail and DynamoDB (plan steps 9 and the live-Gmail stretch).
  */
