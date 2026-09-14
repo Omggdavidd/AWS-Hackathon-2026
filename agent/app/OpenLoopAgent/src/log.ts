@@ -1,3 +1,5 @@
+import type { GoogleSourceEvent } from '@openloop/shared'
+
 /**
  * Structured pipeline logging (#30). One JSON object per line on stdout, which is what the
  * AgentCore Runtime ships to CloudWatch: per-thread progress and per-role durations, so a scan
@@ -30,6 +32,26 @@ export function jsonLogger(write: (chunk: string) => void = (c) => void process.
 /** Milliseconds since `start`, for steps that are not a single awaited call. */
 export function elapsed(start: number): number {
   return Date.now() - start
+}
+
+/**
+ * What a live Gmail listing lost, as pipeline log lines (#30). Ids, reasons and counts only:
+ * subjects, bodies and addresses never reach the log.
+ */
+export function googleSourceLogger(log: Logger): (event: GoogleSourceEvent) => void {
+  return (event) => {
+    if (event.type === 'message_skipped') {
+      log({ evt: 'source_message_skipped', messageId: event.id, reason: event.reason })
+      return
+    }
+    log({
+      evt: 'source_truncated',
+      kind: event.kind,
+      limit: event.limit,
+      from: event.covered.from,
+      to: event.covered.to,
+    })
+  }
 }
 
 /** Run `fn`, then log `line` with the elapsed milliseconds. Failures are logged and rethrown. */

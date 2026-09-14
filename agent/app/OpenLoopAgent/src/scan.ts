@@ -10,6 +10,7 @@ import {
   type LedgerStore,
   OpenLoop,
   type ProposedAction,
+  type ScanSummary,
 } from '@openloop/shared'
 import type { Specialists } from './agents'
 import { elapsed, type Logger, noopLogger, timed } from './log'
@@ -42,19 +43,7 @@ export type ScanEvent =
     }
   | { type: 'done'; summary: ScanSummary }
 
-export interface ScanSummary {
-  threads: number
-  skipped: number
-  created: number
-  updated: number
-  /**
-   * Threads whose pipeline threw. The scan carries on; the rest of the inbox still lands. A thread
-   * that threw after its loop reached the ledger is counted in both `created` and here, so `created`
-   * never reports fewer loops than a person can see.
-   */
-  failed: number
-  byStatus: Record<string, number>
-}
+export type { ScanSummary }
 
 /** Threads run in parallel; three keeps the Bedrock round trips overlapping without hammering it. */
 const DEFAULT_CONCURRENCY = 3
