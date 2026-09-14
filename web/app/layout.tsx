@@ -7,7 +7,7 @@ import { AppearanceMenu } from '@/components/appearance-menu'
 import { CommandBar } from '@/components/command-bar'
 import { LoopMark } from '@/components/loop-mark'
 import { NotificationBell } from '@/components/notification-bell'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { ThemeMenu } from '@/components/theme-menu'
 import { Welcome } from '@/components/welcome'
 import { scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
@@ -19,10 +19,12 @@ import {
   parseAccent,
   parseDensity,
   parseHome,
+  parseTheme,
+  THEME_COOKIE,
 } from '@/lib/appearance'
 import { formatDateTime } from '@/lib/format'
 import { loadAudit, loadDecisions, loadLoops, USER_ID } from '@/lib/ledger'
-import { buildNotices } from '@/lib/notifications'
+import { buildNotices, summarizeNotices } from '@/lib/notifications'
 import { purposeLabel, readProfile } from '@/lib/profile'
 import { readRuntimeMode } from '@/lib/runtime-lock'
 import './globals.css'
@@ -49,7 +51,7 @@ export const dynamic = 'force-dynamic'
  */
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const jar = await cookies()
-  const theme = jar.get('openloops-theme')?.value === 'dark' ? 'dark' : 'light'
+  const theme = parseTheme(jar.get(THEME_COOKIE)?.value)
   const named = cleanAgentName(jar.get(AGENT_COOKIE)?.value)
   const agentName = named ?? 'Your agent'
   const accent = parseAccent(jar.get(ACCENT_COOKIE)?.value)
@@ -129,9 +131,11 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                   notices={feed.notices}
                   unread={feed.unread}
                   latestAt={feed.latestAt}
+                  summary={summarizeNotices(feed.notices)}
+                  bubbleSeen={jar.get('openloops-bubble')?.value}
                 />
                 <AppearanceMenu accent={accent} density={density} home={home} />
-                <ThemeToggle initialTheme={theme} />
+                <ThemeMenu initialTheme={theme} />
                 {/* Phones have no rail, so Settings (which also holds the inbox and appearance) sits here. */}
                 <Link
                   href="/settings"

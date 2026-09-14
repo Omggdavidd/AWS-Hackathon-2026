@@ -1,5 +1,15 @@
-import type { AuditEvent, OpenLoop } from '@openloop/shared'
-import { NOTABLE } from './changes'
+import type { AuditEvent, AuditKind, OpenLoop } from '@openloop/shared'
+
+/**
+ * What counts as something the user should be told. Evidence, scans and catch-ups are the agent
+ * working, not a change in the world; proposals and approvals are already visible as buttons on
+ * the loop. SPEC §8H: notify state changes and decisions, never "you have 6 emails".
+ */
+export const NOTABLE: ReadonlySet<AuditKind> = new Set<AuditKind>([
+  'state_changed',
+  'loop_created',
+  'action_executed',
+])
 
 /**
  * What the notice is about, which is also how it is coloured. The vocabulary is the product's
@@ -46,12 +56,11 @@ const TEXT: Record<NoticeKind, string> = {
 /**
  * The notification centre, derived from the audit trail rather than stored (SPEC §8H). One notice
  * per loop, not per event: five things happening to one responsibility is one piece of news, and
- * the newest of them is the one worth telling. The policy for what counts as news has a single
- * owner, `NOTABLE` in `changes.ts`, so the bell and the banner can never disagree.
+ * the newest of them is the one worth telling.
  *
- * `seen` is the timestamp of the last notice the user acknowledged, the same cookie the banner
- * writes when it is dismissed. Anything newer is unread; there is no read/unread column anywhere,
- * so nothing has to migrate and both ledger adapters work unchanged.
+ * `seen` is the timestamp of the last notice the user acknowledged, written by "Mark all read".
+ * Anything newer is unread; there is no read/unread column anywhere, so nothing has to migrate and
+ * both ledger adapters work unchanged.
  */
 export function buildNotices(
   audit: AuditEvent[],
@@ -117,4 +126,60 @@ function classify(
   if (status === 'NEEDS_YOU' || status === 'UNCERTAIN') return 'needs_you'
   if (status === 'WAITING') return 'waiting'
   return 'watching'
+}
+
+/**
+ * The bubble that hangs off the bell is a headline, not the list: at most two categories and a
+ * count, so it can be read without stopping. Most urgent first, because the one category that is
+ * named should be the one worth acting on.
+ */
+const RANK: NoticeKind[] = ['needs_you', 'new', 'waiting', 'watching', 'handled', 'resolved']
+
+/** The verb phrase that follows a count: 3 + " need you". */
+const PHRASE: Record<NoticeKind, (count: number) => string> = {
+  needs_you: (count) => (count === 1 ? 'needs you' : 'need you'),
+  new: (count) => (count === 1 ? 'is new' : 'are new'),
+  waiting: (count) => (count === 1 ? 'is waiting' : 'are waiting'),
+  watching: (count) => (count === 1 ? 'is being watched' : 'are being watched'),
+  handled: (count) => (count === 1 ? 'was handled' : 'were handled'),
+  resolved: (count) => (count === 1 ? 'is done' : 'are done'),
+}
+
+/** A hard ceiling so the bubble never grows into a second banner. */
+export const SUMMARY_CAP = 72
+
+/**
+ * One line for the bubble: "3 need you and 4 more are waiting." Only unread notices count, since
+ * the bubble is what you have not looked at yet. Two categories are named; beyond that the rest
+ * stay a number, because a bubble listing six categories is the banner we just removed.
+ *
+ * Returns undefined when nothing is unread, so the caller renders no bubble at all.
+ */
+export function summarizeNotices(notices: Notice[]): string | undefined {
+  const unread = notices.filter((notice) => notice.unread)
+  if (unread.length === 0) return undefined
+
+  const counts = new Map<NoticeKind, number>()
+  for (const notice of unread) counts.set(notice.kind, (counts.get(notice.kind) ?? 0) + 1)
+  const ranked = RANK.filter((kind) => counts.has(kind))
+  const first = ranked[0]
+  if (!first) return undefined
+
+  const lead = counts.get(first) ?? 0
+  const head = `${lead} ${PHRASE[first](lead)}`
+  const rest = unread.length - lead
+  if (rest === 0) return cap(`${head}.`)
+
+  const second = ranked[1]
+  const tail =
+    ranked.length === 2 && second ? `${rest} more ${PHRASE[second](rest)}` : `${rest} more changed`
+  return cap(`${head} and ${tail}.`)
+}
+
+/** Truncate on a word boundary rather than mid-word, and say so with an ellipsis. */
+function cap(text: string): string {
+  if (text.length <= SUMMARY_CAP) return text
+  const clipped = text.slice(0, SUMMARY_CAP - 1)
+  const space = clipped.lastIndexOf(' ')
+  return `${(space > 0 ? clipped.slice(0, space) : clipped).replace(/[.,]$/, '')}…`
 }

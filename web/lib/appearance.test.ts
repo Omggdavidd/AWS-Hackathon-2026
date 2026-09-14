@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseAccent, parseDensity, parseHome } from './appearance'
+import { parseAccent, parseDensity, parseHome, parseTheme } from './appearance'
 
 describe('appearance cookies', () => {
   it('accepts a six-digit hex accent and treats the default as unset', () => {
@@ -14,5 +14,16 @@ describe('appearance cookies', () => {
     expect(parseDensity('dense')).toBe('comfortable')
     expect(parseHome('board')).toBe('board')
     expect(parseHome('list')).toBe('today')
+  })
+})
+
+describe('parseTheme', () => {
+  it('reads the three grounds and falls back to light', () => {
+    expect(parseTheme('light')).toBe('light')
+    expect(parseTheme('dark')).toBe('dark')
+    expect(parseTheme('midnight')).toBe('midnight')
+    expect(parseTheme(undefined)).toBe('light')
+    expect(parseTheme('DARK')).toBe('light')
+    expect(parseTheme('super-dark')).toBe('light')
   })
 })
