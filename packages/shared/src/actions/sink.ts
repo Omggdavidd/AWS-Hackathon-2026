@@ -1,4 +1,4 @@
-import type { ActionPlan, ActionResult, ProposedAction } from '../schemas/index'
+import type { ActionPlan, ActionResult, ProposedAction, ProposedActionType } from '../schemas/index'
 
 /**
  * Where effects happen (ADR-0005). The fixture sink simulates them for the deterministic demo; Gmail and
@@ -9,17 +9,34 @@ export interface ActionSink {
   execute(action: ProposedAction, plan: ActionPlan): Promise<ActionResult>
 }
 
-/** Effects a sink can carry out without a person: everything except sending mail or paying (SPEC §12). */
+/**
+ * Effects no tier makes safe: they move money, commit the user to someone else, or speak in their
+ * name, and none of them can be taken back. `riskTier` is a field the Risk Judge writes and
+ * `requiresApproval` is derived from it, so without this list one model field decides whether a
+ * payment leaves the account. This one asks the model nothing.
+ */
+const NEVER_AUTOMATIC: ReadonlySet<ProposedActionType> = new Set([
+  'pay',
+  'submit_form',
+  'send_email',
+  'book_appointment',
+  'other',
+])
+
+/** Preparing is not acting: what a medium-risk action may still do alone. */
+const MEDIUM_OK: ReadonlySet<ProposedActionType> = new Set([
+  'draft_email',
+  'create_calendar_event',
+  'remind',
+  'follow_up',
+])
+
+/** Effects a sink can carry out without a person (SPEC §12). The type is checked at every tier. */
 export function isAutoExecutable(action: ProposedAction): boolean {
+  if (NEVER_AUTOMATIC.has(action.type)) return false
   if (action.riskTier === 'high') return false
   if (action.riskTier === 'low') return true
-  return [
-    'draft_email',
-    'create_calendar_event',
-    'remind',
-    'follow_up',
-    'book_appointment',
-  ].includes(action.type)
+  return MEDIUM_OK.has(action.type)
 }
 
 /** Policy gate applied by the orchestrator before any effect runs. */
