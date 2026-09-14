@@ -27,7 +27,7 @@ Before this review, any script that could reach the URL could run those in a loo
 
 **Not fully mitigated, and this is the honest limit:** an attacker who sets one header walks straight through. An origin check is a bill boundary against casual abuse, not a defence against anyone trying. Two things bound the damage past that point:
 
-1. **An AWS budget alarm.** In place: a $25 monthly cost budget with email alerts at 85% and 100% of actual spend and 100% of forecast, verified from the CLI 2026-09-13 (#144, ticked in `SUBMISSION.md`). Note what it is and is not — a tripwire, not a hard cap. AWS does not stop the spend when it fires, it tells us the spend happened, so it bounds how long abuse runs unnoticed rather than what it costs.
+1. **An AWS budget alarm.** In place: a $60 monthly cost budget with email alerts at 85% and 100% of actual spend and 100% of forecast, verified from the CLI 2026-09-13 (#144, ticked in `SUBMISSION.md`) and raised from $25 on 2026-09-14 after the first four days of scans cost about $30, almost all of it local CLI runs rather than the public URL. Note what it is and is not — a tripwire, not a hard cap. AWS does not stop the spend when it fires, it tells us the spend happened, so it bounds how long abuse runs unnoticed rather than what it costs.
 2. **A rate limit on those routes** — still open, and now the only thing between a determined caller and the bill. Per-IP and a global daily ceiling; needs shared state, so on Vercel it means a counter in DynamoDB or a managed limiter. Deliberately not attempted the day before submission: a limiter that misfires locks a judge out of the demo, which is worse than the risk it removes.
 
 ## Response headers
