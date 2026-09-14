@@ -3,7 +3,7 @@
 import { randomUUID } from 'node:crypto'
 import type { LoopStatus } from '@openloop/shared'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { invokeCommand, scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
@@ -11,6 +11,17 @@ import { getStore, resetLedger, USER_ID } from '@/lib/ledger'
 import { type ParkKind, parkLoopByUser } from '@/lib/park'
 import { resolveLoopByUser } from '@/lib/resolve'
 import { restoreLoopByUser } from '@/lib/restore'
+import { isSameOrigin } from '@/lib/same-origin'
+
+/**
+ * Next checks a Server Action's Origin against Host only when Origin is present, and lets a request
+ * with no Origin through. The actions that spend Bedrock or wipe the demo table refuse those; a
+ * browser always sends Origin on the POST behind a button, so the app is unchanged.
+ */
+async function requireSameOrigin(): Promise<void> {
+  if (!isSameOrigin(await headers(), ''))
+    throw new Error('Refused: request did not come from this app')
+}
 
 /** "I already did this": the user closes a loop by hand, cancelling what it leaves behind (SPEC §8B). */
 export async function markDone(loopId: string): Promise<void> {
@@ -57,6 +68,7 @@ export async function ignoreLoop(loopId: string): Promise<void> {
  * record is approved and left for a later `handle`.
  */
 export async function approveAction(actionId: string): Promise<void> {
+  await requireSameOrigin()
   const store = await getStore()
   const action = await store.getAction(USER_ID, actionId)
   if (action?.status !== 'PROPOSED') return
@@ -144,6 +156,7 @@ export async function renameAgent(form: FormData): Promise<void> {
 
 /** Reset the demo ledger (#29 from the web). Destructive on the shared table; the button confirms in place. */
 export async function resetDemo(): Promise<string> {
+  await requireSameOrigin()
   const result = await resetLedger(USER_ID)
   revalidatePath('/', 'layout')
   return result

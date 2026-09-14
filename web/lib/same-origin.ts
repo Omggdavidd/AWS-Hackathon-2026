@@ -12,7 +12,7 @@
  *
  * Next's Server Actions compare Origin with Host only when Origin is present and let a request
  * with no Origin through. Route handlers get nothing by default, which is why this exists; the
- * server actions that spend or reset are listed as unmitigated in `docs/security.md`.
+ * server actions that spend or reset (`approveAction`, `resetDemo`) call it too.
  */
 export function isSameOrigin(headers: Headers, url: string): boolean {
   const origin = headers.get('origin')
