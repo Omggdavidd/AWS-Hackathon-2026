@@ -29,6 +29,15 @@ const SUPPORTS_LABEL = {
 const FOLD_AFTER = 200
 
 /**
+ * How far back the history of one loop is read. History renders every event it is given, so the
+ * number has to sit above anything a loop can collect: the demo's busiest loop has two events and
+ * the whole trail has seventeen, and a loop gathers a handful more each scan. Without a limit the
+ * DynamoDB adapter filters the audit partition server-side with no `Limit` at all, which only gets
+ * slower as the trail grows.
+ */
+const HISTORY_LIMIT = 100
+
+/**
  * One responsibility, in the order a person checks it: what to do, what the agent found, what it
  * did, what happened. Every claim keeps its link back to the message or event it came from
  * (SPEC §8B, §12). Rendered as the full page at /loops/[id] and as the pane beside the list, so
@@ -44,7 +53,7 @@ export async function LoopDetail({ id, mode }: { id: string; mode: 'page' | 'pan
   const [evidence, actions, audit] = await Promise.all([
     store.listEvidence(id),
     store.listActions(USER_ID, { loopId: id }),
-    store.listAudit(USER_ID, { loopId: id }),
+    store.listAudit(USER_ID, { loopId: id, limit: HISTORY_LIMIT }),
   ])
   const now = new Date()
   const resolved = loop.status === 'RESOLVED'

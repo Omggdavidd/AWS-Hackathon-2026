@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { StateIcon } from '@/components/loop-mark'
 import { DEMO_TIME_ZONE } from '@/lib/format'
 
@@ -42,7 +42,7 @@ type ScanState = {
 }
 
 type Result =
-  | { op: 'catch_up'; at: Date; summary: CatchUp }
+  | { op: 'catch_up'; at: Date; summary?: CatchUp }
   | { op: 'handle'; at: Date; handled: Handled }
   | { op: 'scan' | 'delta'; at: Date; scan: ScanState }
 
@@ -51,7 +51,7 @@ const LABEL: Record<Op, { idle: string; busy: string; title: string; hint: strin
     idle: 'Catch me up',
     busy: 'Catching up…',
     title: 'What changed',
-    hint: 'A short digest of what changed since you last looked.',
+    hint: 'A short digest of what changed since you last looked. About a minute.',
   },
   handle: {
     idle: 'Handle what you can',
@@ -113,6 +113,7 @@ export function AgentPanel({
     setResult(undefined)
     try {
       if (op === 'catch_up') {
+        setResult({ op, at: new Date() })
         const res = await fetch('/api/catch-up', { method: 'POST' })
         const body = (await res.json()) as CatchUp & { error?: string }
         if (!res.ok) throw new Error(body.error ?? 'The agent could not catch you up.')
@@ -129,6 +130,8 @@ export function AgentPanel({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
+      // A catch-up that failed has nothing to show; a scan keeps the lines it already streamed.
+      setResult((r) => (r?.op === 'catch_up' && !r.summary ? undefined : r))
     } finally {
       setRunning(undefined)
     }
@@ -249,7 +252,12 @@ export function AgentPanel({
             )}
           </div>
           {error && <p className="agent-error">{error}</p>}
-          {result?.op === 'catch_up' && <Digest summary={result.summary} />}
+          {result?.op === 'catch_up' &&
+            (result.summary ? (
+              <Digest summary={result.summary} />
+            ) : (
+              <CatchUpProgress startedAt={result.at} />
+            ))}
           {result?.op === 'handle' && <HandledList handled={result.handled} />}
           {(result?.op === 'scan' || result?.op === 'delta') && (
             <ScanProgress scan={result.scan} running={busy} />
@@ -289,6 +297,44 @@ function Digest({ summary }: { summary: CatchUp }) {
           Nothing else needs you.
         </p>
       )}
+    </div>
+  )
+}
+
+/**
+ * The three stages a catch-up really goes through: the ledger and audit reads, the diff, then the
+ * model writing the summary. Nothing reports them over the wire, so the captions run on a timer
+ * and stay broad on purpose — each one keeps describing work that is still under way.
+ */
+const CATCH_UP_PHASES = [
+  { after: 0, caption: 'Reading your ledger' },
+  { after: 4, caption: 'Working out what changed' },
+  { after: 10, caption: 'Writing your digest' },
+] as const
+
+/** Shown from the click, not from the answer: a minute of a greyed-out button reads as a hang. */
+function CatchUpProgress({ startedAt }: { startedAt: Date }) {
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    const tick = () =>
+      setElapsed(Math.max(0, Math.floor((Date.now() - startedAt.getTime()) / 1000)))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [startedAt])
+  const phase = CATCH_UP_PHASES.filter((p) => elapsed >= p.after).at(-1) ?? CATCH_UP_PHASES[0]
+  return (
+    <div className="scan">
+      <p className="scan-status">
+        {phase.caption}
+        {/* Hidden from the status region: a counter ticking every second would be announced every second. */}
+        <span className="scan-elapsed" aria-hidden="true">
+          {elapsed}s
+        </span>
+      </p>
+      <div className="scan-bar" aria-hidden="true">
+        <div />
+      </div>
     </div>
   )
 }

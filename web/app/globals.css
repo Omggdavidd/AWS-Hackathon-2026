@@ -1855,6 +1855,24 @@ body::before {
     transform: translateX(400%);
   }
 }
+.scan-elapsed {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* A frozen 30% stub reads as stalled; a full quiet bar reads as work still running. */
+  .scan-bar > div {
+    width: 100%;
+    animation: none;
+    background: var(--accent-soft);
+  }
+  .agent-panel[data-busy] .agent-pulse {
+    animation: none;
+  }
+}
 .scan-log {
   display: flex;
   flex-direction: column;
