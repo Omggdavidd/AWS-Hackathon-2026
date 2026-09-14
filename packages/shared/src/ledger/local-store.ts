@@ -17,7 +17,12 @@ import {
   matchesAuditFilter,
   matchesLoopFilter,
 } from './filters'
-import type { LedgerStore, LoopFilter } from './store'
+import {
+  type LedgerStore,
+  type LoopFilter,
+  type PutLoopOptions,
+  StaleLoopWriteError,
+} from './store'
 
 /** The on-disk shape, validated on load so a hand-edited file cannot become a parsed type. */
 const Snapshot = z.object({
@@ -110,9 +115,23 @@ export class LocalLedgerStore implements LedgerStore {
     return loop?.userId === userId ? loop : undefined
   }
 
-  async putLoop(loop: OpenLoop): Promise<void> {
-    this.loops.set(loop.id, loop)
+  /**
+   * The compare and the set run in one synchronous step, before the first await, so two callers
+   * interleaved by the event loop cannot both find the version they expect. The file write is
+   * queued after that, on the same queue as every other write, so the snapshot it takes already
+   * includes the swap.
+   */
+  async putLoop(loop: OpenLoop, opts: PutLoopOptions = {}): Promise<OpenLoop> {
+    let next = loop
+    if (opts.ifUnchanged) {
+      const expected = loop.version ?? 0
+      if ((this.loops.get(loop.id)?.version ?? 0) !== expected)
+        throw new StaleLoopWriteError(loop.id, expected)
+      next = { ...loop, version: expected + 1 }
+    }
+    this.loops.set(next.id, next)
     await this.persist()
+    return next
   }
 
   async listLoops(userId: string, filter: LoopFilter = {}): Promise<OpenLoop[]> {

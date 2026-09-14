@@ -11,6 +11,29 @@ export interface LoopFilter {
   status?: LoopStatus | LoopStatus[]
 }
 
+export interface PutLoopOptions {
+  /**
+   * Compare and swap instead of overwriting (ADR-0014): write only while the stored loop is still
+   * at the version the caller read, then bump it. A caller that lost throws StaleLoopWriteError.
+   */
+  ifUnchanged?: boolean
+}
+
+/**
+ * A compare-and-swap write that lost: someone else wrote the loop between the caller's read and
+ * its write (ADR-0014). Distinct from every other store failure so a caller can re-read, reapply
+ * its change and try again, rather than retrying a write that will never succeed.
+ */
+export class StaleLoopWriteError extends Error {
+  constructor(
+    readonly loopId: string,
+    readonly expectedVersion: number,
+  ) {
+    super(`Loop ${loopId} changed since it was read at version ${expectedVersion}`)
+    this.name = 'StaleLoopWriteError'
+  }
+}
+
 /**
  * The ledger adapter (ADR-0004, ADR-0009). Two implementations: LocalLedgerStore (in-process,
  * optional JSON file) and DynamoLedgerStore (AWS). Both must pass the shared contract test in
@@ -19,7 +42,14 @@ export interface LoopFilter {
  */
 export interface LedgerStore {
   getLoop(userId: string, loopId: string): Promise<OpenLoop | undefined>
-  putLoop(loop: OpenLoop): Promise<void>
+  /**
+   * Write a loop and return the record as stored. Without options this overwrites whatever is
+   * there, the behaviour every caller has today; with `ifUnchanged` it is a compare and swap on
+   * `loop.version` (absent counts as 0, so a row written before versions existed can be claimed
+   * once) and the returned record carries the bumped version. Overwrites do not touch the version,
+   * so the guard only holds between callers that opt in.
+   */
+  putLoop(loop: OpenLoop, opts?: PutLoopOptions): Promise<OpenLoop>
   listLoops(userId: string, filter?: LoopFilter): Promise<OpenLoop[]>
   /** Loops whose sourceRefs include the given source id; used for deduplication. */
   findLoopsBySource(userId: string, sourceId: string): Promise<OpenLoop[]>

@@ -89,6 +89,12 @@ export const OpenLoop = z
     resolvedAt: IsoDateTime.optional(),
     /** When the user asked to be reminded again, after parking the loop in Watching (SPEC 8B). */
     remindAt: IsoDateTime.optional(),
+    /**
+     * Optimistic-concurrency counter, bumped only by a compare-and-swap write (ADR-0014). Optional
+     * rather than defaulted: every record written before it existed, and every blind `putLoop`,
+     * leaves it absent, and the stores read absent as 0.
+     */
+    version: z.number().int().nonnegative().optional(),
   })
   // A closed loop says when it closed: `applyTransition` stamps it, so a RESOLVED row without it
   // was written around the lifecycle (SPEC 7).
