@@ -24,7 +24,7 @@ pnpm --filter @openloop/agent scan -- --delta   # then the next-morning batch (d
 pnpm --filter @openloop/agent scan -- --handle  # execute every allowed proposed action (drafts, calendar, reminders); high risk waits for approval
 pnpm --filter @openloop/agent scan -- --catch-up  # what changed since the last catch-up, written from the ledger only
 pnpm --filter @openloop/agent scan -- --ask "what am I waiting on?"  # answer one question from the ledger; reads only
-pnpm --filter @openloop/agent agreement         # 1 real scan (about fifty cents), per-thread status against demo/seed-ledger.json; OPENLOOP_AGREEMENT_RUNS=3 for a final check
+pnpm --filter @openloop/agent agreement         # one four-thread calibration run
 pnpm --filter @openloop/agent test              # stub-based, no AWS needed
 pnpm reset-demo --dry-run                       # count the rows a reset would delete; deletes nothing
 pnpm reset-demo --table openloop-ledger --yes   # delete them, then rescan the base inbox on the deployed runtime (~95 to 105s)
@@ -119,7 +119,7 @@ The Extractor sets `area` on every loop (school, work, money, health, home, trav
 
 ## Known calibration
 
-Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and states. The rescheduled club meeting was the one thread that drifted: on the prompt before the change below, the Investigator marked it Needs You rather than Watching once in four observed runs on the 12-thread inbox, and about half the time on the earlier 10-thread one. Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities. `pnpm --filter @openloop/agent agreement` measures that drift: it runs the base scan three times and prints each thread's status next to the expected one, with an agreement count. The comparison itself is `src/agreement.ts`, covered by `test/agreement.test.ts`; the runs need AWS credentials.
+Against `demo/seed-ledger.json` the pipeline produces the expected 11 loops and states. The rescheduled club meeting was the one thread that drifted: on the prompt before the change below, the Investigator marked it Needs You rather than Watching once in four observed runs on the 12-thread inbox, and about half the time on the earlier 10-thread one. Priorities and loop titles vary between runs; `demo/README.md` pins states, not priorities. `pnpm --filter @openloop/agent agreement` measures that drift: it defaults to one run of four complete threads (club, deposit, issue1 and newsletter), selected from the demo fixture with the full calendar preserved. Expected states come from the existing seed ledger; the newsletter must produce no loop. It prints per-thread agreement and exits unsuccessfully on any disagreement. Invalid run counts or unknown flags fail before model initialization. Use `OPENLOOP_AGREEMENT_RUNS=3 pnpm --filter @openloop/agent agreement -- --full` for final verification of the entire showcase; `--full` alone runs it once. A subset is fast feedback, not proof that other threads are unaffected. The comparison itself is `src/agreement.ts`, covered by `test/agreement.test.ts`; the runs need AWS credentials.
 
 The Investigator prompt now states the rule outright (a meeting already on the calendar whose time changed is Watching unless another event overlaps the new slot or the organizer asks for a reply).
 
@@ -142,6 +142,6 @@ thr-passport   WATCHING  WATCHING  WATCHING  WATCHING  ✓
 agreement 11/11 threads over 3 runs
 ```
 
-Update-from-new-evidence (delta scans), DynamoDB, live Gmail and action execution are later plan steps.
+Delta scans, DynamoDB and simulated action execution are implemented; live integration status is tracked in `../STATUS.md`.
 
 `AGENTS.md` here is the CLI's own guide to `agentcore/` config and applies alongside the root `AGENTS.md`.
