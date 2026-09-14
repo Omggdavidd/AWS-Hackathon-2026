@@ -17,10 +17,11 @@ import { executeAction, handleWhatYouCan } from './src/actions'
 import { createSpecialists } from './src/agents'
 import { ask } from './src/ask'
 import { catchUp } from './src/catch-up'
+import { emitStream } from './src/emit-stream'
 import { GmailSourceSchema, googleAccessToken, googleSourceLogger } from './src/google-auth'
 import { jsonLogger, timed } from './src/log'
 import { loadModel, loadModelsByRole } from './src/model'
-import { runScan } from './src/scan'
+import { runScan, type ScanSummary } from './src/scan'
 
 /**
  * AgentCore Runtime entry point (ADR-0008). Five commands today, named on `command` below.
@@ -71,18 +72,39 @@ const app = new BedrockAgentCoreApp({
     async *process(payload) {
       // Structured pipeline lines go to stdout, which the Runtime ships to CloudWatch (#30).
       const logger = jsonLogger()
-      const source: IngestionSource =
-        payload.source.kind === 'gmail'
-          ? new GoogleSource({
-              accessToken: googleAccessToken(payload.source),
-              backfillDays: payload.source.backfillDays,
-              onEvent: googleSourceLogger(logger),
-            })
-          : payload.source.path
-            ? await FixtureSource.load(payload.source.path)
-            : payload.source.variant === 'delta'
-              ? FixtureSource.fromDataWithDelta(seedInbox, seedInboxDelta)
-              : FixtureSource.fromData(seedInbox)
+      /**
+       * Opened on first read, once. `catch_up` and `ask` read no mail, so on those commands —
+       * including the 07:00 daily catch-up — nothing here runs and the bundled demo inbox is never
+       * parsed. `source` below is the handle everything else holds; opening is its own step so the
+       * one instance is shared and `logIngestionStats` can still see what it was.
+       */
+      let opening: Promise<IngestionSource> | undefined
+      let opened: IngestionSource | undefined
+      const openSource = async (): Promise<IngestionSource> => {
+        const source =
+          payload.source.kind === 'gmail'
+            ? new GoogleSource({
+                accessToken: googleAccessToken(payload.source),
+                backfillDays: payload.source.backfillDays,
+                onEvent: googleSourceLogger(logger),
+              })
+            : payload.source.path
+              ? await FixtureSource.load(payload.source.path)
+              : payload.source.variant === 'delta'
+                ? FixtureSource.fromDataWithDelta(seedInbox, seedInboxDelta)
+                : FixtureSource.fromData(seedInbox)
+        opened = source
+        return source
+      }
+      const open = () => {
+        opening ??= openSource()
+        return opening
+      }
+      const source: IngestionSource = {
+        listMessages: async (query) => (await open()).listMessages(query),
+        getThread: async (threadId) => (await open()).getThread(threadId),
+        listEvents: async (range) => (await open()).listEvents(range),
+      }
       const store: LedgerStore =
         payload.ledger.kind === 'dynamo'
           ? new DynamoLedgerStore({ tableName: payload.ledger.table })
@@ -97,7 +119,7 @@ const app = new BedrockAgentCoreApp({
       })
       /** What live ingestion lost, once it is done. A fixture source loses nothing and has no stats. */
       const logIngestionStats = () => {
-        if (source instanceof GoogleSource) logger({ evt: 'source_stats', ...source.stats })
+        if (opened instanceof GoogleSource) logger({ evt: 'source_stats', ...opened.stats })
       }
       if (payload.command === 'catch_up') {
         const summary = await timed(logger, { evt: 'catch_up' }, () =>
@@ -148,19 +170,29 @@ const app = new BedrockAgentCoreApp({
         logIngestionStats()
         return
       }
-      const events: string[] = []
-      const summary = await runScan({
-        source,
-        store,
-        userId: payload.userId,
-        specialists,
-        logger,
-        ...(payload.now ? { now: payload.now } : {}),
-        onEvent: (e) => events.push(JSON.stringify(e)),
-      })
-      logIngestionStats()
-      for (const line of events) yield { data: line }
-      yield { data: JSON.stringify({ type: 'summary', summary }) }
+      // Yielded as the scan emits them: the browser draws a hundred seconds of progress rather
+      // than a frozen screen and one burst at the end (web/components/agent-panel.tsx).
+      const scan = emitStream<string, ScanSummary>((emit) =>
+        runScan({
+          source,
+          store,
+          userId: payload.userId,
+          specialists,
+          logger,
+          ...(payload.now ? { now: payload.now } : {}),
+          // Serialized here, not at yield time, so a later write to the loop it carries cannot
+          // change what the client already saw.
+          onEvent: (e) => emit(JSON.stringify(e)),
+        }),
+      )
+      for await (const emitted of scan) {
+        if (emitted.kind === 'event') {
+          yield { data: emitted.event }
+          continue
+        }
+        logIngestionStats()
+        yield { data: JSON.stringify({ type: 'summary', summary: emitted.result }) }
+      }
     },
   },
 })
