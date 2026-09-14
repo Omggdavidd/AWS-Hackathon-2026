@@ -10,6 +10,18 @@ import { LEDGER_TABLE } from './ledger'
 export const RUNTIME_ARN = process.env.OPENLOOP_RUNTIME_ARN
 export const scanConfigured = Boolean(RUNTIME_ARN && LEDGER_TABLE)
 
+let client: BedrockAgentCoreClient | undefined
+
+/**
+ * One client for the life of the process, as `getStore()` keeps one ledger. A fresh client resolves
+ * credentials and opens a new TLS connection on every click, which is pure latency before the
+ * runtime has been asked anything.
+ */
+function getClient(): BedrockAgentCoreClient {
+  client ??= new BedrockAgentCoreClient({ region: process.env.AWS_REGION ?? 'us-east-1' })
+  return client
+}
+
 /**
  * Start a scan on the deployed runtime and return its SSE byte stream. The runtime writes loops to the
  * shared DynamoDB table as it goes; the stream carries progress events (`data: "<json>"` lines).
@@ -22,8 +34,7 @@ export async function invokeScan(
 ): Promise<ReadableStream<Uint8Array>> {
   if (!RUNTIME_ARN || !LEDGER_TABLE)
     throw new Error('OPENLOOP_RUNTIME_ARN and OPENLOOP_LEDGER_TABLE must be set')
-  const client = new BedrockAgentCoreClient({ region: process.env.AWS_REGION ?? 'us-east-1' })
-  const res = await client.send(
+  const res = await getClient().send(
     new InvokeAgentRuntimeCommand({
       agentRuntimeArn: RUNTIME_ARN,
       runtimeSessionId: `web-${userId}-${randomUUID()}`,
@@ -55,8 +66,7 @@ export async function invokeCommand(
 ): Promise<Record<string, unknown>> {
   if (!RUNTIME_ARN || !LEDGER_TABLE)
     throw new Error('OPENLOOP_RUNTIME_ARN and OPENLOOP_LEDGER_TABLE must be set')
-  const client = new BedrockAgentCoreClient({ region: process.env.AWS_REGION ?? 'us-east-1' })
-  const res = await client.send(
+  const res = await getClient().send(
     new InvokeAgentRuntimeCommand({
       agentRuntimeArn: RUNTIME_ARN,
       runtimeSessionId: `web-${userId}-${randomUUID()}`,

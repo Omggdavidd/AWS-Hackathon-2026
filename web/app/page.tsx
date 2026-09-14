@@ -12,9 +12,8 @@ import { scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName, TOUR_COOKIE } from '@/lib/agent-name'
 import { HOME_COOKIE, HOME_HREF, parseHome } from '@/lib/appearance'
 import { summarizeChanges } from '@/lib/changes'
-import { pendingDecisions } from '@/lib/decisions'
 import { formatDateTime, groupByStatus } from '@/lib/format'
-import { getStore, USER_ID } from '@/lib/ledger'
+import { loadAudit, loadDecisions, loadLoops, USER_ID } from '@/lib/ledger'
 import { readProfile } from '@/lib/profile'
 
 export const dynamic = 'force-dynamic'
@@ -38,12 +37,8 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
   const profile = readProfile(jar)
   const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value)
 
-  const store = await getStore()
-  const [loops, audit] = await Promise.all([
-    store.listLoops(USER_ID),
-    store.listAudit(USER_ID, { limit: 40 }),
-  ])
-  const decisions = await pendingDecisions(store, USER_ID, loops)
+  const [loops, audit] = await Promise.all([loadLoops(USER_ID), loadAudit(USER_ID)])
+  const decisions = await loadDecisions(USER_ID)
   const lastScan = audit.find((event) => event.kind === 'scan_completed')
   const checked = lastScan ? formatDateTime(lastScan.at) : undefined
   const now = new Date()
