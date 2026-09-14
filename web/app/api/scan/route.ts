@@ -1,4 +1,5 @@
 import { invokeScan, scanConfigured } from '@/lib/agent'
+import { CEILING_MESSAGE, withinDailyCeiling } from '@/lib/ceiling'
 import { USER_ID } from '@/lib/ledger'
 import { isSameOrigin } from '@/lib/same-origin'
 
@@ -12,6 +13,7 @@ export async function POST(request: Request): Promise<Response> {
     return new Response('Cross-origin requests are not accepted', { status: 403 })
   if (!scanConfigured)
     return new Response('Scan is not configured; see web/.env.example', { status: 503 })
+  if (!(await withinDailyCeiling())) return new Response(CEILING_MESSAGE, { status: 429 })
   try {
     const variant = new URL(request.url).searchParams.get('variant') === 'delta' ? 'delta' : 'base'
     const stream = await invokeScan(USER_ID, variant)
