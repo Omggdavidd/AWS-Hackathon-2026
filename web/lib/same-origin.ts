@@ -10,8 +10,9 @@
  * header. It does **not** stop anyone willing to send `Origin` by hand; for that see the rate
  * limit and budget alarm in `docs/security.md`.
  *
- * Next's Server Actions already do an equivalent Origin/Host comparison of their own. Route
- * handlers get nothing by default, which is why this exists.
+ * Next's Server Actions compare Origin with Host only when Origin is present and let a request
+ * with no Origin through. Route handlers get nothing by default, which is why this exists; the
+ * server actions that spend or reset are listed as unmitigated in `docs/security.md`.
  */
 export function isSameOrigin(headers: Headers, url: string): boolean {
   const origin = headers.get('origin')
