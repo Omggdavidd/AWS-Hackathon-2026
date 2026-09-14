@@ -63,6 +63,15 @@ const specialists = createSpecialists({
   userId,
 })
 
+/**
+ * A run's product is the ledger. A thread or action that did not land is a responsibility the user
+ * believes is tracked and is not, so it has to reach the caller as a non-zero exit, not just stdout.
+ */
+function fail(message: string): never {
+  process.stderr.write(`${message}\n`)
+  process.exit(1)
+}
+
 const started = Date.now()
 if (askIdx >= 0) {
   if (!question) throw new Error('--ask needs a question in quotes')
@@ -93,11 +102,17 @@ if (handle) {
     logger,
     now: source.fixture.persona.now,
   })
-  for (const h of result.handled) console.log(`✓ ${h.status.padEnd(9)} ${h.summary}`)
+  const failedActions = result.handled.filter((h) => h.status === 'FAILED')
+  for (const h of result.handled)
+    console.log(`${h.status === 'FAILED' ? '✗' : '✓'} ${h.status.padEnd(9)} ${h.summary}`)
   for (const n of result.needsYou) console.log(`→ needs you: ${n.summary} (${n.reason})`)
   console.log(
-    `\nhandled ${result.handled.length}, needs you ${result.needsYou.length}, in ${Math.round((Date.now() - started) / 1000)}s`,
+    `\nhandled ${result.handled.length}, needs you ${result.needsYou.length}${failedActions.length > 0 ? `, failed ${failedActions.length}` : ''}, in ${Math.round((Date.now() - started) / 1000)}s`,
   )
+  if (failedActions.length > 0)
+    fail(
+      `${failedActions.length} of ${result.handled.length} actions failed; those loops were not acted on`,
+    )
   process.exit(0)
 }
 const summary = await runScan({
@@ -119,3 +134,7 @@ const summary = await runScan({
 console.log(
   `\n${JSON.stringify(summary)}  in ${Math.round((Date.now() - started) / 1000)}s  ledger: ${dynamoTable ?? path.relative(repoRoot, ledgerPath)}`,
 )
+if (summary.failed > 0)
+  fail(
+    `${summary.failed} of ${summary.threads} threads failed; the ledger is missing what they would have tracked`,
+  )
