@@ -7,6 +7,7 @@ import { AppearanceMenu } from '@/components/appearance-menu'
 import { LoopMark } from '@/components/loop-mark'
 import { NotificationBell } from '@/components/notification-bell'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { Welcome } from '@/components/welcome'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
 import {
   ACCENT_COOKIE,
@@ -19,8 +20,9 @@ import {
 } from '@/lib/appearance'
 import { pendingDecisions } from '@/lib/decisions'
 import { formatDateTime } from '@/lib/format'
-import { getStore, USER_ID, USER_NAME } from '@/lib/ledger'
+import { getStore, USER_ID } from '@/lib/ledger'
 import { buildNotices } from '@/lib/notifications'
+import { purposeLabel, readProfile } from '@/lib/profile'
 import './globals.css'
 
 const sans = Inter({
@@ -46,11 +48,13 @@ export const dynamic = 'force-dynamic'
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const jar = await cookies()
   const theme = jar.get('openloops-theme')?.value === 'dark' ? 'dark' : 'light'
-  const agentName = cleanAgentName(jar.get(AGENT_COOKIE)?.value) ?? 'Your agent'
+  const named = cleanAgentName(jar.get(AGENT_COOKIE)?.value)
+  const agentName = named ?? 'Your agent'
   const accent = parseAccent(jar.get(ACCENT_COOKIE)?.value)
   const density = parseDensity(jar.get(DENSITY_COOKIE)?.value)
   const home = parseHome(jar.get(HOME_COOKIE)?.value)
   const todayHref = home === 'today' ? '/' : '/?view=list'
+  const profile = readProfile(jar)
   const store = await getStore()
   const [loops, audit] = await Promise.all([
     store.listLoops(USER_ID),
@@ -75,7 +79,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
           Skip to content
         </a>
         <div className="app-shell">
-          <AppRail pending={decisions.length} initial={USER_NAME} todayHref={todayHref} />
+          <AppRail pending={decisions.length} initial={profile.name} todayHref={todayHref} />
           <div className="workspace">
             <header className="topbar">
               <Link href="/" className="wordmark topbar-wordmark">
@@ -92,6 +96,28 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
                 </span>
               </p>
               <div className="header-actions">
+                <Link
+                  href="/settings#s-you"
+                  className="inbox-chip"
+                  title={`Connected for ${purposeLabel(profile.purpose).toLowerCase()}. Reading the seeded demo inbox for this address; live Gmail is the next connection.`}
+                >
+                  <span className="inbox-dot" aria-hidden="true" />
+                  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                    <rect
+                      x="1.5"
+                      y="3.5"
+                      width="13"
+                      height="9"
+                      rx="1.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                    />
+                    <path d="m2 5 6 4 6-4" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                  </svg>
+                  <span className="inbox-address">{profile.inbox}</span>
+                  <small>{purposeLabel(profile.purpose)}</small>
+                </Link>
                 <NotificationBell
                   notices={feed.notices}
                   unread={feed.unread}
@@ -102,7 +128,8 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
               </div>
             </header>
             <main id="main-content" className="main-content">
-              {children}
+              {/* First visit on any route: the product introduces itself before showing anything (#150). */}
+              {named ? children : <Welcome />}
             </main>
             <footer className="site-foot">
               <p>

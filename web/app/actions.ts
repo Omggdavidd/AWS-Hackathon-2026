@@ -9,6 +9,14 @@ import { invokeCommand, scanConfigured } from '@/lib/agent'
 import { AGENT_COOKIE, cleanAgentName } from '@/lib/agent-name'
 import { getStore, resetLedger, USER_ID } from '@/lib/ledger'
 import { type ParkKind, parkLoopByUser } from '@/lib/park'
+import {
+  cleanEmail,
+  cleanPersonName,
+  INBOX_COOKIE,
+  PURPOSE_COOKIE,
+  parsePurpose,
+  YOU_COOKIE,
+} from '@/lib/profile'
 import { resolveLoopByUser } from '@/lib/resolve'
 import { restoreLoopByUser } from '@/lib/restore'
 import { isSameOrigin } from '@/lib/same-origin'
@@ -141,7 +149,28 @@ export async function nameAgent(form: FormData): Promise<void> {
   const name = cleanAgentName(typeof raw === 'string' ? raw : undefined) ?? 'Loop'
   const jar = await cookies()
   jar.set(AGENT_COOKIE, name, { path: '/', maxAge: 31536000, sameSite: 'lax' })
+  setProfileCookies(jar, form)
   redirect('/?tour=1')
+}
+
+/** The person's name, the inbox the agent reads and what it is for (#150); a bad value keeps the old one. */
+export async function updateProfile(form: FormData): Promise<void> {
+  setProfileCookies(await cookies(), form)
+  revalidatePath('/', 'layout')
+}
+
+function setProfileCookies(jar: Awaited<ReturnType<typeof cookies>>, form: FormData): void {
+  const field = (key: string) => {
+    const v = form.get(key)
+    return typeof v === 'string' ? v : undefined
+  }
+  const you = cleanPersonName(field('you'))
+  const inbox = cleanEmail(field('inbox'))
+  const purpose = parsePurpose(field('purpose'))
+  const opts = { path: '/', maxAge: 31536000, sameSite: 'lax' as const }
+  if (you) jar.set(YOU_COOKIE, you, opts)
+  if (inbox) jar.set(INBOX_COOKIE, inbox, opts)
+  if (purpose) jar.set(PURPOSE_COOKIE, purpose, opts)
 }
 
 /** Rename the agent from Settings: same cookie as the welcome screen, no redirect. */
