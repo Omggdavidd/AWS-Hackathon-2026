@@ -27,3 +27,4 @@ Format: MADR 4.0 minimal, see `adr-template.md`. Keep each under a page. Write i
 | [0010](0010-nextjs-frontend-on-vercel.md) | Build the product UI with Next.js 16 and host it on Vercel | accepted |
 | [0011](0011-google-oauth-in-web-app.md) | The web app owns Google OAuth in Testing status; the agent receives tokens per invocation and polls | accepted |
 | [0012](0012-repository-layout-and-tooling.md) | pnpm workspace with web, agent, shared schemas and demo fixtures; Biome and Vitest | accepted |
+| [0013](0013-scheduled-catch-up-eventbridge-scheduler.md) | The agent checks in on its own: a daily catch-up scheduled with Amazon EventBridge Scheduler | proposed |
