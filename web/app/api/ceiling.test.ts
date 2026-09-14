@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
- * The four paths that spend Bedrock, checked at the boundary the UI actually sees: `agent-panel`
- * reads `res.text()` for a failed scan and `body.error` for handle and catch-up, and a server
- * action surfaces a thrown message. Nothing here reaches AWS.
+ * The five paths that spend Bedrock, checked at the boundary the UI actually sees: `agent-panel`
+ * reads `res.text()` for a failed scan and `body.error` for handle and catch-up, `command-bar`
+ * reads `body.error` for ask, and a server action surfaces a thrown message. Nothing here reaches
+ * AWS.
  */
 const aws = vi.hoisted(() => ({ send: vi.fn() }))
 const agent = vi.hoisted(() => ({ invokeScan: vi.fn(), invokeCommand: vi.fn() }))
@@ -48,6 +49,7 @@ async function load(ceiling = '2') {
     scan: (await import('./scan/route')).POST,
     handle: (await import('./handle/route')).POST,
     catchUp: (await import('./catch-up/route')).POST,
+    ask: (await import('./ask/route')).POST,
     actions: await import('../actions'),
     CEILING_MESSAGE: (await import('@/lib/ceiling')).CEILING_MESSAGE,
   }
@@ -57,6 +59,15 @@ function post(path: string): Request {
   return new Request(`http://localhost:3000${path}`, {
     method: 'POST',
     headers: { origin: 'http://localhost:3000' },
+  })
+}
+
+/** Ask refuses an empty question before it reaches the runtime, so the body has to be real. */
+function ask(): Request {
+  return new Request('http://localhost:3000/api/ask', {
+    method: 'POST',
+    headers: { origin: 'http://localhost:3000', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: 'What is due today?' }),
   })
 }
 
@@ -84,6 +95,13 @@ describe('under the ceiling', () => {
     expect((await handle(post('/api/handle'))).status).toBe(200)
     expect((await catchUp(post('/api/catch-up'))).status).toBe(200)
     expect(agent.invokeCommand).toHaveBeenCalledTimes(2)
+  })
+
+  it('asks', async () => {
+    aws.send.mockResolvedValue(UNDER)
+    const { ask: route } = await load()
+    expect((await route(ask())).status).toBe(200)
+    expect(agent.invokeCommand).toHaveBeenCalledOnce()
   })
 
   it('approves', async () => {
@@ -121,6 +139,15 @@ describe('at the ceiling', () => {
     expect(agent.invokeCommand).not.toHaveBeenCalled()
   })
 
+  it('refuses ask as { error }, which is the shape the command bar renders', async () => {
+    aws.send.mockResolvedValue(OVER)
+    const { ask: route, CEILING_MESSAGE } = await load()
+    const res = await route(ask())
+    expect(res.status).toBe(429)
+    expect(await res.json()).toEqual({ error: CEILING_MESSAGE })
+    expect(agent.invokeCommand).not.toHaveBeenCalled()
+  })
+
   it('refuses an approval by throwing, as the origin guard beside it already does', async () => {
     aws.send.mockResolvedValue(OVER)
     const { actions, CEILING_MESSAGE } = await load()
@@ -143,6 +170,13 @@ describe('a counter that fails', () => {
     const { handle, catchUp } = await load('1')
     expect((await handle(post('/api/handle'))).status).toBe(200)
     expect((await catchUp(post('/api/catch-up'))).status).toBe(200)
+  })
+
+  it('lets ask through anyway', async () => {
+    aws.send.mockRejectedValue(new Error('dynamodb unreachable'))
+    const { ask: route } = await load('1')
+    expect((await route(ask())).status).toBe(200)
+    expect(agent.invokeCommand).toHaveBeenCalledOnce()
   })
 
   it('lets an approval through anyway', async () => {
