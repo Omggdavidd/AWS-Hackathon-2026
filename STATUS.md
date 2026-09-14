@@ -8,7 +8,7 @@ Current phase: Phase 2, Foundation (definitions in `docs/process/phases.md`). En
 
 ## Demo readiness
 
-Public URL: https://openloop-neon.vercel.app (Vercel project `openloop`, production from `main`, preview per PR; scoped IAM user `openloop-web`). Before recording, put the live table back in its post-scan state with `pnpm reset-demo --table openloop-ledger --yes` (#29); as of 2026-09-13 evening it still holds a mid-demo ledger from before the area and interrupt fields existed. Scan, Check for new mail, Handle and Approve drive the deployed runtime from there. Locally, `pnpm --filter @openloop/web dev` renders the seeded ledger, and with `OPENLOOP_LEDGER_TABLE` and `OPENLOOP_RUNTIME_ARN` set the same buttons work. Submission deadline Mon Sep 14, 2026, 8:00 PM ET; dates and checklist in `docs/hackathon/SUBMISSION.md`.
+Public URL: https://openloop-neon.vercel.app (Vercel project `openloop`, production from `main`, preview per PR; scoped IAM user `openloop-web`). Before recording, put the live table back in its post-scan state with `pnpm reset-demo --table openloop-ledger --yes` (#29); as of 2026-09-13 night it is in that state: 11 loops with areas and interrupt flags from a scan on the runtime redeployed with #121's three-thread pipeline. Scan, Check for new mail, Handle and Approve drive the deployed runtime from there. Locally, `pnpm --filter @openloop/web dev` renders the seeded ledger, and with `OPENLOOP_LEDGER_TABLE` and `OPENLOOP_RUNTIME_ARN` set the same buttons work. Submission deadline Mon Sep 14, 2026, 8:00 PM ET; dates and checklist in `docs/hackathon/SUBMISSION.md`.
 
 ## What works
 
@@ -25,12 +25,11 @@ Work is tracked as GitHub issues on the submission milestone (`must-ship` first,
 
 | Owner | Issues, hardest first within each row |
 |---|---|
-| Omggdavidd (hard + front end) | #20 live Gmail, #21 Google sinks (stretch); video and submission chores |
+| Omggdavidd (hard + front end) | #20 live Gmail, the web OAuth half (the reader shipped in #130), #21 Google sinks (stretch); video and submission chores |
 | Ojulari123 (next hardest) | #31 command bar (stretch): PR #128 conflicts with `main` after #121 and #113 and needs the `isSameOrigin` guard on `/api/ask`; #16 shipped in #121 |
-| tdare514 (medium) | #20 live Gmail: the reader and the runtime's `gmail` source kind are in, the web OAuth half is not; #111 shipped |
+| tdare514 (medium) | nothing open; #20's reader and the runtime's `gmail` source kind shipped in #130, #111 shipped |
 | ab00bae (medium-easy) | nothing open |
 | AyomideAw (easiest) | nothing open |
-| Omggdavidd (stretch, after #19) | #20 live Gmail, #21 Google sinks |
 
 One owner per issue and no issue waits on another. Every issue states why it matters for the submission.
 
@@ -48,6 +47,7 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 - 2026-09-13 Front-end revamp, first tier: rail of routes and a split Today view (#105), rows in fixed columns and one Group by menu (#106), Decisions with a review sheet that confirms in place (#107), welcome screen, agent name and a five-stop tour (#108); Today fills the screen until a loop is chosen (#120). Re-judge on the delta path (#111, tdare514). Demo reset script (#29), Investigator calibration with an agreement harness (#15) and failure-path tests (#14), all Ojulari123.
 - 2026-09-13 Demo script for the five-minute video, written against the app as built and walked twice against the running app (#22, ab00bae, taken over from AyomideAw).
 
+- 2026-09-13 Scan runs three threads at a time with per-role model ids and a loop belongs only to the thread it was found in, 95 to 105 seconds for the demo inbox instead of four to five minutes (#121, Ojulari123, closes #16); agent `.env.example` (#125, Ojulari123); `GoogleSource` reads live Gmail and Calendar behind the existing `IngestionSource`, the web OAuth half of #20 still open (#130, tdare514); budget alarm and `openloop-web` policy verified from the CLI (#144).
 - 2026-09-13 Security review of the deployed app and ledger: origin check on the three agent routes so an unauthenticated stranger cannot spend Bedrock tokens, response headers, and `docs/security.md` recording what is deliberately open (ab00bae).
 
 ## Blocked
@@ -56,7 +56,7 @@ One owner per issue and no issue waits on another. Every issue states why it mat
 
 ## Next up
 
-Every must-ship is in and the front-end revamp is complete. Before the video: reset the live table (Settings, or #29's script) and scan it once so the loops carry areas and interrupt flags. Then stretch (#20, #21, #31). Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
+Every must-ship is in, the front-end revamp is complete, and the live table and runtime are ready to record. Remaining stretch: the OAuth half of #20 (needs the Google Cloud project), #21, and #31 once #128 is rebased and guarded. Owner-only chores (video, submission day, IAM users, Devpost) are in `docs/hackathon/SUBMISSION.md`.
 
 ## Known issues
 

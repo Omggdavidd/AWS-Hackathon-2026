@@ -1,6 +1,6 @@
 /**
  * The three agent routes are unauthenticated and each one costs money: a POST to `/api/scan`
- * invokes the deployed runtime and spends four to five minutes of Claude Sonnet. There is no
+ * invokes the deployed runtime and spends a minute and a half or more of Claude Sonnet. There is no
  * session to steal, so this is not a privilege boundary — it is a bill boundary. A state-changing
  * POST with no CSRF token can be fired from any page a browser happens to visit, and the charge
  * lands on the account behind the deployment.

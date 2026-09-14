@@ -22,7 +22,7 @@ If you record locally instead, the agent buttons only work with `web/.env.local`
 
 So: **identify rows by what they are, not by the string in this script, and read aloud whatever is on screen.** The counts are stable and worth checking; the wording is not.
 
-**Do not record a cold scan.** A full scan is four to five and a half minutes, measured across four runs — longer than the whole video. Open on a ledger that has already been scanned (#29's reset script). Scene 6 explains how to show the agent working without waiting for it.
+**Do not record a cold scan.** A full scan is about 95 to 105 seconds since #121, so it now fits inside the video, but it is still a third of the running time spent waiting on a model that can land a thread differently from take to take. Open on a ledger that has already been scanned (#29's reset script). Scene 6 explains how to show the agent working without waiting for it.
 
 Check before you hit record:
 
