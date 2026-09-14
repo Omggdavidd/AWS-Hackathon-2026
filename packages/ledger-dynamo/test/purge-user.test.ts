@@ -75,7 +75,8 @@ describe('purgeUser', () => {
     expect(queries).toHaveLength(3 + 30)
     // no delete is issued until every query has run, or evidence partitions become unreachable
     expect(fake.calls.findIndex((c) => c.target === 'BatchWriteItem')).toBe(queries.length)
-    expect(writes.map((c) => deleteRequests(c).length)).toEqual([25, 25, 12])
+    // sorted: the batches go out concurrently, so which lands first is not part of the contract
+    expect(writes.map((c) => deleteRequests(c).length).sort((a, b) => b - a)).toEqual([25, 25, 12])
     const deleted = writes.flatMap((c) =>
       deleteRequests(c).map((r) => `${r.DeleteRequest.Key.PK.S} ${r.DeleteRequest.Key.SK.S}`),
     )

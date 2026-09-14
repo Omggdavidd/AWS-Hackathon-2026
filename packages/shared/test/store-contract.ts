@@ -137,5 +137,41 @@ export function runStoreContract(name: string, make: () => Promise<LedgerStore>)
         'x1',
       ])
     })
+
+    it('reads a partition larger than one response page, and bounds it by loop and limit', {
+      timeout: 120_000,
+    }, async () => {
+      const store = await make()
+      // DynamoDB caps a query response at 1MB, so 30 rows of 40KB cannot arrive in one page: a
+      // store that ignores LastEvaluatedKey silently loses the older half of the activity feed.
+      const blob = 'x'.repeat(40_000)
+      const total = 30
+      for (let i = 0; i < total; i++)
+        await store.appendAudit({
+          id: `p${String(i).padStart(2, '0')}`,
+          userId: 'user-1',
+          at: new Date(Date.UTC(2026, 8, 1, 0, i)).toISOString(),
+          kind: 'state_changed',
+          actor: 'agent',
+          reason: 'bulk',
+          details: { blob },
+          // every other event belongs to loop-1, so a filtered read has to page too
+          ...(i % 2 === 0 ? { loopId: 'loop-1' } : {}),
+        })
+
+      const all = await store.listAudit('user-1')
+      expect(all).toHaveLength(total)
+      expect([all[0]?.id, all.at(-1)?.id]).toEqual(['p29', 'p00'])
+      expect((await store.listAudit('user-1', { limit: 3 })).map((e) => e.id)).toEqual([
+        'p29',
+        'p28',
+        'p27',
+      ])
+      expect(await store.listAudit('user-1', { loopId: 'loop-1' })).toHaveLength(total / 2)
+      expect(
+        (await store.listAudit('user-1', { loopId: 'loop-1', limit: 4 })).map((e) => e.id),
+      ).toEqual(['p28', 'p26', 'p24', 'p22'])
+      expect(await store.listAudit('user-1', { loopId: 'loop-9', limit: 4 })).toEqual([])
+    })
   })
 }
