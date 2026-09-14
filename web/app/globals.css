@@ -67,6 +67,38 @@
   --on-accent: #102c32;
 }
 
+/*
+ * Midnight: the same navy vocabulary pulled down to near-black for an unlit room or an OLED
+ * screen. Not dark with the brightness turned down: the grounds separate by hue as well as by
+ * value so cards still read as cards, and the foreground is lifted to hold contrast against them.
+ */
+:root[data-theme="midnight"] {
+  color-scheme: dark;
+  --background: #05070d;
+  --foreground: #e8eef7;
+  --muted: #93a3ba;
+  --card: #0b101a;
+  --border: #1e2836;
+  --sidebar: #03050a;
+  --accent: #7fe0d6;
+  --accent-soft: #0c2a2d;
+  --attention: #ffa1b8;
+  --waiting: #f3d67c;
+  --watching: #a9cdff;
+  --resolved: #b6e98c;
+  --resolved-soft: #0d1c1a;
+  --area-school: #b0b2ff;
+  --area-work: #96c8ef;
+  --area-money: #ebcb70;
+  --area-health: #ffa694;
+  --area-home: #dfae90;
+  --area-travel: #86daf1;
+  --area-community: #eba0e1;
+  --area-other: #93a3ba;
+  --surface: #090e17;
+  --on-accent: #04060b;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -105,7 +137,7 @@ body::before {
   background-size: 160px 160px;
   mix-blend-mode: multiply;
 }
-:root[data-theme="dark"] body::before {
+:root:is([data-theme="dark"], [data-theme="midnight"]) body::before {
   mix-blend-mode: screen;
   opacity: 0.035;
 }
@@ -365,21 +397,99 @@ body::before {
   width: 20px;
   height: 20px;
 }
-.theme-sun {
+/* Three glyphs stacked; the one matching the current mode is the one that is shown. */
+.theme-icon[data-for="light"] {
   color: #f0cd78;
+}
+.theme-icon[data-for="dark"] {
+  color: #506d98;
+}
+.theme-icon[data-for="midnight"] {
+  color: #7f8fd8;
+}
+.theme-toggle .theme-icon {
   opacity: 0;
   transform: rotate(90deg) scale(0.5);
 }
-.theme-moon {
-  color: #506d98;
-}
-.theme-toggle[data-mode="dark"] .theme-sun {
+.theme-toggle[data-mode="light"] .theme-icon[data-for="light"],
+.theme-toggle[data-mode="dark"] .theme-icon[data-for="dark"],
+.theme-toggle[data-mode="midnight"] .theme-icon[data-for="midnight"] {
   opacity: 1;
   transform: rotate(0) scale(1);
 }
-.theme-toggle[data-mode="dark"] .theme-moon {
+.theme-wrap {
+  position: relative;
+}
+.theme-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  min-width: 216px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 25%);
+}
+.theme-option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  text-align: left;
+  color: var(--foreground);
+}
+.theme-option:hover {
+  background: var(--surface);
+}
+/* The mode you are on is marked, so reopening the menu answers "which one am I in?" at a glance. */
+.theme-option[data-active] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  --option-hint: color-mix(in srgb, var(--accent) 70%, var(--muted));
+}
+.theme-option-glyph svg {
+  width: 18px;
+  height: 18px;
+}
+.theme-option-glyph[data-for="light"] {
+  color: #f0cd78;
+}
+.theme-option-glyph[data-for="dark"] {
+  color: #506d98;
+}
+.theme-option-glyph[data-for="midnight"] {
+  color: #7f8fd8;
+}
+.theme-option-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.theme-option-text strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.theme-option-text small {
+  font-size: 11.5px;
+  color: var(--option-hint, var(--muted));
+}
+.theme-option-tick {
   opacity: 0;
-  transform: rotate(-90deg) scale(0.5);
+}
+.theme-option-tick svg {
+  width: 16px;
+  height: 16px;
+}
+.theme-option[data-active] .theme-option-tick {
+  opacity: 1;
 }
 :root[data-theme-transition]::view-transition {
   pointer-events: none;
@@ -726,46 +836,6 @@ body::before {
   margin: 0 8px 2px 0;
   border-radius: 50%;
   background: var(--accent);
-}
-
-.change-banner {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  background: var(--accent-soft);
-  border-radius: 10px;
-  padding: 14px 18px;
-  margin-bottom: 22px;
-}
-.change-banner p {
-  line-height: 1.6;
-}
-.change-banner a {
-  color: var(--accent);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-thickness: 1px;
-}
-.change-banner a:hover {
-  color: var(--foreground);
-}
-.change-banner button {
-  flex-shrink: 0;
-  font-size: 13px;
-  color: var(--muted);
-  padding: 2px 4px;
-  border-radius: 6px;
-}
-.change-banner button:hover {
-  color: var(--foreground);
-}
-@media (max-width: 640px) {
-  .change-banner {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
 }
 
 .view-hint {
@@ -2249,6 +2319,110 @@ body::before {
   line-height: 18px;
   text-align: center;
 }
+/*
+ * The unread headline, hung off the bell instead of laid across the page. A tail points back at
+ * the control it summarises, the accent edge and the blur keep it reading as something floating
+ * over the page rather than part of it, and the whole thing is one click to dismiss.
+ */
+.notice-bubble {
+  position: absolute;
+  top: calc(100% + 11px);
+  right: -4px;
+  z-index: 35;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  width: max-content;
+  max-width: min(290px, calc(100vw - 32px));
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+  backdrop-filter: blur(12px) saturate(1.5);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 7%, transparent),
+    0 14px 34px -16px color-mix(in srgb, var(--accent) 80%, transparent),
+    0 6px 20px -14px rgb(0 0 0 / 40%);
+  animation:
+    bubble-in 340ms cubic-bezier(0.2, 0.9, 0.32, 1.2) both,
+    bubble-drift 7s ease-in-out 500ms infinite;
+}
+/* The tour has its own stop on the bell; two things pointing at it at once is one too many. */
+body:has(.tour) .notice-bubble {
+  display: none;
+}
+/* The tail. Square, rotated, and clipped to its top-left edges so it reads as part of the border. */
+.notice-bubble::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 17px;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 2px 0 0 0;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+}
+.notice-bubble-open {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-align: left;
+  color: var(--foreground);
+}
+.notice-bubble-open:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.notice-bubble-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.notice-bubble-more {
+  font-size: 11.5px;
+  color: var(--accent);
+}
+.notice-bubble-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 26px;
+  border-radius: 9px;
+  color: var(--muted);
+}
+.notice-bubble-close:hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+.notice-bubble-close svg {
+  width: 14px;
+  height: 14px;
+}
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes bubble-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
 .notice-panel {
   position: absolute;
   top: calc(100% + 8px);
@@ -2374,6 +2548,15 @@ body::before {
     top: 60px;
     right: 12px;
     width: calc(100vw - 24px);
+  }
+  .notice-bubble {
+    position: fixed;
+    top: 60px;
+    right: 12px;
+    max-width: calc(100vw - 24px);
+  }
+  .notice-bubble::before {
+    display: none;
   }
 }
 
@@ -3221,10 +3404,13 @@ body:has(.welcome) .bottom-tabs {
   --accent-soft: color-mix(in srgb, var(--accent-base) 12%, var(--card));
   --on-accent: #fff;
 }
-:root[data-accent="custom"][data-theme="dark"] {
+:root[data-accent="custom"]:is([data-theme="dark"], [data-theme="midnight"]) {
   --accent: color-mix(in srgb, var(--accent-base) 58%, white);
   --accent-soft: color-mix(in srgb, var(--accent-base) 32%, var(--card));
   --on-accent: #101b2e;
+}
+:root[data-accent="custom"][data-theme="midnight"] {
+  --on-accent: #04060b;
 }
 .appearance {
   position: relative;
