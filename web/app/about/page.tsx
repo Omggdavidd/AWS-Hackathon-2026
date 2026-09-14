@@ -3,11 +3,11 @@ import Link from 'next/link'
 import { StateIcon } from '@/components/loop-mark'
 
 const TEAM = [
-  { login: 'Omggdavidd', role: 'Lead, front end, deployment' },
-  { login: 'Ojulari123', role: 'Agent quality and demo reset' },
-  { login: 'tdare514', role: 'Observability, notifications, CI' },
-  { login: 'ab00bae', role: 'README, loop actions, demo script' },
-  { login: 'AyomideAw', role: 'Demo and submission checks' },
+  { name: 'David Amaefula', login: 'Omggdavidd', role: 'Lead, front end, deployment' },
+  { name: 'Adeoluwa Ojulari', login: 'Ojulari123', role: 'Agent quality and demo reset' },
+  { name: 'Oluwatoby Dare', login: 'tdare514', role: 'Observability, notifications, CI' },
+  { name: 'Ebube Esor', login: 'ab00bae', role: 'README, loop actions, demo script' },
+  { name: 'Ayomide Awofisayo', login: 'AyomideAw', role: 'Demo and submission checks' },
 ]
 
 const STATES = [
@@ -37,6 +37,32 @@ export default function AboutPage() {
           only when a real decision is needed.
         </p>
       </header>
+      <section className="about-section" aria-labelledby="about-team">
+        <h2 id="about-team">The Dev Team</h2>
+        <ul className="about-team">
+          {TEAM.map((member) => (
+            <li key={member.login}>
+              <a href={`https://github.com/${member.login}`} className="about-link">
+                {member.name}
+              </a>
+              <span className="about-role">{member.role}</span>
+            </li>
+          ))}
+        </ul>
+        <p>
+          New here?{' '}
+          <Link href="/?tour=1" className="about-link">
+            Replay the tour
+          </Link>
+          .
+        </p>
+        <p>
+          Source, architecture and decisions:{' '}
+          <a href="https://github.com/Omggdavidd/AWS-Hackathon-2026" className="about-link">
+            github.com/Omggdavidd/AWS-Hackathon-2026
+          </a>
+        </p>
+      </section>
       <section className="about-section" aria-labelledby="about-states">
         <h2 id="about-states">Every loop is in one of four states</h2>
         <ul className="about-states">
@@ -74,32 +100,6 @@ export default function AboutPage() {
             same ledger.
           </figcaption>
         </figure>
-      </section>
-      <section className="about-section" aria-labelledby="about-team">
-        <h2 id="about-team">Built for the AWS Agents for Humans hackathon</h2>
-        <ul className="about-team">
-          {TEAM.map((member) => (
-            <li key={member.login}>
-              <a href={`https://github.com/${member.login}`} className="about-link">
-                {member.login}
-              </a>
-              <span className="about-role">{member.role}</span>
-            </li>
-          ))}
-        </ul>
-        <p>
-          New here?{' '}
-          <Link href="/?tour=1" className="about-link">
-            Replay the tour
-          </Link>
-          .
-        </p>
-        <p>
-          Source, architecture and decisions:{' '}
-          <a href="https://github.com/Omggdavidd/AWS-Hackathon-2026" className="about-link">
-            github.com/Omggdavidd/AWS-Hackathon-2026
-          </a>
-        </p>
       </section>
     </div>
   )
