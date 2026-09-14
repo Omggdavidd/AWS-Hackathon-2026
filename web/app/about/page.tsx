@@ -3,11 +3,11 @@ import Link from 'next/link'
 import { StateIcon } from '@/components/loop-mark'
 
 const TEAM = [
-  { login: 'Omggdavidd', role: 'Lead, front end, deployment' },
-  { login: 'Ojulari123', role: 'Agent quality and demo reset' },
-  { login: 'tdare514', role: 'Observability, notifications, CI' },
-  { login: 'ab00bae', role: 'README, loop actions, demo script' },
-  { login: 'AyomideAw', role: 'Demo and submission checks' },
+  { name: 'David Amaefula', login: 'Omggdavidd', role: 'Lead, front end, deployment' },
+  { name: 'Adeoluwa Ojulari', login: 'Ojulari123', role: 'Agent quality and demo reset' },
+  { name: 'Oluwatoby Dare', login: 'tdare514', role: 'Observability, notifications, CI' },
+  { name: 'Ebube Esor', login: 'ab00bae', role: 'README, loop actions, demo script' },
+  { name: 'Ayomide Awofisayo', login: 'AyomideAw', role: 'Demo and submission checks' },
 ]
 
 const STATES = [
@@ -76,12 +76,12 @@ export default function AboutPage() {
         </figure>
       </section>
       <section className="about-section" aria-labelledby="about-team">
-        <h2 id="about-team">Built for the AWS Agents for Humans hackathon</h2>
+        <h2 id="about-team">The Dev Team</h2>
         <ul className="about-team">
           {TEAM.map((member) => (
             <li key={member.login}>
               <a href={`https://github.com/${member.login}`} className="about-link">
-                {member.login}
+                {member.name}
               </a>
               <span className="about-role">{member.role}</span>
             </li>
