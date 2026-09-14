@@ -61,10 +61,12 @@ The `openloop-web` user for Vercel is scoped to DynamoDB item and query actions 
 Checked and clean:
 
 - **No raw HTML anywhere.** Loop titles, reasons and drafted email bodies are all model-generated and all render as escaped React text; there is no `dangerouslySetInnerHTML` in the tree. That is the obvious injection path in a product that displays model output, and it is closed.
+- **Mail cannot forge the prompt envelope it arrives in.** `renderMessage` and `renderEvent` wrap each message and event in `<message>` / `<event>` tags carrying the ids the model cites as evidence. A body, subject or display name that closed one of those tags and opened another could invent a message with a source id the UI then links to. Attribute values are escaped and the envelope tokens are defused in text (#164); a real From header keeps its angle brackets, so prompt text for both demo fixtures is byte-identical to before the change. This matters when `GoogleSource` is reading a live inbox and the sender is a stranger.
 - **Every ledger read and write is user-scoped.** No handler takes a user id from the request.
 - **`/messages/[id]`** serves only the bundled demo fixtures and 404s on an unknown id, so it cannot be walked into arbitrary content.
 - **Cookies** (`openloops-theme`, `openloops-seen`) hold a theme name and a timestamp, are `SameSite=Lax`, and carry nothing sensitive. Neither is a session.
 - **High-risk actions** cannot execute without `APPROVED`, enforced in `mayExecute` and covered by tests. Note the scope of that claim: it stops the *agent* acting unilaterally. It does not stop a person who can reach the UI from clicking Approve, because there is no auth — see the first section.
+- **Sending mail, paying and submitting a form never execute unattended**, whatever risk tier they carry, along with the catch-all `other`. The tier is assigned by the Risk Judge, so it is model output; resting the guarantee on the tier alone meant a `pay` the model rated `low` was auto-executable (#163). The type is now checked before the tier in `isAutoExecutable`, and a test pins each of those four types at all three tiers. Approval still executes them — this is a gate, not a ban.
 
 ## If something does go wrong
 
